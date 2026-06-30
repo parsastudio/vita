@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import localFont from "next/font/local";
+import { Geist, Geist_Mono, Vazirmatn } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { GuestBanner } from "@/components/auth/guest-banner";
@@ -17,10 +16,9 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const vazirmatn = localFont({
-  src: "../../public/Vazirmatn.woff2",
+const vazirmatn = Vazirmatn({
+  subsets: ["arabic", "latin"],
   variable: "--font-vazirmatn",
-  weight: "100 900",
   display: "swap",
 });
 
