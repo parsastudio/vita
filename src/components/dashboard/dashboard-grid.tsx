@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "next-themes";
 import { useModules } from "@/hooks/use-modules";
 import { useSync } from "@/hooks/use-sync";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -15,6 +16,7 @@ export function DashboardGrid({
   financeWidget: React.ReactNode;
 }) {
   const { user, isGuest, logout, disableGuestMode } = useAuth();
+  const { theme, setTheme } = useTheme();
   const { enabledModules, toggleModule } = useModules();
   const { isSyncing, performSync } = useSync();
   const [showSettings, setShowSettings] = useState(false);
@@ -36,6 +38,10 @@ export function DashboardGrid({
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
 
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col gap-8">
@@ -79,6 +85,44 @@ export function DashboardGrid({
         </div>
 
         <div className="relative flex items-center gap-3 self-start md:self-auto">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleTheme}
+            className="rounded-full border-border bg-background text-foreground"
+          >
+            <span className="sr-only">Toggle Theme</span>
+            {theme === "dark" ? (
+              <svg
+                className="size-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14.828 14.828a4 4 0 11-5.656-5.656 4 4 0 015.656 5.656z"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="size-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                />
+              </svg>
+            )}
+          </Button>
+
           {isGuest ? (
             <Button
               variant="default"
