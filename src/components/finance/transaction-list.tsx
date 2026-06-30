@@ -1,0 +1,126 @@
+"use client";
+
+import React, { useState } from "react";
+import { localDb } from "@/lib/db/client";
+import { Button } from "@/components/ui/button";
+
+export function TransactionList({ transactions }: { transactions: any[] }) {
+  const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState<string>("all");
+
+  const filtered = transactions.filter((tx) => {
+    const matchesSearch =
+      tx.category.toLowerCase().includes(search.toLowerCase()) ||
+      tx.description.toLowerCase().includes(search.toLowerCase()) ||
+      tx.tags.some((tag: string) =>
+        tag.toLowerCase().includes(search.toLowerCase()),
+      );
+
+    if (filterType === "all") return matchesSearch;
+    return matchesSearch && tx.type === filterType;
+  });
+
+  const handleDelete = async (id: string) => {
+    await localDb.financeTransactions.delete(id);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search descriptions, tags, categories..."
+          className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
+        />
+
+        <div className="flex flex-wrap gap-1.5">
+          {["all", "expense", "income"].map((type) => (
+            <Button
+              key={type}
+              variant={filterType === type ? "default" : "outline"}
+              size="xs"
+              onClick={() => setFilterType(type)}
+              className="capitalize"
+            >
+              {type}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+        {filtered.map((tx) => (
+          <div
+            key={tx.id}
+            className="p-4 border border-border bg-background rounded-xl flex items-center justify-between gap-4 hover:border-muted-foreground/30 transition-all"
+          >
+            <div className="space-y-1 flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-sm text-foreground break-words">
+                  {tx.category}
+                </span>
+                <span
+                  className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full ${
+                    tx.type === "income"
+                      ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                      : "bg-red-500/10 text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {tx.type}
+                </span>
+              </div>
+              {tx.description && (
+                <p className="text-xs text-muted-foreground break-words">
+                  {tx.description}
+                </p>
+              )}
+              {tx.tags && tx.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {tx.tags.map((tag: string, idx: number) => (
+                    <span
+                      key={idx}
+                      className="text-[9px] bg-muted px-1.5 py-0.5 rounded-sm text-muted-foreground font-mono"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <span className="text-[9px] text-muted-foreground block font-mono">
+                {new Date(tx.createdAt).toLocaleString()}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <span
+                className={`font-bold text-sm ${
+                  tx.type === "income"
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-red-600 dark:text-red-400"
+                }`}
+              >
+                {tx.type === "income" ? "+" : "-"}$
+                {Number(tx.amount).toFixed(2)}
+              </span>
+              <Button
+                variant="destructive"
+                size="icon-xs"
+                onClick={() => handleDelete(tx.id)}
+              >
+                🗑️
+              </Button>
+            </div>
+          </div>
+        ))}
+
+        {filtered.length === 0 && (
+          <div className="text-center py-8 text-sm text-muted-foreground">
+            No transaction records found.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
