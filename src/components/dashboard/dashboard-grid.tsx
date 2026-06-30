@@ -14,10 +14,11 @@ export function DashboardGrid({
   languageWidget: React.ReactNode;
   financeWidget: React.ReactNode;
 }) {
-  const { isGuest } = useAuth();
+  const { user, isGuest, logout, disableGuestMode } = useAuth();
   const { enabledModules, toggleModule } = useModules();
-  const { isSyncing, error, performSync } = useSync();
+  const { isSyncing, performSync } = useSync();
   const [showSettings, setShowSettings] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [isOnline, setIsOnline] = useState(
     typeof window !== "undefined" ? navigator.onLine : true,
   );
@@ -77,7 +78,73 @@ export function DashboardGrid({
           </p>
         </div>
 
-        <div className="relative flex items-center gap-2">
+        <div className="relative flex items-center gap-3 self-start md:self-auto">
+          {isGuest ? (
+            <Button
+              variant="default"
+              onClick={disableGuestMode}
+              className="rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white border-none text-xs px-4 h-8 font-semibold shadow-md shadow-indigo-500/20 animate-pulse"
+            >
+              Save Progress to Cloud
+            </Button>
+          ) : (
+            <div className="relative">
+              <Button
+                variant="outline"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="rounded-full size-8 p-0 flex items-center justify-center font-bold text-sm bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 transition-all"
+              >
+                {user?.email?.[0]?.toUpperCase() || "U"}
+              </Button>
+
+              <AnimatePresence>
+                {showUserMenu && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setShowUserMenu(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-xl p-4 shadow-xl z-20 space-y-3"
+                    >
+                      <div className="border-b border-border pb-2">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                          Signed in as
+                        </span>
+                        <span className="text-xs font-semibold text-foreground truncate block mt-0.5">
+                          {user?.email}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          performSync();
+                        }}
+                        className="w-full text-left text-xs text-foreground hover:text-primary transition-colors py-1 block font-medium"
+                      >
+                        Force Cloud Sync
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          logout();
+                        }}
+                        className="w-full text-left text-xs text-destructive hover:text-destructive/80 transition-colors py-1 block font-semibold border-t border-border pt-2"
+                      >
+                        Sign Out
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
           <Button
             variant="outline"
             onClick={() => setShowSettings(!showSettings)}

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import Cookies from "js-cookie";
+import { localDb } from "@/lib/db/client";
 import {
   signUpAction,
   signInAction,
@@ -34,6 +35,43 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+async function migrateGuestData(newUserId: string) {
+  try {
+    await localDb.transaction(
+      "rw",
+      [
+        localDb.languageCards,
+        localDb.financeTransactions,
+        localDb.financeBudgets,
+        localDb.userSettings,
+      ],
+      async () => {
+        await localDb.languageCards
+          .where("userId")
+          .equals("guest")
+          .modify({ userId: newUserId, synced: false });
+
+        await localDb.financeTransactions
+          .where("userId")
+          .equals("guest")
+          .modify({ userId: newUserId, synced: false });
+
+        await localDb.financeBudgets
+          .where("userId")
+          .equals("guest")
+          .modify({ userId: newUserId, synced: false });
+
+        await localDb.userSettings
+          .where("userId")
+          .equals("guest")
+          .modify({ userId: newUserId, synced: false });
+      },
+    );
+  } catch {
+    // handle silently
+  }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -77,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string) => {
     const res = await signUpAction(email, password);
     if (res.success && res.user) {
+      await migrateGuestData(res.user.id);
       setUser(res.user);
       setIsGuest(false);
       Cookies.remove("guest_mode");
@@ -89,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     const res = await signInAction(email, password);
     if (res.success && res.user) {
+      await migrateGuestData(res.user.id);
       setUser(res.user);
       setIsGuest(false);
       Cookies.remove("guest_mode");
