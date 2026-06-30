@@ -94,7 +94,12 @@ export function SrsReviewer({
             {currentCard.originalText}
           </p>
           <div className="flex justify-center gap-2">
-            <Button variant="outline" size="icon-sm" onClick={handleSpeak}>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={handleSpeak}
+              aria-label="Pronounce original text"
+            >
               🔊
             </Button>
           </div>

@@ -135,19 +135,20 @@ export function FinanceDashboard({
       tx.type,
       tx.amount,
       tx.category,
-      tx.tags.join("; "),
-      tx.description.replace(/"/g, '""'),
+      (tx.tags || []).join("; "),
+      (tx.description || "").replace(/"/g, '""'),
       new Date(tx.createdAt).toISOString(),
     ]);
 
     const csvContent =
-      "data:text/csv;charset=utf-8," +
+      "\uFEFF" +
       [
         headers.join(","),
         ...rows.map((e) => e.map((val) => `"${val}"`).join(",")),
       ].join("\n");
 
-    const encodedUri = encodeURI(csvContent);
+    const encodedUri =
+      "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
     link.setAttribute(

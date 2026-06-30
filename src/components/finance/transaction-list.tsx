@@ -124,6 +124,7 @@ export function TransactionList({
                 variant="destructive"
                 size="icon-xs"
                 onClick={() => handleDelete(tx.id)}
+                aria-label={`Delete transaction for ${tx.category}`}
               >
                 🗑️
               </Button>

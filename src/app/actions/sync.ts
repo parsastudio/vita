@@ -9,14 +9,60 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, gt, inArray } from "drizzle-orm";
 
+interface SyncLanguageCard {
+  id: string;
+  originalText: string;
+  translation: string;
+  focusWord: string;
+  isSentenceTranslation: boolean;
+  srsStatus: string;
+  nextReviewAt: string | Date;
+  intervalDays: number | string;
+  easeFactor: number | string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+interface SyncFinanceTransaction {
+  id: string;
+  amount: number | string;
+  type: string;
+  category: string;
+  tags: string[];
+  description: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+interface SyncFinanceBudget {
+  id: string;
+  categoryOrTag: string;
+  limitAmount: number | string;
+  period: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+interface SyncUserSettings {
+  id: string;
+  enabledModules: string[];
+  updatedAt: string | Date;
+}
+
+interface SyncDeletedRecord {
+  id: string;
+  tableName: string;
+  deletedAt: string | Date;
+}
+
 interface SyncPayload {
   userId: string;
   lastSyncedAt: string | null;
-  languageCards: any[];
-  financeTransactions: any[];
-  financeBudgets: any[];
-  userSettings: any[];
-  deletedRecords: any[];
+  languageCards: SyncLanguageCard[];
+  financeTransactions: SyncFinanceTransaction[];
+  financeBudgets: SyncFinanceBudget[];
+  userSettings: SyncUserSettings[];
+  deletedRecords: SyncDeletedRecord[];
 }
 
 export async function syncData(payload: SyncPayload) {
@@ -67,9 +113,13 @@ export async function syncData(payload: SyncPayload) {
   }
 
   for (const card of changes.languageCards) {
-    const existing = await db.query.languageCards.findFirst({
+    const existingGlobal = await db.query.languageCards.findFirst({
       where: eq(languageCards.id, card.id),
     });
+
+    if (existingGlobal && existingGlobal.userId !== userId) {
+      continue;
+    }
 
     const cardData = {
       id: card.id,
@@ -86,9 +136,9 @@ export async function syncData(payload: SyncPayload) {
       updatedAt: new Date(card.updatedAt),
     };
 
-    if (!existing) {
+    if (!existingGlobal) {
       await db.insert(languageCards).values(cardData);
-    } else if (new Date(card.updatedAt) > new Date(existing.updatedAt)) {
+    } else if (new Date(card.updatedAt) > new Date(existingGlobal.updatedAt)) {
       await db
         .update(languageCards)
         .set(cardData)
@@ -97,9 +147,13 @@ export async function syncData(payload: SyncPayload) {
   }
 
   for (const tx of changes.financeTransactions) {
-    const existing = await db.query.financeTransactions.findFirst({
+    const existingGlobal = await db.query.financeTransactions.findFirst({
       where: eq(financeTransactions.id, tx.id),
     });
+
+    if (existingGlobal && existingGlobal.userId !== userId) {
+      continue;
+    }
 
     const txData = {
       id: tx.id,
@@ -113,9 +167,9 @@ export async function syncData(payload: SyncPayload) {
       updatedAt: new Date(tx.updatedAt),
     };
 
-    if (!existing) {
+    if (!existingGlobal) {
       await db.insert(financeTransactions).values(txData);
-    } else if (new Date(tx.updatedAt) > new Date(existing.updatedAt)) {
+    } else if (new Date(tx.updatedAt) > new Date(existingGlobal.updatedAt)) {
       await db
         .update(financeTransactions)
         .set(txData)
@@ -124,9 +178,13 @@ export async function syncData(payload: SyncPayload) {
   }
 
   for (const budget of changes.financeBudgets) {
-    const existing = await db.query.financeBudgets.findFirst({
+    const existingGlobal = await db.query.financeBudgets.findFirst({
       where: eq(financeBudgets.id, budget.id),
     });
+
+    if (existingGlobal && existingGlobal.userId !== userId) {
+      continue;
+    }
 
     const budgetData = {
       id: budget.id,
@@ -138,9 +196,11 @@ export async function syncData(payload: SyncPayload) {
       updatedAt: new Date(budget.updatedAt),
     };
 
-    if (!existing) {
+    if (!existingGlobal) {
       await db.insert(financeBudgets).values(budgetData);
-    } else if (new Date(budget.updatedAt) > new Date(existing.updatedAt)) {
+    } else if (
+      new Date(budget.updatedAt) > new Date(existingGlobal.updatedAt)
+    ) {
       await db
         .update(financeBudgets)
         .set(budgetData)
@@ -149,9 +209,13 @@ export async function syncData(payload: SyncPayload) {
   }
 
   for (const setting of changes.userSettings) {
-    const existing = await db.query.userSettings.findFirst({
+    const existingGlobal = await db.query.userSettings.findFirst({
       where: eq(userSettings.id, setting.id),
     });
+
+    if (existingGlobal && existingGlobal.userId !== userId) {
+      continue;
+    }
 
     const settingData = {
       id: setting.id,
@@ -160,9 +224,11 @@ export async function syncData(payload: SyncPayload) {
       updatedAt: new Date(setting.updatedAt),
     };
 
-    if (!existing) {
+    if (!existingGlobal) {
       await db.insert(userSettings).values(settingData);
-    } else if (new Date(setting.updatedAt) > new Date(existing.updatedAt)) {
+    } else if (
+      new Date(setting.updatedAt) > new Date(existingGlobal.updatedAt)
+    ) {
       await db
         .update(userSettings)
         .set(settingData)

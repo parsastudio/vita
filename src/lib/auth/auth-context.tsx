@@ -62,15 +62,41 @@ async function migrateGuestData(newUserId: string) {
           .equals("guest")
           .modify({ userId: newUserId, synced: false });
 
-        await localDb.userSettings
+        const existingSettings = await localDb.userSettings
+          .where("userId")
+          .equals(newUserId)
+          .first();
+
+        const guestSettings = await localDb.userSettings
           .where("userId")
           .equals("guest")
-          .modify({ userId: newUserId, synced: false });
+          .first();
+
+        if (guestSettings) {
+          if (existingSettings) {
+            const mergedModules = Array.from(
+              new Set([
+                ...existingSettings.enabledModules,
+                ...guestSettings.enabledModules,
+              ]),
+            );
+            await localDb.userSettings.update(existingSettings.id, {
+              enabledModules: mergedModules,
+              updatedAt: new Date(),
+              synced: false,
+            });
+            await localDb.userSettings.delete(guestSettings.id);
+          } else {
+            await localDb.userSettings.update(guestSettings.id, {
+              userId: newUserId,
+              synced: false,
+              updatedAt: new Date(),
+            });
+          }
+        }
       },
     );
-  } catch {
-    // handle silently
-  }
+  } catch {}
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

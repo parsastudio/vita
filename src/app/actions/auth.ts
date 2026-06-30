@@ -14,14 +14,14 @@ const IV_LENGTH = 16;
 function hashPassword(password: string): { hash: string; salt: string } {
   const salt = crypto.randomBytes(16).toString("hex");
   const hash = crypto
-    .pbkdf2Sync(password, salt, 1000, 64, "sha512")
+    .pbkdf2Sync(password, salt, 100000, 64, "sha512")
     .toString("hex");
   return { hash, salt };
 }
 
 function verifyPassword(password: string, salt: string, hash: string): boolean {
   const verifyHash = crypto
-    .pbkdf2Sync(password, salt, 1000, 64, "sha512")
+    .pbkdf2Sync(password, salt, 100000, 64, "sha512")
     .toString("hex");
   return verifyHash === hash;
 }
@@ -83,10 +83,12 @@ export async function signUpAction(email: string, password: string) {
       success: true,
       user: { id: userId, email },
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : "An unexpected error occurred";
     return {
       success: false,
-      error: err.message || "An unexpected error occurred",
+      error: message,
     };
   }
 }
@@ -120,10 +122,12 @@ export async function signInAction(email: string, password: string) {
       success: true,
       user: { id: userRecord.id, email: userRecord.email },
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : "An unexpected error occurred";
     return {
       success: false,
-      error: err.message || "An unexpected error occurred",
+      error: message,
     };
   }
 }

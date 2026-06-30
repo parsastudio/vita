@@ -21,20 +21,24 @@ export function useSync() {
       const lastSyncedAt = localStorage.getItem(lastSyncedKey);
 
       const unsyncedCards = await localDb.languageCards
-        .where("synced")
-        .equals(false)
+        .where("userId")
+        .equals(user.id)
+        .filter((c) => !c.synced)
         .toArray();
       const unsyncedTransactions = await localDb.financeTransactions
-        .where("synced")
-        .equals(false)
+        .where("userId")
+        .equals(user.id)
+        .filter((t) => !t.synced)
         .toArray();
       const unsyncedBudgets = await localDb.financeBudgets
-        .where("synced")
-        .equals(false)
+        .where("userId")
+        .equals(user.id)
+        .filter((b) => !b.synced)
         .toArray();
       const unsyncedSettings = await localDb.userSettings
-        .where("synced")
-        .equals(false)
+        .where("userId")
+        .equals(user.id)
+        .filter((s) => !s.synced)
         .toArray();
       const unsyncedDeletes = await localDb.deletedRecords
         .where("synced")
@@ -158,7 +162,7 @@ export function useSync() {
 
         localStorage.setItem(lastSyncedKey, response.serverTimestamp);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : "Sync failed";
       setError(errMsg);
     } finally {

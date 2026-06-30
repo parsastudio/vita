@@ -110,6 +110,7 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
                 variant="ghost"
                 size="icon-xs"
                 onClick={() => handleSpeak(card.originalText)}
+                aria-label={`Pronounce ${card.originalText}`}
               >
                 🔊
               </Button>
@@ -117,6 +118,7 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
                 variant="destructive"
                 size="icon-xs"
                 onClick={() => handleDelete(card.id)}
+                aria-label={`Delete card for ${card.originalText}`}
               >
                 🗑️
               </Button>

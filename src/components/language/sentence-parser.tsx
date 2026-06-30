@@ -23,11 +23,13 @@ export function SentenceParser({
 
   React.useEffect(() => {
     if (words.length > 0) {
-      setSelectedWord(words[0]);
+      if (!selectedWord || !words.includes(selectedWord)) {
+        setSelectedWord(words[0]);
+      }
     } else {
       setSelectedWord("");
     }
-  }, [words]);
+  }, [words, selectedWord]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
