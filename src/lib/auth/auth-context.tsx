@@ -2,6 +2,12 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import Cookies from "js-cookie";
+import {
+  signUpAction,
+  signInAction,
+  signOutAction,
+  getCurrentUserAction,
+} from "@/app/actions/auth";
 
 interface AuthUser {
   id: string;
@@ -16,7 +22,14 @@ interface AuthContextType {
   setShowAuthModal: (show: boolean) => void;
   enableGuestMode: () => void;
   disableGuestMode: () => void;
-  login: (email: string) => void;
+  signUp: (
+    email: string,
+    password: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  signIn: (
+    email: string,
+    password: string,
+  ) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
@@ -29,19 +42,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
 
   useEffect(() => {
-    const guestCookie = Cookies.get("guest_mode");
-    const activeUser = localStorage.getItem("active_user");
-
-    if (activeUser) {
-      setUser(JSON.parse(activeUser));
-      setIsGuest(false);
-    } else if (guestCookie === "true") {
-      setIsGuest(true);
-      setUser(null);
-    } else {
-      setShowAuthModal(true);
+    async function initSession() {
+      const activeUser = await getCurrentUserAction();
+      if (activeUser) {
+        setUser(activeUser);
+        setIsGuest(false);
+      } else {
+        const guestCookie = Cookies.get("guest_mode");
+        if (guestCookie === "true") {
+          setIsGuest(true);
+          setUser(null);
+        } else {
+          setShowAuthModal(true);
+        }
+      }
+      setIsLoading(false);
     }
-    setIsLoading(false);
+    initSession();
   }, []);
 
   const enableGuestMode = () => {
@@ -57,17 +74,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setShowAuthModal(true);
   };
 
-  const login = (email: string) => {
-    const mockUser = { id: crypto.randomUUID(), email };
-    localStorage.setItem("active_user", JSON.stringify(mockUser));
-    Cookies.remove("guest_mode");
-    setUser(mockUser);
-    setIsGuest(false);
-    setShowAuthModal(false);
+  const signUp = async (email: string, password: string) => {
+    const res = await signUpAction(email, password);
+    if (res.success && res.user) {
+      setUser(res.user);
+      setIsGuest(false);
+      Cookies.remove("guest_mode");
+      setShowAuthModal(false);
+      return { success: true };
+    }
+    return { success: false, error: res.error };
   };
 
-  const logout = () => {
-    localStorage.removeItem("active_user");
+  const signIn = async (email: string, password: string) => {
+    const res = await signInAction(email, password);
+    if (res.success && res.user) {
+      setUser(res.user);
+      setIsGuest(false);
+      Cookies.remove("guest_mode");
+      setShowAuthModal(false);
+      return { success: true };
+    }
+    return { success: false, error: res.error };
+  };
+
+  const logout = async () => {
+    await signOutAction();
     setUser(null);
     setIsGuest(false);
     setShowAuthModal(true);
@@ -83,7 +115,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setShowAuthModal,
         enableGuestMode,
         disableGuestMode,
-        login,
+        signUp,
+        signIn,
         logout,
       }}
     >
