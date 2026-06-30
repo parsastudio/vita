@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useModules } from "@/hooks/use-modules";
+import { useSync } from "@/hooks/use-sync";
+import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 
 export function DashboardGrid({
@@ -12,22 +14,70 @@ export function DashboardGrid({
   languageWidget: React.ReactNode;
   financeWidget: React.ReactNode;
 }) {
+  const { isGuest } = useAuth();
   const { enabledModules, toggleModule } = useModules();
+  const { isSyncing, error, performSync } = useSync();
   const [showSettings, setShowSettings] = useState(false);
+  const [isOnline, setIsOnline] = useState(
+    typeof window !== "undefined" ? navigator.onLine : true,
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col gap-8">
-      <header className="flex items-center justify-between border-b border-border pb-6">
+      <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-border pb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground font-vazir">
-            vita space
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground font-vazir">
+              vita space
+            </h1>
+
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/60 border border-border text-[10px] font-semibold">
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  isOnline ? "bg-green-500 animate-pulse" : "bg-amber-500"
+                }`}
+              />
+              <span className="text-muted-foreground uppercase">
+                {isOnline ? "Online" : "Offline"}
+              </span>
+            </div>
+
+            {!isGuest && isOnline && (
+              <button
+                onClick={() => performSync()}
+                disabled={isSyncing}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary hover:bg-primary/20 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <span>{isSyncing ? "Syncing..." : "Synced ✓"}</span>
+              </button>
+            )}
+
+            {isGuest && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                <span>Local DB Only</span>
+              </div>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
             Your secure personal tools, working offline by default.
           </p>
         </div>
 
-        <div className="relative">
+        <div className="relative flex items-center gap-2">
           <Button
             variant="outline"
             onClick={() => setShowSettings(!showSettings)}

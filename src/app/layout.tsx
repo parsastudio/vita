@@ -5,6 +5,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { GuestBanner } from "@/components/auth/guest-banner";
 import { AuthModal } from "@/components/auth/auth-modal";
+import { PwaBanner } from "@/components/pwa/pwa-banner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,6 +44,7 @@ export default function RootLayout({
           <GuestBanner />
           <div className="flex-1 flex flex-col">{children}</div>
           <AuthModal />
+          <PwaBanner />
         </Providers>
       </body>
     </html>
