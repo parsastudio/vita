@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { localDb } from "@/lib/db/client";
+import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 
 export function SrsReviewer({
   cards,
   onReviewComplete,
 }: {
-  cards: any[];
+  cards: LanguageCard[];
   onReviewComplete: () => void;
 }) {
   const [index, setIndex] = useState(0);

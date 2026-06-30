@@ -1,11 +1,18 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { localDb } from "@/lib/db/client";
+import { localDb, type FinanceTransaction } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 
-const PRESET_QUICKS = [
+interface PresetQuick {
+  label: string;
+  amount: number;
+  type: "income" | "expense";
+  category: string;
+}
+
+const PRESET_QUICKS: PresetQuick[] = [
   { label: "Coffee", amount: 5, type: "expense", category: "Food" },
   { label: "Taxi", amount: 12, type: "expense", category: "Transport" },
   { label: "Salary", amount: 2500, type: "income", category: "Salary" },
@@ -16,7 +23,7 @@ export function QuickEntry({
   transactions,
   onSaveSuccess,
 }: {
-  transactions: any[];
+  transactions: FinanceTransaction[];
   onSaveSuccess: () => void;
 }) {
   const { user } = useAuth();
@@ -69,9 +76,10 @@ export function QuickEntry({
     };
   }, [nlpText]);
 
-  const dynamicQuickActions = useMemo(() => {
+  const dynamicQuickActions = useMemo<PresetQuick[]>(() => {
     if (!transactions || transactions.length === 0) return PRESET_QUICKS;
-    const freqMap: Record<string, { count: number; tx: any }> = {};
+    const freqMap: Record<string, { count: number; tx: FinanceTransaction }> =
+      {};
     transactions.forEach((tx) => {
       const key = `${tx.category}-${tx.amount}-${tx.type}`;
       if (!freqMap[key]) {
@@ -159,7 +167,7 @@ export function QuickEntry({
     onSaveSuccess();
   };
 
-  const handlePresetClick = async (preset: any) => {
+  const handlePresetClick = async (preset: PresetQuick) => {
     const userId = user?.id || "guest";
     const txId = crypto.randomUUID();
 
@@ -213,7 +221,7 @@ export function QuickEntry({
 
   return (
     <div className="space-y-8">
-      <div className="space-y-4 p-5 bg-primary/5 rounded-2xl border border-primary/10">
+      <div className="space-y-4 p-5 bg-gradient-to-r from-primary/5 via-violet-500/5 to-indigo-500/5 rounded-2xl border border-primary/10 backdrop-blur-md transition-all duration-300 hover:border-primary/20">
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold text-primary uppercase tracking-wider">
             Natural Language Quick Box
@@ -238,7 +246,7 @@ export function QuickEntry({
         </div>
 
         {parsedNlp && parsedNlp.amount > 0 && (
-          <div className="p-3 bg-card rounded-lg border border-border flex items-center justify-between text-xs transition-all animate-in fade-in-50 duration-200">
+          <div className="p-4 bg-card/60 backdrop-blur-sm rounded-xl border border-primary/20 flex items-center justify-between text-xs transition-all animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div>
               <span className="font-medium text-muted-foreground">
                 Detected:
@@ -253,7 +261,7 @@ export function QuickEntry({
                 {parsedNlp.category}
               </span>
             </div>
-            <span className="text-[10px] text-muted-foreground uppercase">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
               Ready to commit
             </span>
           </div>

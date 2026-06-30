@@ -1,10 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { localDb } from "@/lib/db/client";
+import { localDb, type FinanceTransaction } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 
-export function TransactionList({ transactions }: { transactions: any[] }) {
+export function TransactionList({
+  transactions,
+}: {
+  transactions: FinanceTransaction[];
+}) {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
 
@@ -21,7 +25,19 @@ export function TransactionList({ transactions }: { transactions: any[] }) {
   });
 
   const handleDelete = async (id: string) => {
-    await localDb.financeTransactions.delete(id);
+    await localDb.transaction(
+      "rw",
+      [localDb.financeTransactions, localDb.deletedRecords],
+      async () => {
+        await localDb.financeTransactions.delete(id);
+        await localDb.deletedRecords.put({
+          id,
+          tableName: "financeTransactions",
+          deletedAt: new Date(),
+          synced: false,
+        });
+      },
+    );
   };
 
   return (

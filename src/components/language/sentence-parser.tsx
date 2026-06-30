@@ -18,7 +18,7 @@ export function SentenceParser({
 
   const words = useMemo(() => {
     if (!text.trim()) return [];
-    return text.split(/[\s,./#!$%\^&*Entity;:{}=\-_`~()?]+/).filter(Boolean);
+    return text.split(/[\s,./#!$%\^&*;:{}=\-_`~()?]+/).filter(Boolean);
   }, [text]);
 
   React.useEffect(() => {

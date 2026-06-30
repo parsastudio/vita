@@ -22,19 +22,23 @@ export function useSync() {
 
       const unsyncedCards = await localDb.languageCards
         .where("synced")
-        .equals(0)
+        .equals(false)
         .toArray();
       const unsyncedTransactions = await localDb.financeTransactions
         .where("synced")
-        .equals(0)
+        .equals(false)
         .toArray();
       const unsyncedBudgets = await localDb.financeBudgets
         .where("synced")
-        .equals(0)
+        .equals(false)
         .toArray();
       const unsyncedSettings = await localDb.userSettings
         .where("synced")
-        .equals(0)
+        .equals(false)
+        .toArray();
+      const unsyncedDeletes = await localDb.deletedRecords
+        .where("synced")
+        .equals(false)
         .toArray();
 
       const response = await syncData({
@@ -44,6 +48,7 @@ export function useSync() {
         financeTransactions: unsyncedTransactions,
         financeBudgets: unsyncedBudgets,
         userSettings: unsyncedSettings,
+        deletedRecords: unsyncedDeletes,
       });
 
       if (response && response.success) {
@@ -54,12 +59,14 @@ export function useSync() {
             localDb.financeTransactions,
             localDb.financeBudgets,
             localDb.userSettings,
+            localDb.deletedRecords,
           ],
           async () => {
             const cardIds = unsyncedCards.map((c) => c.id);
             const txIds = unsyncedTransactions.map((t) => t.id);
             const budgetIds = unsyncedBudgets.map((b) => b.id);
             const settingIds = unsyncedSettings.map((s) => s.id);
+            const deleteIds = unsyncedDeletes.map((d) => d.id);
 
             await localDb.languageCards
               .where("id")
@@ -77,6 +84,13 @@ export function useSync() {
               .where("id")
               .anyOf(settingIds)
               .modify({ synced: true });
+
+            if (deleteIds.length > 0) {
+              await localDb.deletedRecords
+                .where("id")
+                .anyOf(deleteIds)
+                .delete();
+            }
 
             for (const card of response.pulled.languageCards) {
               const local = await localDb.languageCards.get(card.id);
@@ -144,8 +158,9 @@ export function useSync() {
 
         localStorage.setItem(lastSyncedKey, response.serverTimestamp);
       }
-    } catch (err: any) {
-      setError(err?.message || "Sync failed");
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Sync failed";
+      setError(errMsg);
     } finally {
       setIsSyncing(false);
     }

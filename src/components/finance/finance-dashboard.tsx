@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { localDb } from "@/lib/db/client";
+import {
+  localDb,
+  type FinanceTransaction,
+  type FinanceBudget,
+} from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 
@@ -9,8 +13,8 @@ export function FinanceDashboard({
   transactions,
   budgets,
 }: {
-  transactions: any[];
-  budgets: any[];
+  transactions: FinanceTransaction[];
+  budgets: FinanceBudget[];
 }) {
   const { user } = useAuth();
   const [budgetCategory, setBudgetCategory] = useState("");
@@ -100,7 +104,19 @@ export function FinanceDashboard({
   };
 
   const handleDeleteBudget = async (id: string) => {
-    await localDb.financeBudgets.delete(id);
+    await localDb.transaction(
+      "rw",
+      [localDb.financeBudgets, localDb.deletedRecords],
+      async () => {
+        await localDb.financeBudgets.delete(id);
+        await localDb.deletedRecords.put({
+          id,
+          tableName: "financeBudgets",
+          deletedAt: new Date(),
+          synced: false,
+        });
+      },
+    );
   };
 
   const handleExportCSV = () => {

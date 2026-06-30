@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { localDb } from "@/lib/db/client";
+import { localDb, type LanguageCard } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { SentenceParser } from "./sentence-parser";
 import { SrsReviewer } from "./srs-reviewer";
@@ -18,7 +18,7 @@ export function LanguageWidget() {
     return localDb.languageCards.where("userId").equals(userId).toArray();
   }, [user]);
 
-  const reviewCards = React.useMemo(() => {
+  const reviewCards = React.useMemo<LanguageCard[]>(() => {
     if (!cards) return [];
     const now = new Date();
     return cards.filter((card) => {

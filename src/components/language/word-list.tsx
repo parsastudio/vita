@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { localDb } from "@/lib/db/client";
+import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 
-export function WordList({ cards }: { cards: any[] }) {
+export function WordList({ cards }: { cards: LanguageCard[] }) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
@@ -28,7 +28,19 @@ export function WordList({ cards }: { cards: any[] }) {
   };
 
   const handleDelete = async (id: string) => {
-    await localDb.languageCards.delete(id);
+    await localDb.transaction(
+      "rw",
+      [localDb.languageCards, localDb.deletedRecords],
+      async () => {
+        await localDb.languageCards.delete(id);
+        await localDb.deletedRecords.put({
+          id,
+          tableName: "languageCards",
+          deletedAt: new Date(),
+          synced: false,
+        });
+      },
+    );
   };
 
   return (

@@ -48,11 +48,19 @@ export interface UserSettings {
   synced: boolean;
 }
 
+export interface DeletedRecord {
+  id: string;
+  tableName: string;
+  deletedAt: Date;
+  synced: boolean;
+}
+
 class VitaLocalDatabase extends Dexie {
   languageCards!: Table<LanguageCard, string>;
   financeTransactions!: Table<FinanceTransaction, string>;
   financeBudgets!: Table<FinanceBudget, string>;
   userSettings!: Table<UserSettings, string>;
+  deletedRecords!: Table<DeletedRecord, string>;
 
   constructor() {
     super("VitaLocalDatabase");
@@ -62,6 +70,7 @@ class VitaLocalDatabase extends Dexie {
         "id, userId, type, category, createdAt, updatedAt, synced",
       financeBudgets: "id, userId, categoryOrTag, updatedAt, synced",
       userSettings: "id, userId, updatedAt, synced",
+      deletedRecords: "id, tableName, synced",
     });
   }
 }

@@ -7,7 +7,7 @@ import {
   financeBudgets,
   userSettings,
 } from "@/lib/db/schema";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, inArray } from "drizzle-orm";
 
 interface SyncPayload {
   userId: string;
@@ -16,11 +16,55 @@ interface SyncPayload {
   financeTransactions: any[];
   financeBudgets: any[];
   userSettings: any[];
+  deletedRecords: any[];
 }
 
 export async function syncData(payload: SyncPayload) {
   const { userId, lastSyncedAt, ...changes } = payload;
   const lastSyncDate = lastSyncedAt ? new Date(lastSyncedAt) : new Date(0);
+
+  if (changes.deletedRecords && changes.deletedRecords.length > 0) {
+    const cardIdsToDelete = changes.deletedRecords
+      .filter((r) => r.tableName === "languageCards")
+      .map((r) => r.id);
+    const txIdsToDelete = changes.deletedRecords
+      .filter((r) => r.tableName === "financeTransactions")
+      .map((r) => r.id);
+    const budgetIdsToDelete = changes.deletedRecords
+      .filter((r) => r.tableName === "financeBudgets")
+      .map((r) => r.id);
+
+    if (cardIdsToDelete.length > 0) {
+      await db
+        .delete(languageCards)
+        .where(
+          and(
+            eq(languageCards.userId, userId),
+            inArray(languageCards.id, cardIdsToDelete),
+          ),
+        );
+    }
+    if (txIdsToDelete.length > 0) {
+      await db
+        .delete(financeTransactions)
+        .where(
+          and(
+            eq(financeTransactions.userId, userId),
+            inArray(financeTransactions.id, txIdsToDelete),
+          ),
+        );
+    }
+    if (budgetIdsToDelete.length > 0) {
+      await db
+        .delete(financeBudgets)
+        .where(
+          and(
+            eq(financeBudgets.userId, userId),
+            inArray(financeBudgets.id, budgetIdsToDelete),
+          ),
+        );
+    }
+  }
 
   for (const card of changes.languageCards) {
     const existing = await db.query.languageCards.findFirst({
