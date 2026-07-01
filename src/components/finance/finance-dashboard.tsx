@@ -9,7 +9,7 @@ import {
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { formatPersianNumber } from "@/lib/utils";
+import { formatPersianNumber, getJalaliDateParts } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
 
 export function FinanceDashboard({
@@ -62,33 +62,23 @@ export function FinanceDashboard({
   }, [transactions]);
 
   const trends = useMemo(() => {
-    const monthlyData: Record<string, { income: number; expense: number }> = {};
-    const months = [
-      "فروردین",
-      "اردیبهشت",
-      "خرداد",
-      "تیر",
-      "مرداد",
-      "شهریور",
-      "مهر",
-      "آبان",
-      "آذر",
-      "دی",
-      "بهمن",
-      "اسفند",
-    ];
-
+    const monthlyData: Record<
+      string,
+      { income: number; expense: number; label: string }
+    > = {};
     const now = new Date();
+
     for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const mIdx = (d.getMonth() + 9) % 12;
-      const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
-      monthlyData[key] = { income: 0, expense: 0 };
+      const tempDate = new Date(now.getFullYear(), now.getMonth() - i, 15);
+      const { year, month, monthName } = getJalaliDateParts(tempDate);
+      const key = `${year}-${month}`;
+      monthlyData[key] = { income: 0, expense: 0, label: monthName };
     }
 
     transactions.forEach((tx) => {
       const txDate = new Date(tx.createdAt);
-      const key = `${txDate.getFullYear()}-${txDate.getMonth() + 1}`;
+      const { year, month } = getJalaliDateParts(txDate);
+      const key = `${year}-${month}`;
       if (monthlyData[key]) {
         const amt = Number(tx.amount);
         if (tx.type === "income") {
@@ -99,15 +89,7 @@ export function FinanceDashboard({
       }
     });
 
-    return Object.entries(monthlyData).map(([key, value]) => {
-      const [year, monthStr] = key.split("-");
-      const mIdx = (parseInt(monthStr) + 8) % 12;
-      return {
-        label: months[mIdx],
-        income: value.income,
-        expense: value.expense,
-      };
-    });
+    return Object.values(monthlyData);
   }, [transactions]);
 
   const budgetStatuses = useMemo(() => {
@@ -291,7 +273,7 @@ export function FinanceDashboard({
 
       <div className="p-6 border border-border bg-background rounded-xl space-y-4">
         <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider font-vazir">
-          مقایسه ت روند درآمد و هزینه‌های اخیر
+          مقایسه روند درآمد و هزینه‌های اخیر
         </h3>
         <div className="relative h-48 w-full flex items-end justify-between pt-6 gap-2">
           {trends.map((t, idx) => {

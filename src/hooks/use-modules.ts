@@ -1,53 +1,44 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { localDb } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { v4 as uuidv4 } from "uuid";
 
 export function useModules() {
   const { user } = useAuth();
-  const [enabledModules, setEnabledModules] = useState<string[]>([
+  const userId = user?.id || "guest";
+
+  const settingsRecord = useLiveQuery(() => {
+    return localDb.userSettings.where("userId").equals(userId).first();
+  }, [userId]);
+
+  const enabledModules = settingsRecord?.enabledModules || [
     "language",
     "finance",
-  ]);
-  const [settingsId, setSettingsId] = useState<string>("");
+  ];
+  const settingsId = settingsRecord?.id || "";
 
   useEffect(() => {
-    async function loadSettings() {
-      const userId = user?.id || "guest";
-      const settings = await localDb.userSettings
-        .where("userId")
-        .equals(userId)
-        .first();
-
-      if (settings) {
-        setEnabledModules(settings.enabledModules);
-        setSettingsId(settings.id);
-      } else {
-        const newId = uuidv4();
-        await localDb.userSettings.put({
-          id: newId,
-          userId,
-          enabledModules: ["language", "finance"],
-          updatedAt: new Date(),
-          synced: false,
-        });
-        setEnabledModules(["language", "finance"]);
-        setSettingsId(newId);
-      }
+    if (settingsRecord === undefined) return;
+    if (!settingsRecord) {
+      const newId = uuidv4();
+      localDb.userSettings.put({
+        id: newId,
+        userId,
+        enabledModules: ["language", "finance"],
+        updatedAt: new Date(),
+        synced: false,
+      });
     }
-    loadSettings();
-  }, [user]);
+  }, [settingsRecord, userId]);
 
   const toggleModule = async (moduleId: string) => {
     const updated = enabledModules.includes(moduleId)
       ? enabledModules.filter((id) => id !== moduleId)
       : [...enabledModules, moduleId];
 
-    setEnabledModules(updated);
-
-    const userId = user?.id || "guest";
     await localDb.userSettings.put({
       id: settingsId || uuidv4(),
       userId,

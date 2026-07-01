@@ -116,12 +116,23 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
               <p className="text-xs text-primary font-vazir break-words">
                 {card.translation}
               </p>
-              <p className="text-[10px] text-muted-foreground font-vazir">
-                کلمه تمرکزی اصلی:{" "}
-                <span className="text-destructive font-medium">
-                  {card.focusWord}
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-[10px] text-muted-foreground font-vazir">
+                  کلمه تمرکزی اصلی:{" "}
+                  <span className="text-destructive font-medium">
+                    {card.focusWord}
+                  </span>
+                </p>
+                <span
+                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm ${
+                    card.isSentenceTranslation
+                      ? "bg-violet-500/10 text-violet-600 dark:text-violet-400"
+                      : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                  }`}
+                >
+                  {card.isSentenceTranslation ? "ترجمه جمله" : "ترجمه کلمه"}
                 </span>
-              </p>
+              </div>
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">

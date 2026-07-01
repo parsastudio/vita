@@ -5,7 +5,8 @@ import { localDb, type FinanceTransaction } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { formatPersianNumber } from "@/lib/utils";
+import { formatPersianNumber, getJalaliDateParts } from "@/lib/utils";
+import { parseNaturalLanguageTransaction, toEnglishDigits } from "@/lib/nlp";
 import { v4 as uuidv4 } from "uuid";
 import { Sparkles, AlertTriangle, ArrowDown, ArrowUp } from "lucide-react";
 import { z } from "zod";
@@ -23,58 +24,6 @@ const PRESET_QUICKS: PresetQuick[] = [
   { label: "حقوق", amount: 25000000, type: "income", category: "حقوق" },
   { label: "سوپرمارکت", amount: 150000, type: "expense", category: "خوراک" },
 ];
-
-function toEnglishDigits(str: string): string {
-  const persianDigits = [
-    /۰/g,
-    /۱/g,
-    /۲/g,
-    /۳/g,
-    /۴/g,
-    /۵/g,
-    /۶/g,
-    /۷/g,
-    /۸/g,
-    /۹/g,
-  ];
-  const arabicDigits = [
-    /٠/g,
-    /١/g,
-    /٢/g,
-    /٣/g,
-    /٤/g,
-    /٥/g,
-    /٦/g,
-    /٧/g,
-    /٨/g,
-    /٩/g,
-  ];
-  let result = str;
-  for (let i = 0; i < 10; i++) {
-    result = result
-      .replace(persianDigits[i], String(i))
-      .replace(arabicDigits[i], String(i));
-  }
-  return result;
-}
-
-const PERSIAN_STOP_WORDS = new Set([
-  "تومان",
-  "ریال",
-  "بابت",
-  "برای",
-  "به",
-  "با",
-  "از",
-  "تا",
-  "رو",
-  "در",
-  "پرداخت",
-  "خرید",
-  "هزینه",
-  "کردم",
-  "شد",
-]);
 
 const formSchema = z.object({
   amount: z.string().refine(
@@ -109,70 +58,11 @@ export function QuickEntry({
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const parsedNlp = useMemo(() => {
-    if (!nlpText.trim()) return null;
-    const normalizedText = toEnglishDigits(nlpText);
-    const words = normalizedText.split(/\s+/).filter(Boolean);
-    let parsedAmount = 0;
-    let parsedType: "income" | "expense" = "expense";
-    let detectedTags: string[] = [];
-
-    const millionMatch = normalizedText.match(
-      /(\d+(?:\.\d+)?)\s*(میلیون|ملیون)/,
-    );
-    const thousandMatch = normalizedText.match(/(\d+(?:\.\d+)?)\s*(هزار)/);
-
-    if (millionMatch) {
-      parsedAmount = parseFloat(millionMatch[1]) * 1000000;
-    } else if (thousandMatch) {
-      parsedAmount = parseFloat(thousandMatch[1]) * 1000;
-    } else {
-      for (const word of words) {
-        const num = parseFloat(word.replace(/,/g, ""));
-        if (!isNaN(num) && num > 0) {
-          parsedAmount = num;
-          break;
-        }
-      }
-    }
-
-    if (parsedAmount <= 0) return null;
-
-    for (const word of words) {
-      if (
-        [
-          "income",
-          "salary",
-          "earn",
-          "deposit",
-          "gift",
-          "حقوق",
-          "درآمد",
-          "واریز",
-        ].includes(word.toLowerCase())
-      ) {
-        parsedType = "income";
-      } else if (
-        !PERSIAN_STOP_WORDS.has(word) &&
-        isNaN(parseFloat(word.replace(/,/g, ""))) &&
-        !word.includes("هزار") &&
-        !word.includes("میلیون")
-      ) {
-        detectedTags.push(word);
-      }
-    }
-
-    const parsedCategory = detectedTags[0] || "عمومی";
-    return {
-      amount: parsedAmount,
-      type: parsedType,
-      category: parsedCategory,
-      tags: detectedTags,
-      description: nlpText,
-    };
+    return parseNaturalLanguageTransaction(nlpText);
   }, [nlpText]);
 
   const amountSuggestions = useMemo(() => {
-    const amtVal = parseFloat(toEnglishDigits(amount));
+    const amtVal = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
     if (
       isNaN(amtVal) ||
       amtVal <= 0 ||
@@ -251,7 +141,7 @@ export function QuickEntry({
   }, [transactions]);
 
   useEffect(() => {
-    const amtVal = parseFloat(toEnglishDigits(amount));
+    const amtVal = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
     if (isNaN(amtVal) || amtVal <= 0 || !category.trim()) {
       setBudgetWarning(null);
       return;
@@ -292,9 +182,12 @@ export function QuickEntry({
 
             const txDate = new Date(tx.createdAt);
             const now = new Date();
+
+            const txParts = getJalaliDateParts(txDate);
+            const nowParts = getJalaliDateParts(now);
+
             return (
-              txDate.getMonth() === now.getMonth() &&
-              txDate.getFullYear() === now.getFullYear()
+              txParts.month === nowParts.month && txParts.year === nowParts.year
             );
           })
           .reduce((sum, tx) => sum + Number(tx.amount), 0);
@@ -340,7 +233,7 @@ export function QuickEntry({
 
   const handleNlpToForm = () => {
     if (!parsedNlp || parsedNlp.amount <= 0) return;
-    setAmount(String(parsedNlp.amount));
+    setAmount(parsedNlp.amount.toLocaleString("en-US"));
     setType(parsedNlp.type);
     setCategory(parsedNlp.category);
     setTagsInput(parsedNlp.tags.join(", "));
@@ -431,6 +324,17 @@ export function QuickEntry({
       `دسته‌بندی و تگ بر اساس مبلغ به عنوان "${sug.category}" اعمال شد`,
       "info",
     );
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawVal = toEnglishDigits(e.target.value).replace(/[^0-9]/g, "");
+    if (rawVal === "") {
+      setAmount("");
+      return;
+    }
+    const parsed = parseInt(rawVal, 10);
+    if (isNaN(parsed)) return;
+    setAmount(parsed.toLocaleString("en-US"));
   };
 
   return (
@@ -545,9 +449,9 @@ export function QuickEntry({
               type="text"
               required
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
+              onChange={handleAmountChange}
+              placeholder="0"
+              className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir ltr"
             />
 
             {amountSuggestions.length > 0 && (

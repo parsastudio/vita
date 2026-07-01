@@ -150,12 +150,25 @@ export function SrsReviewer({
                 <p className="text-xl font-bold text-primary font-vazir">
                   {currentCard.translation}
                 </p>
-                <p className="text-xs text-muted-foreground font-medium font-vazir">
-                  کلمه تمرکزی اصلی:{" "}
-                  <span className="text-destructive font-semibold">
-                    {currentCard.focusWord}
+                <div className="flex flex-col items-center gap-1.5">
+                  <p className="text-xs text-muted-foreground font-medium font-vazir">
+                    کلمه تمرکزی اصلی:{" "}
+                    <span className="text-destructive font-semibold">
+                      {currentCard.focusWord}
+                    </span>
+                  </p>
+                  <span
+                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                      currentCard.isSentenceTranslation
+                        ? "bg-violet-500/10 text-violet-600 dark:text-violet-400"
+                        : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                    }`}
+                  >
+                    {currentCard.isSentenceTranslation
+                      ? "ترجمه کل جمله"
+                      : "ترجمه کلمه تمرکزی"}
                   </span>
-                </p>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
