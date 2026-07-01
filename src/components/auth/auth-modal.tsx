@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ export function AuthModal() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -32,6 +34,9 @@ export function AuthModal() {
   useEffect(() => {
     if (showAuthModal && mounted) {
       document.body.style.overflow = "hidden";
+      if (emailInputRef.current) {
+        emailInputRef.current.focus();
+      }
     } else {
       document.body.style.overflow = "";
     }
@@ -39,6 +44,17 @@ export function AuthModal() {
       document.body.style.overflow = "";
     };
   }, [showAuthModal, mounted]);
+
+  useEffect(() => {
+    if (!showAuthModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isGuest) {
+        setShowAuthModal(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showAuthModal, isGuest, setShowAuthModal]);
 
   if (!mounted || isLoading || !showAuthModal) return null;
 
@@ -103,6 +119,8 @@ export function AuthModal() {
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
           className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card p-8 shadow-2xl"
+          role="dialog"
+          aria-modal="true"
         >
           {isGuest && (
             <button
@@ -138,6 +156,7 @@ export function AuthModal() {
                 آدرس ایمیل
               </label>
               <input
+                ref={emailInputRef}
                 type="email"
                 required
                 disabled={isSubmitting}

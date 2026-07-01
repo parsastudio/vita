@@ -281,26 +281,28 @@ export function DashboardGrid({
                   layout
                   className="w-full relative group/widget"
                 >
-                  <div className="absolute top-4 left-24 z-10 flex gap-1 opacity-0 group-hover/widget:opacity-100 transition-opacity">
-                    <Button
-                      variant="outline"
-                      size="icon-xs"
-                      onClick={() => moveWidget(idx, "up")}
-                      disabled={idx === 0}
-                      className="rounded-full bg-background/80 backdrop-blur-xs"
-                    >
-                      <ChevronUp className="size-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon-xs"
-                      onClick={() => moveWidget(idx, "down")}
-                      disabled={idx === widgetOrder.length - 1}
-                      className="rounded-full bg-background/80 backdrop-blur-xs"
-                    >
-                      <ChevronDown className="size-3" />
-                    </Button>
-                  </div>
+                  {activeModulesCount > 1 && (
+                    <div className="absolute top-4 left-24 z-10 flex gap-1 opacity-0 group-hover/widget:opacity-100 transition-opacity">
+                      <Button
+                        variant="outline"
+                        size="icon-xs"
+                        onClick={() => moveWidget(idx, "up")}
+                        disabled={idx === 0}
+                        className="rounded-full bg-background/80 backdrop-blur-xs"
+                      >
+                        <ChevronUp className="size-3" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon-xs"
+                        onClick={() => moveWidget(idx, "down")}
+                        disabled={idx === widgetOrder.length - 1}
+                        className="rounded-full bg-background/80 backdrop-blur-xs"
+                      >
+                        <ChevronDown className="size-3" />
+                      </Button>
+                    </div>
+                  )}
                   <ErrorBoundary
                     fallback={
                       <div className="p-6 border border-destructive/20 bg-destructive/5 text-destructive rounded-2xl text-center font-vazir text-xs">
@@ -326,26 +328,28 @@ export function DashboardGrid({
                   layout
                   className="w-full relative group/widget"
                 >
-                  <div className="absolute top-4 left-24 z-10 flex gap-1 opacity-0 group-hover/widget:opacity-100 transition-opacity">
-                    <Button
-                      variant="outline"
-                      size="icon-xs"
-                      onClick={() => moveWidget(idx, "up")}
-                      disabled={idx === 0}
-                      className="rounded-full bg-background/80 backdrop-blur-xs"
-                    >
-                      <ChevronUp className="size-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon-xs"
-                      onClick={() => moveWidget(idx, "down")}
-                      disabled={idx === widgetOrder.length - 1}
-                      className="rounded-full bg-background/80 backdrop-blur-xs"
-                    >
-                      <ChevronDown className="size-3" />
-                    </Button>
-                  </div>
+                  {activeModulesCount > 1 && (
+                    <div className="absolute top-4 left-24 z-10 flex gap-1 opacity-0 group-hover/widget:opacity-100 transition-opacity">
+                      <Button
+                        variant="outline"
+                        size="icon-xs"
+                        onClick={() => moveWidget(idx, "up")}
+                        disabled={idx === 0}
+                        className="rounded-full bg-background/80 backdrop-blur-xs"
+                      >
+                        <ChevronUp className="size-3" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon-xs"
+                        onClick={() => moveWidget(idx, "down")}
+                        disabled={idx === widgetOrder.length - 1}
+                        className="rounded-full bg-background/80 backdrop-blur-xs"
+                      >
+                        <ChevronDown className="size-3" />
+                      </Button>
+                    </div>
+                  )}
                   <ErrorBoundary
                     fallback={
                       <div className="p-6 border border-destructive/20 bg-destructive/5 text-destructive rounded-2xl text-center font-vazir text-xs">

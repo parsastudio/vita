@@ -48,12 +48,24 @@ export function SrsReviewer({
           currentCard.originalText,
         );
         utterance.lang = "en-US";
-        const voices = window.speechSynthesis.getVoices();
-        const enVoice = voices.find((v) => v.lang.startsWith("en"));
-        if (enVoice) {
-          utterance.voice = enVoice;
+        let voices = window.speechSynthesis.getVoices();
+
+        const triggerSpeech = () => {
+          const enVoice = voices.find((v) => v.lang.startsWith("en"));
+          if (enVoice) {
+            utterance.voice = enVoice;
+          }
+          window.speechSynthesis.speak(utterance);
+        };
+
+        if (voices.length === 0) {
+          window.speechSynthesis.onvoiceschanged = () => {
+            voices = window.speechSynthesis.getVoices();
+            triggerSpeech();
+          };
+        } else {
+          triggerSpeech();
         }
-        window.speechSynthesis.speak(utterance);
       } else {
         toast("مرورگر شما از قابلیت تلفظ صوتی پشتیبانی نمی‌کند", "error");
       }

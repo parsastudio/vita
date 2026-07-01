@@ -101,7 +101,7 @@ export function QuickEntryForm({
         setBudgetWarning(null);
         return;
       }
-      const tags = tagsInput
+      const tags = (tagsInput || "")
         .split(",")
         .map((t) => t.trim().toLowerCase())
         .filter(Boolean);
@@ -173,7 +173,7 @@ export function QuickEntryForm({
     }
 
     const numAmt = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
-    const tags = tagsInput
+    const tags = (tagsInput || "")
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
@@ -187,7 +187,7 @@ export function QuickEntryForm({
     description: string;
   }) => {
     setCategory(sug.category);
-    setTagsInput(sug.tags.join(", "));
+    setTagsInput((sug.tags || []).join(", "));
     setDescription(sug.description);
     toast(
       `دسته‌بندی و تگ بر اساس مبلغ به عنوان "${sug.category}" اعمال شد`,

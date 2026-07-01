@@ -237,6 +237,16 @@ export function useSync() {
     syncRef.current = performSync;
   }, [performSync]);
 
+  const prevUserRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (user && !isGuest && prevUserRef.current !== user.id) {
+      prevUserRef.current = user.id;
+      performSync();
+    } else if (!user) {
+      prevUserRef.current = null;
+    }
+  }, [user, isGuest, performSync]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 

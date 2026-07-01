@@ -71,6 +71,7 @@ export function parseNaturalLanguageTransaction(
   let parsedAmount = 0;
   let parsedType: "income" | "expense" = "expense";
   const detectedTags: string[] = [];
+  let triggeredWord = "";
 
   const millionMatch = normalizedText.match(/(\d+(?:\.\d+)?)\s*(میلیون|ملیون)/);
   const thousandMatch = normalizedText.match(/(\d+(?:\.\d+)?)\s*(هزار)/);
@@ -92,19 +93,20 @@ export function parseNaturalLanguageTransaction(
   if (parsedAmount <= 0) return null;
 
   for (const word of words) {
-    if (
-      [
-        "income",
-        "salary",
-        "earn",
-        "deposit",
-        "gift",
-        "حقوق",
-        "درآمد",
-        "واریز",
-      ].includes(word.toLowerCase())
-    ) {
+    const isTrigger = [
+      "income",
+      "salary",
+      "earn",
+      "deposit",
+      "gift",
+      "حقوق",
+      "درآمد",
+      "واریز",
+    ].includes(word.toLowerCase());
+
+    if (isTrigger) {
       parsedType = "income";
+      triggeredWord = word;
     } else if (
       !PERSIAN_STOP_WORDS.has(word) &&
       isNaN(parseFloat(word.replace(/,/g, ""))) &&
@@ -114,6 +116,10 @@ export function parseNaturalLanguageTransaction(
     ) {
       detectedTags.push(word);
     }
+  }
+
+  if (detectedTags.length === 0 && triggeredWord) {
+    detectedTags.push(triggeredWord);
   }
 
   const parsedCategory = detectedTags[0] || "عمومی";

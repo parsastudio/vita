@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { formatPersianNumber } from "@/lib/utils";
 import { Volume2, Trash2 } from "lucide-react";
 
 export function WordList({ cards }: { cards: LanguageCard[] }) {
@@ -33,12 +32,24 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = "en-US";
-        const voices = window.speechSynthesis.getVoices();
-        const enVoice = voices.find((v) => v.lang.startsWith("en"));
-        if (enVoice) {
-          utterance.voice = enVoice;
+        let voices = window.speechSynthesis.getVoices();
+
+        const triggerSpeech = () => {
+          const enVoice = voices.find((v) => v.lang.startsWith("en"));
+          if (enVoice) {
+            utterance.voice = enVoice;
+          }
+          window.speechSynthesis.speak(utterance);
+        };
+
+        if (voices.length === 0) {
+          window.speechSynthesis.onvoiceschanged = () => {
+            voices = window.speechSynthesis.getVoices();
+            triggerSpeech();
+          };
+        } else {
+          triggerSpeech();
         }
-        window.speechSynthesis.speak(utterance);
       } else {
         toast("مرورگر شما از قابلیت تلفظ صوتی پشتیبانی نمی‌کند", "error");
       }
