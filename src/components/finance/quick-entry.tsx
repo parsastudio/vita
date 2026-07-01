@@ -125,6 +125,8 @@ export function QuickEntry({
       }
     }
 
+    if (parsedAmount <= 0) return null;
+
     const parsedCategory = detectedTags[0] || "عمومی";
     return {
       amount: parsedAmount,
@@ -134,6 +136,45 @@ export function QuickEntry({
       description: nlpText,
     };
   }, [nlpText]);
+
+  const amountSuggestions = useMemo(() => {
+    const amtVal = parseFloat(toEnglishDigits(amount));
+    if (
+      isNaN(amtVal) ||
+      amtVal <= 0 ||
+      !transactions ||
+      transactions.length === 0
+    )
+      return [];
+
+    const similar = transactions.filter((tx) => {
+      const diff = Math.abs(Number(tx.amount) - amtVal);
+      const threshold = amtVal * 0.15;
+      return diff <= threshold;
+    });
+
+    const uniqueSuggestions: Array<{
+      category: string;
+      tags: string[];
+      description: string;
+    }> = [];
+    const seenCategories = new Set<string>();
+
+    for (const tx of similar) {
+      const catKey = tx.category.trim().toLowerCase();
+      if (!seenCategories.has(catKey)) {
+        seenCategories.add(catKey);
+        uniqueSuggestions.push({
+          category: tx.category,
+          tags: tx.tags,
+          description: tx.description || "",
+        });
+      }
+      if (uniqueSuggestions.length >= 3) break;
+    }
+
+    return uniqueSuggestions;
+  }, [amount, transactions]);
 
   const dynamicQuickActions = useMemo<PresetQuick[]>(() => {
     if (!transactions || transactions.length === 0) {
@@ -331,6 +372,20 @@ export function QuickEntry({
     onSaveSuccess();
   };
 
+  const applySuggestion = (sug: {
+    category: string;
+    tags: string[];
+    description: string;
+  }) => {
+    setCategory(sug.category);
+    setTagsInput(sug.tags.join(", "));
+    setDescription(sug.description);
+    toast(
+      `دسته‌بندی و تگ بر اساس مبلغ به عنوان "${sug.category}" اعمال شد`,
+      "info",
+    );
+  };
+
   return (
     <div className="space-y-8">
       <div className="space-y-4 p-5 bg-gradient-to-r from-primary/5 via-violet-500/5 to-indigo-500/5 rounded-2xl border border-primary/10 backdrop-blur-md transition-all duration-300 hover:border-primary/20">
@@ -440,6 +495,26 @@ export function QuickEntry({
               placeholder="0.00"
               className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
             />
+
+            {amountSuggestions.length > 0 && (
+              <div className="pt-2 animate-in fade-in duration-200">
+                <span className="text-[10px] font-semibold text-muted-foreground block mb-1 font-vazir">
+                  حدس دسته‌بندی بر اساس مبلغ وارد شده:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {amountSuggestions.map((sug, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => applySuggestion(sug)}
+                      className="px-2.5 py-1 text-[10px] font-bold rounded-md bg-primary/10 hover:bg-primary/20 text-primary border border-primary/15 transition-all cursor-pointer font-vazir"
+                    >
+                      {sug.category}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5">

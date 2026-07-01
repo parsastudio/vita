@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { localDb } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ export function SentenceParser({
 
   const wordsSerialized = words.join(" ");
 
-  React.useEffect(() => {
+  useEffect(() => {
     const wordsArray = wordsSerialized.split(" ").filter(Boolean);
     if (wordsArray.length > 0) {
       if (!selectedWord || !wordsArray.includes(selectedWord)) {
@@ -35,7 +35,7 @@ export function SentenceParser({
     } else {
       setSelectedWord("");
     }
-  }, [wordsSerialized, selectedWord]);
+  }, [wordsSerialized]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,9 +68,16 @@ export function SentenceParser({
   return (
     <form onSubmit={handleSave} className="space-y-6">
       <div className="space-y-2">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider font-vazir">
-          کلمه یا جمله انگلیسی
-        </label>
+        <div className="flex justify-between items-center">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider font-vazir">
+            کلمه یا جمله انگلیسی
+          </label>
+          {selectedWord && (
+            <span className="text-[10px] text-red-500 font-bold font-vazir">
+              کلمه اصلی: {selectedWord}
+            </span>
+          )}
+        </div>
         <textarea
           required
           rows={3}
@@ -101,7 +108,7 @@ export function SentenceParser({
                 onClick={() => setSelectedWord(word)}
                 className={`px-3 py-1.5 text-sm rounded-lg border transition-all cursor-pointer ${
                   selectedWord === word
-                    ? "border-destructive/40 bg-destructive/5 text-destructive font-semibold shadow-sm"
+                    ? "border-destructive/40 bg-destructive/5 text-destructive font-semibold shadow-xs"
                     : "border-border bg-background hover:bg-muted text-foreground"
                 }`}
               >

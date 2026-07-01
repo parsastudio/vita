@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { localDb, type LanguageCard } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -13,13 +13,18 @@ import { formatPersianNumber } from "@/lib/utils";
 export function LanguageWidget() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"add" | "review" | "list">("add");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const cards = useLiveQuery(() => {
     const userId = user?.id || "guest";
     return localDb.languageCards.where("userId").equals(userId).toArray();
   }, [user]);
 
-  const reviewCards = React.useMemo<LanguageCard[]>(() => {
+  const reviewCards = useMemo<LanguageCard[]>(() => {
     if (!cards) return [];
     const now = new Date();
     return cards.filter((card) => {
@@ -44,7 +49,7 @@ export function LanguageWidget() {
           </p>
         </div>
         <span className="text-[10px] px-2.5 py-1 rounded-full bg-primary/10 text-primary font-bold">
-          {formatPersianNumber(cardCount)} کارت
+          {mounted ? formatPersianNumber(cardCount) : cardCount} کارت
         </span>
       </div>
 
@@ -67,7 +72,7 @@ export function LanguageWidget() {
           مرور کارت‌ها
           {reviewCount > 0 && (
             <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-[9px] text-white flex items-center justify-center rounded-full font-bold">
-              {formatPersianNumber(reviewCount)}
+              {mounted ? formatPersianNumber(reviewCount) : reviewCount}
             </span>
           )}
         </Button>

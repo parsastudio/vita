@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { localDb, type FinanceTransaction } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,11 @@ export function TransactionList({
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const { toast } = useToast();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const filtered = transactions.filter((tx) => {
     const matchesSearch =
@@ -114,7 +119,7 @@ export function TransactionList({
                 </div>
               )}
               <span className="text-[9px] text-muted-foreground block font-mono">
-                {formatPersianDate(tx.createdAt)}
+                {mounted ? formatPersianDate(tx.createdAt) : "..."}
               </span>
             </div>
 
@@ -127,7 +132,10 @@ export function TransactionList({
                 }`}
               >
                 {tx.type === "income" ? "+" : "-"}
-                {formatPersianNumber(Number(tx.amount))} تومان
+                {mounted
+                  ? formatPersianNumber(Number(tx.amount))
+                  : tx.amount}{" "}
+                تومان
               </span>
               <Button
                 variant="destructive"

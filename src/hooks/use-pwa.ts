@@ -34,7 +34,7 @@ export function usePwa() {
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
-    if ("serviceWorker" in navigator) {
+    if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
 

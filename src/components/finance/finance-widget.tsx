@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { localDb } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -13,6 +13,11 @@ import { formatPersianNumber } from "@/lib/utils";
 export function FinanceWidget() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"add" | "stats" | "list">("add");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const transactions = useLiveQuery(() => {
     const userId = user?.id || "guest";
@@ -38,7 +43,7 @@ export function FinanceWidget() {
           </p>
         </div>
         <span className="text-[10px] px-2.5 py-1 rounded-full bg-primary/10 text-primary font-bold">
-          {formatPersianNumber(txCount)} تراکنش
+          {mounted ? formatPersianNumber(txCount) : txCount} تراکنش
         </span>
       </div>
 

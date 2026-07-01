@@ -78,23 +78,30 @@ export function useSync() {
             const settingIds = unsyncedSettings.map((s) => s.id);
             const deleteIds = unsyncedDeletes.map((d) => d.id);
 
-            await localDb.languageCards
-              .where("id")
-              .anyOf(cardIds)
-              .modify({ synced: true });
-            await localDb.financeTransactions
-              .where("id")
-              .anyOf(txIds)
-              .modify({ synced: true });
-            await localDb.financeBudgets
-              .where("id")
-              .anyOf(budgetIds)
-              .modify({ synced: true });
-            await localDb.userSettings
-              .where("id")
-              .anyOf(settingIds)
-              .modify({ synced: true });
-
+            if (cardIds.length > 0) {
+              await localDb.languageCards
+                .where("id")
+                .anyOf(cardIds)
+                .modify({ synced: true });
+            }
+            if (txIds.length > 0) {
+              await localDb.financeTransactions
+                .where("id")
+                .anyOf(txIds)
+                .modify({ synced: true });
+            }
+            if (budgetIds.length > 0) {
+              await localDb.financeBudgets
+                .where("id")
+                .anyOf(budgetIds)
+                .modify({ synced: true });
+            }
+            if (settingIds.length > 0) {
+              await localDb.userSettings
+                .where("id")
+                .anyOf(settingIds)
+                .modify({ synced: true });
+            }
             if (deleteIds.length > 0) {
               await localDb.deletedRecords
                 .where("id")

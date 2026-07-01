@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,11 @@ export function SrsReviewer({
   const [index, setIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const { toast } = useToast();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const currentCard = cards[index];
 
@@ -100,8 +105,8 @@ export function SrsReviewer({
           جلسه مرور لایتنر
         </span>
         <span className="text-xs font-medium text-muted-foreground font-vazir">
-          کارت {formatPersianNumber(index + 1)} از{" "}
-          {formatPersianNumber(cards.length)}
+          کارت {mounted ? formatPersianNumber(index + 1) : index + 1} از{" "}
+          {mounted ? formatPersianNumber(cards.length) : cards.length}
         </span>
       </div>
 

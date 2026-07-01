@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   localDb,
   type FinanceTransaction,
@@ -23,6 +23,11 @@ export function FinanceDashboard({
   const { toast } = useToast();
   const [budgetCategory, setBudgetCategory] = useState("");
   const [budgetLimit, setBudgetLimit] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const stats = useMemo(() => {
     let income = 0;
@@ -203,7 +208,7 @@ export function FinanceDashboard({
             کل درآمدها
           </span>
           <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-            {formatPersianNumber(stats.income)} تومان
+            {mounted ? formatPersianNumber(stats.income) : stats.income} تومان
           </p>
         </div>
 
@@ -212,7 +217,7 @@ export function FinanceDashboard({
             کل هزینه‌ها
           </span>
           <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
-            {formatPersianNumber(stats.expense)} تومان
+            {mounted ? formatPersianNumber(stats.expense) : stats.expense} تومان
           </p>
         </div>
 
@@ -223,7 +228,7 @@ export function FinanceDashboard({
           <p
             className={`text-2xl font-bold mt-1 ${stats.balance >= 0 ? "text-primary" : "text-destructive"}`}
           >
-            {formatPersianNumber(stats.balance)} تومان
+            {mounted ? formatPersianNumber(stats.balance) : stats.balance} تومان
           </p>
         </div>
       </div>
@@ -279,7 +284,9 @@ export function FinanceDashboard({
                     کل خرج‌ها
                   </span>
                   <span className="text-base font-bold text-foreground">
-                    {formatPersianNumber(stats.expense)}
+                    {mounted
+                      ? formatPersianNumber(stats.expense)
+                      : stats.expense}
                   </span>
                 </div>
               </div>
@@ -301,9 +308,14 @@ export function FinanceDashboard({
                     </div>
                     <div className="text-start text-muted-foreground font-vazir">
                       <span className="font-semibold text-foreground">
-                        {formatPersianNumber(seg.value)} تومان
+                        {mounted ? formatPersianNumber(seg.value) : seg.value}{" "}
+                        تومان
                       </span>{" "}
-                      ({formatPersianNumber(seg.percentage.toFixed(0))}٪)
+                      (
+                      {mounted
+                        ? formatPersianNumber(seg.percentage.toFixed(0))
+                        : seg.percentage.toFixed(0)}
+                      ٪)
                     </div>
                   </div>
                 ))}
@@ -383,10 +395,17 @@ export function FinanceDashboard({
 
                 <div className="flex justify-between text-[10px] text-muted-foreground font-vazir">
                   <span>
-                    {formatPersianNumber(b.spent.toFixed(0))} تومان هزینه شده
+                    {mounted
+                      ? formatPersianNumber(b.spent.toFixed(0))
+                      : b.spent.toFixed(0)}{" "}
+                    تومان هزینه شده
                   </span>
                   <span>
-                    سقف: {formatPersianNumber(b.limit.toFixed(0))} تومان
+                    سقف:{" "}
+                    {mounted
+                      ? formatPersianNumber(b.limit.toFixed(0))
+                      : b.limit.toFixed(0)}{" "}
+                    تومان
                   </span>
                 </div>
               </div>
