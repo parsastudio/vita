@@ -6,6 +6,8 @@ import { useTheme } from "next-themes";
 import { useDashboardState } from "./use-dashboard-state";
 import { Button } from "@/components/ui/button";
 import { ChevronUp, ChevronDown, Monitor, Moon, Sun } from "lucide-react";
+import { LogoutModal } from "@/components/auth/logout-modal";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export function DashboardGrid({
   languageWidget,
@@ -40,12 +42,20 @@ export function DashboardGrid({
   };
 
   if (isLoading) {
+    const skeletonColumns =
+      enabledModules.length > 1
+        ? "lg:grid-cols-2"
+        : "lg:grid-cols-1 max-w-3xl mx-auto w-full";
     return (
       <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col gap-8 animate-pulse">
         <div className="h-20 bg-muted/50 rounded-2xl w-full" />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="h-96 bg-muted/40 rounded-2xl w-full" />
-          <div className="h-96 bg-muted/40 rounded-2xl w-full" />
+        <div className={`grid grid-cols-1 ${skeletonColumns} gap-8`}>
+          {enabledModules.map((_, idx) => (
+            <div key={idx} className="h-96 bg-muted/40 rounded-2xl w-full" />
+          ))}
+          {enabledModules.length === 0 && (
+            <div className="h-96 bg-muted/40 rounded-2xl w-full" />
+          )}
         </div>
       </div>
     );
@@ -291,7 +301,15 @@ export function DashboardGrid({
                       <ChevronDown className="size-3" />
                     </Button>
                   </div>
-                  {languageWidget}
+                  <ErrorBoundary
+                    fallback={
+                      <div className="p-6 border border-destructive/20 bg-destructive/5 text-destructive rounded-2xl text-center font-vazir text-xs">
+                        خطایی در اجرای فضای یادگیری زبان رخ داده است.
+                      </div>
+                    }
+                  >
+                    {languageWidget}
+                  </ErrorBoundary>
                 </motion.div>
               );
             }
@@ -328,7 +346,15 @@ export function DashboardGrid({
                       <ChevronDown className="size-3" />
                     </Button>
                   </div>
-                  {financeWidget}
+                  <ErrorBoundary
+                    fallback={
+                      <div className="p-6 border border-destructive/20 bg-destructive/5 text-destructive rounded-2xl text-center font-vazir text-xs">
+                        خطایی در اجرای فضای حسابداری هوشمند رخ داده است.
+                      </div>
+                    }
+                  >
+                    {financeWidget}
+                  </ErrorBoundary>
                 </motion.div>
               );
             }
@@ -351,6 +377,7 @@ export function DashboardGrid({
           </div>
         )}
       </main>
+      <LogoutModal />
     </div>
   );
 }

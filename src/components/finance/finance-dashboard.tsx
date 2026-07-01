@@ -71,12 +71,31 @@ export function FinanceDashboard({
       { income: number; expense: number; label: string }
     > = {};
     const now = new Date();
+    const currentJalali = getJalaliDateParts(now);
+    const monthNames = [
+      "فروردین",
+      "اردیبهشت",
+      "خرداد",
+      "تیر",
+      "مرداد",
+      "شهریور",
+      "مهر",
+      "آبان",
+      "آذر",
+      "دی",
+      "بهمن",
+      "اسفند",
+    ];
 
     for (let i = 5; i >= 0; i--) {
-      const tempDate = new Date(now.getFullYear(), now.getMonth() - i, 15);
-      const { year, month, monthName } = getJalaliDateParts(tempDate);
-      const key = `${year}-${month}`;
-      monthlyData[key] = { income: 0, expense: 0, label: monthName };
+      let m = currentJalali.month - i;
+      let y = currentJalali.year;
+      if (m < 0) {
+        m += 12;
+        y -= 1;
+      }
+      const key = `${y}-${m}`;
+      monthlyData[key] = { income: 0, expense: 0, label: monthNames[m] };
     }
 
     transactions.forEach((tx) => {

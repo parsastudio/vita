@@ -13,7 +13,10 @@ export function useDashboardState() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [mounted, setMounted] = useState(false);
-  const [widgetOrder, setWidgetOrder] = useState<string[]>([]);
+  const [widgetOrder, setWidgetOrder] = useState<string[]>([
+    "language",
+    "finance",
+  ]);
 
   useEffect(() => {
     setMounted(true);
@@ -28,8 +31,6 @@ export function useDashboardState() {
     const savedOrder = localStorage.getItem("vita_widget_order");
     if (savedOrder) {
       setWidgetOrder(JSON.parse(savedOrder));
-    } else {
-      setWidgetOrder(["language", "finance"]);
     }
 
     return () => {

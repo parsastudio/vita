@@ -24,10 +24,10 @@ const ENCRYPTION_KEY = crypto.scryptSync(SESSION_SECRET, "salt", 32);
 const IV_LENGTH = 12;
 
 const authSchema = z.object({
-  email: z.string().email("Invalid email format").max(255),
+  email: z.string().email("فرمت آدرس ایمیل وارد شده معتبر نیست").max(255),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters long")
+    .min(8, "رمز عبور باید حداقل حاوی ۸ کاراکتر باشد")
     .max(100),
 });
 
@@ -89,7 +89,7 @@ export async function signUpAction(email: string, password: string) {
     });
 
     if (existingUser) {
-      return { success: false, error: "Email is already registered" };
+      return { success: false, error: "این آدرس ایمیل قبلاً ثبت‌نام شده است" };
     }
 
     const { hash, salt } = await hashPassword(password);
@@ -119,7 +119,7 @@ export async function signUpAction(email: string, password: string) {
     };
   } catch (err: unknown) {
     const message =
-      err instanceof Error ? err.message : "An unexpected error occurred";
+      err instanceof Error ? err.message : "یک خطای غیرمنتظره رخ داده است";
     return {
       success: false,
       error: message,
@@ -140,13 +140,13 @@ export async function signInAction(email: string, password: string) {
     });
 
     if (!userRecord) {
-      return { success: false, error: "Invalid email or password" };
+      return { success: false, error: "آدرس ایمیل یا رمز عبور اشتباه است" };
     }
 
     const [salt, storedHash] = userRecord.passwordHash.split(":");
     const isMatch = await verifyPassword(password, salt, storedHash);
     if (!isMatch) {
-      return { success: false, error: "Invalid email or password" };
+      return { success: false, error: "آدرس ایمیل یا رمز عبور اشتباه است" };
     }
 
     const sessionToken = encryptSession(userRecord.id);
@@ -165,7 +165,7 @@ export async function signInAction(email: string, password: string) {
     };
   } catch (err: unknown) {
     const message =
-      err instanceof Error ? err.message : "An unexpected error occurred";
+      err instanceof Error ? err.message : "یک خطای غیرمنتظره رخ داده است";
     return {
       success: false,
       error: message,

@@ -99,34 +99,38 @@ export function QuickEntry({
   };
 
   const handleDirectSave = async (parsed: ParsedNlp) => {
-    await localDb.financeTransactions.put({
-      id: uuidv4(),
-      userId,
-      amount: parsed.amount,
-      type: parsed.type,
-      category: parsed.category,
-      tags: parsed.tags,
-      description: parsed.description,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      synced: false,
+    await localDb.transaction("rw", [localDb.financeTransactions], async () => {
+      await localDb.financeTransactions.put({
+        id: uuidv4(),
+        userId,
+        amount: parsed.amount,
+        type: parsed.type,
+        category: parsed.category,
+        tags: parsed.tags,
+        description: parsed.description,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        synced: false,
+      });
     });
     toast("تراکنش به کمک دستیار هوشمند با موفقیت ثبت شد", "success");
     onSaveSuccess();
   };
 
   const handlePresetSelect = async (preset: PresetQuick) => {
-    await localDb.financeTransactions.put({
-      id: uuidv4(),
-      userId,
-      amount: preset.amount,
-      type: preset.type,
-      category: preset.category,
-      tags: [preset.category],
-      description: `ثبت سریع برای ${preset.label.split(" - ")[0]}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      synced: false,
+    await localDb.transaction("rw", [localDb.financeTransactions], async () => {
+      await localDb.financeTransactions.put({
+        id: uuidv4(),
+        userId,
+        amount: preset.amount,
+        type: preset.type,
+        category: preset.category,
+        tags: [preset.category],
+        description: `ثبت سریع برای ${preset.label.split(" - ")[0]}`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        synced: false,
+      });
     });
     toast(
       `تراکنش ثبت سریع "${preset.label.split(" - ")[0]}" انجام شد`,
@@ -136,17 +140,19 @@ export function QuickEntry({
   };
 
   const handleManualSave = async (amountNum: number, tags: string[]) => {
-    await localDb.financeTransactions.put({
-      id: uuidv4(),
-      userId,
-      amount: amountNum,
-      type,
-      category: category.trim(),
-      tags: tags.length > 0 ? tags : [category.trim()],
-      description: description.trim(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      synced: false,
+    await localDb.transaction("rw", [localDb.financeTransactions], async () => {
+      await localDb.financeTransactions.put({
+        id: uuidv4(),
+        userId,
+        amount: amountNum,
+        type,
+        category: category.trim(),
+        tags: tags.length > 0 ? tags : [category.trim()],
+        description: description.trim(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        synced: false,
+      });
     });
 
     setAmount("");

@@ -66,20 +66,22 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
       return;
     }
 
-    await localDb.languageCards.put({
-      id: uuidv4(),
-      userId,
-      originalText: text.trim(),
-      translation: translation.trim(),
-      focusWord: selectedWord,
-      isSentenceTranslation,
-      srsStatus: "hard",
-      nextReviewAt: new Date(),
-      intervalDays: 0,
-      easeFactor: 2.5,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      synced: false,
+    await localDb.transaction("rw", [localDb.languageCards], async () => {
+      await localDb.languageCards.put({
+        id: uuidv4(),
+        userId,
+        originalText: text.trim(),
+        translation: translation.trim(),
+        focusWord: selectedWord,
+        isSentenceTranslation,
+        srsStatus: "hard",
+        nextReviewAt: new Date(),
+        intervalDays: 0,
+        easeFactor: 2.5,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        synced: false,
+      });
     });
 
     setText("");

@@ -5,10 +5,22 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { localDb } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { QuickEntry } from "./quick-entry";
-import { FinanceDashboard } from "./finance-dashboard";
 import { TransactionList } from "./transaction-list";
 import { Button } from "@/components/ui/button";
 import { formatPersianNumber } from "@/lib/utils";
+import dynamic from "next/dynamic";
+
+const FinanceDashboard = dynamic(
+  () => import("./finance-dashboard").then((mod) => mod.FinanceDashboard),
+  {
+    loading: () => (
+      <div className="h-96 bg-muted/20 rounded-2xl animate-pulse flex items-center justify-center text-xs text-muted-foreground font-vazir">
+        در حال بارگذاری داشبورد مالی...
+      </div>
+    ),
+    ssr: false,
+  },
+);
 
 export function FinanceWidget() {
   const { user } = useAuth();

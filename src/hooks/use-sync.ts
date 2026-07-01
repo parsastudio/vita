@@ -72,36 +72,49 @@ export function useSync() {
             localDb.deletedRecords,
           ],
           async () => {
-            const cardIds = unsyncedCards.map((c) => c.id);
-            const txIds = unsyncedTransactions.map((t) => t.id);
-            const budgetIds = unsyncedBudgets.map((b) => b.id);
-            const settingIds = unsyncedSettings.map((s) => s.id);
-            const deleteIds = unsyncedDeletes.map((d) => d.id);
+            for (const card of unsyncedCards) {
+              const current = await localDb.languageCards.get(card.id);
+              if (
+                current &&
+                current.updatedAt.getTime() === card.updatedAt.getTime()
+              ) {
+                await localDb.languageCards.update(card.id, { synced: true });
+              }
+            }
 
-            if (cardIds.length > 0) {
-              await localDb.languageCards
-                .where("id")
-                .anyOf(cardIds)
-                .modify({ synced: true });
+            for (const tx of unsyncedTransactions) {
+              const current = await localDb.financeTransactions.get(tx.id);
+              if (
+                current &&
+                current.updatedAt.getTime() === tx.updatedAt.getTime()
+              ) {
+                await localDb.financeTransactions.update(tx.id, {
+                  synced: true,
+                });
+              }
             }
-            if (txIds.length > 0) {
-              await localDb.financeTransactions
-                .where("id")
-                .anyOf(txIds)
-                .modify({ synced: true });
+
+            for (const b of unsyncedBudgets) {
+              const current = await localDb.financeBudgets.get(b.id);
+              if (
+                current &&
+                current.updatedAt.getTime() === b.updatedAt.getTime()
+              ) {
+                await localDb.financeBudgets.update(b.id, { synced: true });
+              }
             }
-            if (budgetIds.length > 0) {
-              await localDb.financeBudgets
-                .where("id")
-                .anyOf(budgetIds)
-                .modify({ synced: true });
+
+            for (const s of unsyncedSettings) {
+              const current = await localDb.userSettings.get(s.id);
+              if (
+                current &&
+                current.updatedAt.getTime() === s.updatedAt.getTime()
+              ) {
+                await localDb.userSettings.update(s.id, { synced: true });
+              }
             }
-            if (settingIds.length > 0) {
-              await localDb.userSettings
-                .where("id")
-                .anyOf(settingIds)
-                .modify({ synced: true });
-            }
+
+            const deleteIds = unsyncedDeletes.map((d) => d.id);
             if (deleteIds.length > 0) {
               await localDb.deletedRecords
                 .where("id")
