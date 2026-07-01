@@ -76,6 +76,12 @@ export const localDb = new VitaLocalDatabase();
 
 export const dbChangeListeners = new Set<() => void>();
 
+export let isDatabaseSyncingActive = false;
+
+export function setDatabaseSyncingActive(active: boolean) {
+  isDatabaseSyncingActive = active;
+}
+
 export function subscribeToDbChanges(listener: () => void) {
   dbChangeListeners.add(listener);
   return () => {
@@ -96,17 +102,17 @@ const tables = [
 ] as const;
 
 tables.forEach((tableName) => {
-  localDb[tableName].hook("creating", function (primKey, obj, transaction) {
-    transaction.on("complete", () => notifyDbChange());
+  localDb[tableName].hook("creating", function () {
+    if (isDatabaseSyncingActive) return;
+    setTimeout(() => notifyDbChange(), 0);
   });
-  localDb[tableName].hook(
-    "updating",
-    function (mods, primKey, obj, transaction) {
-      transaction.on("complete", () => notifyDbChange());
-    },
-  );
-  localDb[tableName].hook("deleting", function (primKey, obj, transaction) {
-    transaction.on("complete", () => notifyDbChange());
+  localDb[tableName].hook("updating", function () {
+    if (isDatabaseSyncingActive) return;
+    setTimeout(() => notifyDbChange(), 0);
+  });
+  localDb[tableName].hook("deleting", function () {
+    if (isDatabaseSyncingActive) return;
+    setTimeout(() => notifyDbChange(), 0);
   });
 });
 

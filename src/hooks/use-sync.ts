@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { localDb, subscribeToDbChanges } from "@/lib/db/client";
+import {
+  localDb,
+  subscribeToDbChanges,
+  setDatabaseSyncingActive,
+} from "@/lib/db/client";
 import { syncData } from "@/app/actions/sync";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +24,7 @@ export function useSync() {
     isSyncingRef.current = true;
     setIsSyncing(true);
     setError(null);
+    setDatabaseSyncingActive(true);
 
     try {
       const lastSyncedKey = `last_synced_at_${user.id}`;
@@ -225,6 +230,7 @@ export function useSync() {
     } finally {
       setIsSyncing(false);
       isSyncingRef.current = false;
+      setDatabaseSyncingActive(false);
     }
   }, [user, isGuest, toast]);
 

@@ -103,15 +103,7 @@ export function DashboardHeader({
           )}
         </Button>
 
-        {isGuest ? (
-          <Button
-            variant="default"
-            onClick={disableGuestMode}
-            className="rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white border-none text-xs px-4 h-8 font-semibold shadow-md shadow-indigo-500/20 animate-pulse font-vazir"
-          >
-            ذخیره ابری پیشرفت‌ها
-          </Button>
-        ) : (
+        {!isGuest && (
           <div className="relative">
             <Button
               variant="outline"
