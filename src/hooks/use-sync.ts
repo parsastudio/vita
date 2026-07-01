@@ -124,8 +124,17 @@ export function useSync() {
                 new Date(card.updatedAt) > new Date(local.updatedAt)
               ) {
                 await localDb.languageCards.put({
-                  ...card,
+                  id: card.id,
                   userId: user.id,
+                  originalText: card.originalText,
+                  translation: card.translation,
+                  focusWord: card.focusWord,
+                  isSentenceTranslation: card.isSentenceTranslation,
+                  srsStatus: card.srsStatus as
+                    | "hard"
+                    | "medium"
+                    | "easy"
+                    | "archived",
                   intervalDays: Number(card.intervalDays),
                   easeFactor: Number(card.easeFactor),
                   nextReviewAt: new Date(card.nextReviewAt),
@@ -143,9 +152,13 @@ export function useSync() {
                 new Date(tx.updatedAt) > new Date(local.updatedAt)
               ) {
                 await localDb.financeTransactions.put({
-                  ...tx,
+                  id: tx.id,
                   userId: user.id,
                   amount: Number(tx.amount),
+                  type: tx.type as "income" | "expense",
+                  category: tx.category,
+                  tags: tx.tags,
+                  description: tx.description,
                   createdAt: new Date(tx.createdAt),
                   updatedAt: new Date(tx.updatedAt),
                   synced: true,
@@ -157,9 +170,11 @@ export function useSync() {
               const local = await localDb.financeBudgets.get(b.id);
               if (!local || new Date(b.updatedAt) > new Date(local.updatedAt)) {
                 await localDb.financeBudgets.put({
-                  ...b,
+                  id: b.id,
                   userId: user.id,
+                  categoryOrTag: b.categoryOrTag,
                   limitAmount: Number(b.limitAmount),
+                  period: b.period as "monthly",
                   createdAt: new Date(b.createdAt),
                   updatedAt: new Date(b.updatedAt),
                   synced: true,
@@ -171,8 +186,9 @@ export function useSync() {
               const local = await localDb.userSettings.get(s.id);
               if (!local || new Date(s.updatedAt) > new Date(local.updatedAt)) {
                 await localDb.userSettings.put({
-                  ...s,
+                  id: s.id,
                   userId: user.id,
+                  enabledModules: s.enabledModules,
                   updatedAt: new Date(s.updatedAt),
                   synced: true,
                 });
@@ -182,12 +198,15 @@ export function useSync() {
         );
 
         localStorage.setItem(lastSyncedKey, response.serverTimestamp);
-        toast("Sync with cloud completed successfully", "success");
+        toast("همگام‌سازی با سرور ابری با موفقیت انجام شد", "success");
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : "Sync failed";
       setError(errMsg);
-      toast("Cloud sync failed. Working locally.", "error");
+      toast(
+        "خطا در همگام‌سازی ابری. برنامه در حالت آفلاین کار می‌کند.",
+        "error",
+      );
     } finally {
       setIsSyncing(false);
     }

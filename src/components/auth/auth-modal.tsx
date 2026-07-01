@@ -5,9 +5,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { X } from "lucide-react";
 
 export function AuthModal() {
-  const { showAuthModal, enableGuestMode, signIn, signUp } = useAuth();
+  const {
+    showAuthModal,
+    setShowAuthModal,
+    isGuest,
+    enableGuestMode,
+    signIn,
+    signUp,
+  } = useAuth();
   const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
@@ -79,6 +87,16 @@ export function AuthModal() {
           transition={{ duration: 0.2, ease: "easeOut" }}
           className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card p-8 shadow-2xl"
         >
+          {isGuest && (
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-4 left-4 p-1 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer"
+              aria-label="بستن"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+
           <div className="flex flex-col items-center text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
               <span className="text-xl font-bold">و</span>

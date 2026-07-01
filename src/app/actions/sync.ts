@@ -10,64 +10,71 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, gt, inArray, sql } from "drizzle-orm";
 import { getCurrentUserAction } from "@/app/actions/auth";
+import { z } from "zod";
 
-interface SyncLanguageCard {
-  id: string;
-  originalText: string;
-  translation: string;
-  focusWord: string;
-  isSentenceTranslation: boolean;
-  srsStatus: string;
-  nextReviewAt: string | Date;
-  intervalDays: number | string;
-  easeFactor: number | string;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-}
+const syncLanguageCardSchema = z.object({
+  id: z.string().uuid(),
+  originalText: z.string(),
+  translation: z.string(),
+  focusWord: z.string(),
+  isSentenceTranslation: z.boolean(),
+  srsStatus: z.string(),
+  nextReviewAt: z.string().or(z.date()),
+  intervalDays: z.number().or(z.string()),
+  easeFactor: z.number().or(z.string()),
+  createdAt: z.string().or(z.date()),
+  updatedAt: z.string().or(z.date()),
+});
 
-interface SyncFinanceTransaction {
-  id: string;
-  amount: number | string;
-  type: string;
-  category: string;
-  tags: string[];
-  description: string;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-}
+const syncFinanceTransactionSchema = z.object({
+  id: z.string().uuid(),
+  amount: z.number().or(z.string()),
+  type: z.string(),
+  category: z.string(),
+  tags: z.array(z.string()),
+  description: z.string(),
+  createdAt: z.string().or(z.date()),
+  updatedAt: z.string().or(z.date()),
+});
 
-interface SyncFinanceBudget {
-  id: string;
-  categoryOrTag: string;
-  limitAmount: number | string;
-  period: string;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-}
+const syncFinanceBudgetSchema = z.object({
+  id: z.string().uuid(),
+  categoryOrTag: z.string(),
+  limitAmount: z.number().or(z.string()),
+  period: z.string(),
+  createdAt: z.string().or(z.date()),
+  updatedAt: z.string().or(z.date()),
+});
 
-interface SyncUserSettings {
-  id: string;
-  enabledModules: string[];
-  updatedAt: string | Date;
-}
+const syncUserSettingsSchema = z.object({
+  id: z.string().uuid(),
+  enabledModules: z.array(z.string()),
+  updatedAt: z.string().or(z.date()),
+});
 
-interface SyncDeletedRecord {
-  id: string;
-  tableName: string;
-  deletedAt: string | Date;
-}
+const syncDeletedRecordSchema = z.object({
+  id: z.string().uuid(),
+  tableName: z.string(),
+  deletedAt: z.string().or(z.date()),
+});
 
-interface SyncPayload {
-  userId: string;
-  lastSyncedAt: string | null;
-  languageCards: SyncLanguageCard[];
-  financeTransactions: SyncFinanceTransaction[];
-  financeBudgets: SyncFinanceBudget[];
-  userSettings: SyncUserSettings[];
-  deletedRecords: SyncDeletedRecord[];
-}
+const syncPayloadSchema = z.object({
+  userId: z.string().uuid(),
+  lastSyncedAt: z.string().nullable(),
+  languageCards: z.array(syncLanguageCardSchema),
+  financeTransactions: z.array(syncFinanceTransactionSchema),
+  financeBudgets: z.array(syncFinanceBudgetSchema),
+  userSettings: z.array(syncUserSettingsSchema),
+  deletedRecords: z.array(syncDeletedRecordSchema),
+});
 
-export async function syncData(payload: SyncPayload) {
+export async function syncData(rawPayload: unknown) {
+  const parsed = syncPayloadSchema.safeParse(rawPayload);
+  if (!parsed.success) {
+    throw new Error("Invalid sync payload structure");
+  }
+
+  const payload = parsed.data;
   const { userId, lastSyncedAt, ...changes } = payload;
 
   const sessionUser = await getCurrentUserAction();
@@ -78,170 +85,172 @@ export async function syncData(payload: SyncPayload) {
   const serverTimestamp = new Date();
   const lastSyncDate = lastSyncedAt ? new Date(lastSyncedAt) : new Date(0);
 
-  if (changes.deletedRecords && changes.deletedRecords.length > 0) {
-    const cardIdsToDelete = changes.deletedRecords
-      .filter((r) => r.tableName === "languageCards")
-      .map((r) => r.id);
-    const txIdsToDelete = changes.deletedRecords
-      .filter((r) => r.tableName === "financeTransactions")
-      .map((r) => r.id);
-    const budgetIdsToDelete = changes.deletedRecords
-      .filter((r) => r.tableName === "financeBudgets")
-      .map((r) => r.id);
+  await db.transaction(async (tx) => {
+    if (changes.deletedRecords && changes.deletedRecords.length > 0) {
+      const cardIdsToDelete = changes.deletedRecords
+        .filter((r) => r.tableName === "languageCards")
+        .map((r) => r.id);
+      const txIdsToDelete = changes.deletedRecords
+        .filter((r) => r.tableName === "financeTransactions")
+        .map((r) => r.id);
+      const budgetIdsToDelete = changes.deletedRecords
+        .filter((r) => r.tableName === "financeBudgets")
+        .map((r) => r.id);
 
-    if (cardIdsToDelete.length > 0) {
-      await db
-        .delete(languageCards)
-        .where(
-          and(
-            eq(languageCards.userId, userId),
-            inArray(languageCards.id, cardIdsToDelete),
-          ),
-        );
-    }
-    if (txIdsToDelete.length > 0) {
-      await db
-        .delete(financeTransactions)
-        .where(
-          and(
-            eq(financeTransactions.userId, userId),
-            inArray(financeTransactions.id, txIdsToDelete),
-          ),
-        );
-    }
-    if (budgetIdsToDelete.length > 0) {
-      await db
-        .delete(financeBudgets)
-        .where(
-          and(
-            eq(financeBudgets.userId, userId),
-            inArray(financeBudgets.id, budgetIdsToDelete),
-          ),
-        );
+      if (cardIdsToDelete.length > 0) {
+        await tx
+          .delete(languageCards)
+          .where(
+            and(
+              eq(languageCards.userId, userId),
+              inArray(languageCards.id, cardIdsToDelete),
+            ),
+          );
+      }
+      if (txIdsToDelete.length > 0) {
+        await tx
+          .delete(financeTransactions)
+          .where(
+            and(
+              eq(financeTransactions.userId, userId),
+              inArray(financeTransactions.id, txIdsToDelete),
+            ),
+          );
+      }
+      if (budgetIdsToDelete.length > 0) {
+        await tx
+          .delete(financeBudgets)
+          .where(
+            and(
+              eq(financeBudgets.userId, userId),
+              inArray(financeBudgets.id, budgetIdsToDelete),
+            ),
+          );
+      }
+
+      const tbs = changes.deletedRecords.map((r) => ({
+        id: r.id,
+        userId,
+        tableName: r.tableName,
+        deletedAt: new Date(r.deletedAt),
+      }));
+
+      await tx.insert(deletedRecords).values(tbs).onConflictDoNothing();
     }
 
-    const tbs = changes.deletedRecords.map((r) => ({
-      id: r.id,
+    const cardsToUpsert = changes.languageCards.map((card) => ({
+      id: card.id,
       userId,
-      tableName: r.tableName,
-      deletedAt: new Date(r.deletedAt),
+      originalText: card.originalText,
+      translation: card.translation,
+      focusWord: card.focusWord,
+      isSentenceTranslation: card.isSentenceTranslation,
+      srsStatus: card.srsStatus,
+      nextReviewAt: new Date(card.nextReviewAt),
+      intervalDays: String(card.intervalDays),
+      easeFactor: String(card.easeFactor),
+      createdAt: new Date(card.createdAt),
+      updatedAt: new Date(card.updatedAt),
     }));
 
-    await db.insert(deletedRecords).values(tbs).onConflictDoNothing();
-  }
+    if (cardsToUpsert.length > 0) {
+      await tx
+        .insert(languageCards)
+        .values(cardsToUpsert)
+        .onConflictDoUpdate({
+          target: languageCards.id,
+          set: {
+            originalText: sql`EXCLUDED.original_text`,
+            translation: sql`EXCLUDED.translation`,
+            focusWord: sql`EXCLUDED.focus_word`,
+            isSentenceTranslation: sql`EXCLUDED.is_sentence_translation`,
+            srsStatus: sql`EXCLUDED.srs_status`,
+            nextReviewAt: sql`EXCLUDED.next_review_at`,
+            intervalDays: sql`EXCLUDED.interval_days`,
+            easeFactor: sql`EXCLUDED.ease_factor`,
+            updatedAt: sql`EXCLUDED.updated_at`,
+          },
+          where: sql`EXCLUDED.updated_at > language_cards.updated_at AND language_cards.user_id = ${userId}`,
+        });
+    }
 
-  const cardsToUpsert = changes.languageCards.map((card) => ({
-    id: card.id,
-    userId,
-    originalText: card.originalText,
-    translation: card.translation,
-    focusWord: card.focusWord,
-    isSentenceTranslation: card.isSentenceTranslation,
-    srsStatus: card.srsStatus,
-    nextReviewAt: new Date(card.nextReviewAt),
-    intervalDays: String(card.intervalDays),
-    easeFactor: String(card.easeFactor),
-    createdAt: new Date(card.createdAt),
-    updatedAt: new Date(card.updatedAt),
-  }));
+    const txsToUpsert = changes.financeTransactions.map((t) => ({
+      id: t.id,
+      userId,
+      amount: String(t.amount),
+      type: t.type,
+      category: t.category,
+      tags: t.tags,
+      description: t.description,
+      createdAt: new Date(t.createdAt),
+      updatedAt: new Date(t.updatedAt),
+    }));
 
-  if (cardsToUpsert.length > 0) {
-    await db
-      .insert(languageCards)
-      .values(cardsToUpsert)
-      .onConflictDoUpdate({
-        target: languageCards.id,
-        set: {
-          originalText: sql`EXCLUDED.original_text`,
-          translation: sql`EXCLUDED.translation`,
-          focusWord: sql`EXCLUDED.focus_word`,
-          isSentenceTranslation: sql`EXCLUDED.is_sentence_translation`,
-          srsStatus: sql`EXCLUDED.srs_status`,
-          nextReviewAt: sql`EXCLUDED.next_review_at`,
-          intervalDays: sql`EXCLUDED.interval_days`,
-          easeFactor: sql`EXCLUDED.ease_factor`,
-          updatedAt: sql`EXCLUDED.updated_at`,
-        },
-        where: sql`EXCLUDED.updated_at > language_cards.updated_at AND language_cards.user_id = ${userId}`,
-      });
-  }
+    if (txsToUpsert.length > 0) {
+      await tx
+        .insert(financeTransactions)
+        .values(txsToUpsert)
+        .onConflictDoUpdate({
+          target: financeTransactions.id,
+          set: {
+            amount: sql`EXCLUDED.amount`,
+            type: sql`EXCLUDED.type`,
+            category: sql`EXCLUDED.category`,
+            tags: sql`EXCLUDED.tags`,
+            description: sql`EXCLUDED.description`,
+            updatedAt: sql`EXCLUDED.updated_at`,
+          },
+          where: sql`EXCLUDED.updated_at > finance_transactions.updated_at AND finance_transactions.user_id = ${userId}`,
+        });
+    }
 
-  const txsToUpsert = changes.financeTransactions.map((tx) => ({
-    id: tx.id,
-    userId,
-    amount: String(tx.amount),
-    type: tx.type,
-    category: tx.category,
-    tags: tx.tags,
-    description: tx.description,
-    createdAt: new Date(tx.createdAt),
-    updatedAt: new Date(tx.updatedAt),
-  }));
+    const budgetsToUpsert = changes.financeBudgets.map((b) => ({
+      id: b.id,
+      userId,
+      categoryOrTag: b.categoryOrTag,
+      limitAmount: String(b.limitAmount),
+      period: b.period,
+      createdAt: new Date(b.createdAt),
+      updatedAt: new Date(b.updatedAt),
+    }));
 
-  if (txsToUpsert.length > 0) {
-    await db
-      .insert(financeTransactions)
-      .values(txsToUpsert)
-      .onConflictDoUpdate({
-        target: financeTransactions.id,
-        set: {
-          amount: sql`EXCLUDED.amount`,
-          type: sql`EXCLUDED.type`,
-          category: sql`EXCLUDED.category`,
-          tags: sql`EXCLUDED.tags`,
-          description: sql`EXCLUDED.description`,
-          updatedAt: sql`EXCLUDED.updated_at`,
-        },
-        where: sql`EXCLUDED.updated_at > finance_transactions.updated_at AND finance_transactions.user_id = ${userId}`,
-      });
-  }
+    if (budgetsToUpsert.length > 0) {
+      await tx
+        .insert(financeBudgets)
+        .values(budgetsToUpsert)
+        .onConflictDoUpdate({
+          target: financeBudgets.id,
+          set: {
+            categoryOrTag: sql`EXCLUDED.category_or_tag`,
+            limitAmount: sql`EXCLUDED.limit_amount`,
+            period: sql`EXCLUDED.period`,
+            updatedAt: sql`EXCLUDED.updated_at`,
+          },
+          where: sql`EXCLUDED.updated_at > finance_budgets.updated_at AND finance_budgets.user_id = ${userId}`,
+        });
+    }
 
-  const budgetsToUpsert = changes.financeBudgets.map((b) => ({
-    id: b.id,
-    userId,
-    categoryOrTag: b.categoryOrTag,
-    limitAmount: String(b.limitAmount),
-    period: b.period,
-    createdAt: new Date(b.createdAt),
-    updatedAt: new Date(b.updatedAt),
-  }));
+    const settingsToUpsert = changes.userSettings.map((s) => ({
+      id: s.id,
+      userId,
+      enabledModules: s.enabledModules,
+      updatedAt: new Date(s.updatedAt),
+    }));
 
-  if (budgetsToUpsert.length > 0) {
-    await db
-      .insert(financeBudgets)
-      .values(budgetsToUpsert)
-      .onConflictDoUpdate({
-        target: financeBudgets.id,
-        set: {
-          categoryOrTag: sql`EXCLUDED.category_or_tag`,
-          limitAmount: sql`EXCLUDED.limit_amount`,
-          period: sql`EXCLUDED.period`,
-          updatedAt: sql`EXCLUDED.updated_at`,
-        },
-        where: sql`EXCLUDED.updated_at > finance_budgets.updated_at AND finance_budgets.user_id = ${userId}`,
-      });
-  }
-
-  const settingsToUpsert = changes.userSettings.map((s) => ({
-    id: s.id,
-    userId,
-    enabledModules: s.enabledModules,
-    updatedAt: new Date(s.updatedAt),
-  }));
-
-  if (settingsToUpsert.length > 0) {
-    await db
-      .insert(userSettings)
-      .values(settingsToUpsert)
-      .onConflictDoUpdate({
-        target: userSettings.id,
-        set: {
-          enabledModules: sql`EXCLUDED.enabled_modules`,
-          updatedAt: sql`EXCLUDED.updated_at`,
-        },
-        where: sql`EXCLUDED.updated_at > user_settings.updated_at AND user_settings.user_id = ${userId}`,
-      });
-  }
+    if (settingsToUpsert.length > 0) {
+      await tx
+        .insert(userSettings)
+        .values(settingsToUpsert)
+        .onConflictDoUpdate({
+          target: userSettings.id,
+          set: {
+            enabledModules: sql`EXCLUDED.enabled_modules`,
+            updatedAt: sql`EXCLUDED.updated_at`,
+          },
+          where: sql`EXCLUDED.updated_at > user_settings.updated_at AND user_settings.user_id = ${userId}`,
+        });
+    }
+  });
 
   const newCards = await db.query.languageCards.findMany({
     where: and(

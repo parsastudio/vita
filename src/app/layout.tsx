@@ -5,6 +5,7 @@ import { Providers } from "@/components/providers";
 import { GuestBanner } from "@/components/auth/guest-banner";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { PwaBanner } from "@/components/pwa/pwa-banner";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,12 +52,14 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${vazirmatn.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-primary/10">
-        <Providers>
-          <GuestBanner />
-          <div className="flex-1 flex flex-col">{children}</div>
-          <AuthModal />
-          <PwaBanner />
-        </Providers>
+        <ErrorBoundary>
+          <Providers>
+            <GuestBanner />
+            <div className="flex-1 flex flex-col">{children}</div>
+            <AuthModal />
+            <PwaBanner />
+          </Providers>
+        </ErrorBoundary>
       </body>
     </html>
   );

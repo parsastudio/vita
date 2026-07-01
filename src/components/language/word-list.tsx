@@ -5,6 +5,7 @@ import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { formatPersianNumber } from "@/lib/utils";
+import { Volume2, Trash2 } from "lucide-react";
 
 export function WordList({ cards }: { cards: LanguageCard[] }) {
   const [search, setSearch] = useState("");
@@ -83,7 +84,7 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
         {filtered.map((card) => (
           <div
             key={card.id}
-            className="p-4 border border-border bg-background rounded-xl flex items-center justify-between gap-4 group hover:border-muted-foreground/30 transition-all"
+            className="p-4 border border-border bg-background rounded-xl flex items-center justify-between gap-4 group hover:border-muted-foreground/30 transition-all animate-in fade-in duration-300"
           >
             <div className="space-y-1.5 flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -124,16 +125,18 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
                 size="icon-xs"
                 onClick={() => handleSpeak(card.originalText)}
                 aria-label="تلفظ انگلیسی"
+                className="rounded-full hover:scale-105 transition-transform"
               >
-                🔊
+                <Volume2 className="size-3.5 text-foreground" />
               </Button>
               <Button
                 variant="destructive"
                 size="icon-xs"
                 onClick={() => handleDelete(card.id)}
                 aria-label="حذف کارت"
+                className="rounded-full hover:scale-105 transition-transform"
               >
-                🗑️
+                <Trash2 className="size-3.5 text-destructive" />
               </Button>
             </div>
           </div>

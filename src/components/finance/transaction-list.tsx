@@ -5,6 +5,7 @@ import { localDb, type FinanceTransaction } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { formatPersianNumber, formatPersianDate } from "@/lib/utils";
+import { Trash2 } from "lucide-react";
 
 export function TransactionList({
   transactions,
@@ -78,7 +79,7 @@ export function TransactionList({
         {filtered.map((tx) => (
           <div
             key={tx.id}
-            className="p-4 border border-border bg-background rounded-xl flex items-center justify-between gap-4 hover:border-muted-foreground/30 transition-all"
+            className="p-4 border border-border bg-background rounded-xl flex items-center justify-between gap-4 hover:border-muted-foreground/30 transition-all animate-in fade-in duration-300"
           >
             <div className="space-y-1 flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -133,8 +134,9 @@ export function TransactionList({
                 size="icon-xs"
                 onClick={() => handleDelete(tx.id)}
                 aria-label="حذف تراکنش"
+                className="hover:scale-105 transition-transform"
               >
-                🗑️
+                <Trash2 className="size-3.5 text-destructive" />
               </Button>
             </div>
           </div>

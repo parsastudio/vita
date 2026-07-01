@@ -10,7 +10,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const toast = useCallback(
     (message: string, type: "success" | "error" | "info" = "success") => {
       const id = Math.random().toString(36).substring(2, 9);
-      setToasts((prev) => [...prev, { id, message, type }]);
+      setToasts((prev) => {
+        const next = [...prev, { id, message, type }];
+        if (next.length > 3) {
+          return next.slice(-3);
+        }
+        return next;
+      });
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
       }, 4000);
@@ -44,7 +50,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               <span className="text-xs font-semibold">{t.message}</span>
               <button
                 onClick={() => dismiss(t.id)}
-                className="text-xs font-bold hover:opacity-75 transition-opacity ms-4"
+                className="text-xs font-bold hover:opacity-75 transition-opacity ms-4 cursor-pointer"
               >
                 ×
               </button>

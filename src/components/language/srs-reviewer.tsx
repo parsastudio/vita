@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { formatPersianNumber } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { Volume2 } from "lucide-react";
 
 export function SrsReviewer({
   cards,
@@ -22,7 +23,7 @@ export function SrsReviewer({
 
   if (!currentCard) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in duration-300">
         <span className="text-4xl">🎉</span>
         <h3 className="mt-4 text-lg font-bold text-foreground font-vazir">
           تمامی کارت‌ها مرور شدند!
@@ -123,8 +124,9 @@ export function SrsReviewer({
                 size="icon-sm"
                 onClick={handleSpeak}
                 aria-label="تلفظ صوتی کلمه"
+                className="rounded-full hover:scale-105 transition-transform"
               >
-                🔊
+                <Volume2 className="size-4" />
               </Button>
             </div>
           </div>
@@ -154,28 +156,28 @@ export function SrsReviewer({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Button
                   variant="outline"
-                  className="hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 font-vazir text-xs"
+                  className="hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 font-vazir text-xs transition-colors"
                   onClick={() => handleSrsAction("hard")}
                 >
                   سخت (مرور سریع)
                 </Button>
                 <Button
                   variant="outline"
-                  className="hover:bg-blue-500/10 hover:text-blue-500 hover:border-blue-500/30 font-vazir text-xs"
+                  className="hover:bg-blue-500/10 hover:text-blue-500 hover:border-blue-500/30 font-vazir text-xs transition-colors"
                   onClick={() => handleSrsAction("medium")}
                 >
                   متوسط
                 </Button>
                 <Button
                   variant="outline"
-                  className="hover:bg-green-500/10 hover:text-green-500 hover:border-green-500/30 font-vazir text-xs"
+                  className="hover:bg-green-500/10 hover:text-green-500 hover:border-green-500/30 font-vazir text-xs transition-colors"
                   onClick={() => handleSrsAction("easy")}
                 >
                   آسان
                 </Button>
                 <Button
                   variant="outline"
-                  className="hover:bg-muted/50 font-vazir text-xs"
+                  className="hover:bg-muted/50 font-vazir text-xs transition-colors"
                   onClick={() => handleSrsAction("archived")}
                 >
                   یاد گرفتم (آرشیو)

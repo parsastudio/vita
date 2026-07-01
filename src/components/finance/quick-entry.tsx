@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { formatPersianNumber } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
+import { Sparkles, AlertTriangle, ArrowDown, ArrowUp } from "lucide-react";
 
 interface PresetQuick {
   label: string;
@@ -56,6 +57,24 @@ function toEnglishDigits(str: string): string {
   return result;
 }
 
+const PERSIAN_STOP_WORDS = new Set([
+  "تومان",
+  "ریال",
+  "بابت",
+  "برای",
+  "به",
+  "با",
+  "از",
+  "تا",
+  "رو",
+  "در",
+  "پرداخت",
+  "خرید",
+  "هزینه",
+  "کردم",
+  "شد",
+]);
+
 export function QuickEntry({
   transactions,
   onSaveSuccess,
@@ -100,7 +119,7 @@ export function QuickEntry({
           ].includes(lower)
         ) {
           parsedType = "income";
-        } else {
+        } else if (!PERSIAN_STOP_WORDS.has(word)) {
           detectedTags.push(word);
         }
       }
@@ -316,7 +335,8 @@ export function QuickEntry({
     <div className="space-y-8">
       <div className="space-y-4 p-5 bg-gradient-to-r from-primary/5 via-violet-500/5 to-indigo-500/5 rounded-2xl border border-primary/10 backdrop-blur-md transition-all duration-300 hover:border-primary/20">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-primary uppercase tracking-wider font-vazir">
+          <label className="text-xs font-semibold text-primary uppercase tracking-wider font-vazir flex items-center gap-1.5">
+            <Sparkles className="size-4 text-primary animate-pulse" />
             دستیار صوتی و متنی هوشمند ویتا
           </label>
           <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium font-vazir">
@@ -379,14 +399,12 @@ export function QuickEntry({
               onClick={() => handlePresetClick(preset)}
               className="px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted text-xs text-foreground font-medium transition-all flex items-center gap-1.5 shadow-xs cursor-pointer font-vazir"
             >
-              <span
-                className={
-                  preset.type === "income"
-                    ? "text-green-600 font-bold"
-                    : "text-red-600 font-bold"
-                }
-              >
-                {preset.type === "income" ? "↓" : "↑"}
+              <span className="font-bold">
+                {preset.type === "income" ? (
+                  <ArrowDown className="size-3 text-green-600 inline-block" />
+                ) : (
+                  <ArrowUp className="size-3 text-red-600 inline-block" />
+                )}
               </span>
               <span>{preset.label}</span>
             </button>
@@ -403,8 +421,9 @@ export function QuickEntry({
         </span>
 
         {budgetWarning && (
-          <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-medium leading-relaxed font-vazir">
-            ⚠️ {budgetWarning}
+          <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-medium leading-relaxed font-vazir flex items-start gap-1.5 animate-in fade-in duration-300">
+            <AlertTriangle className="size-4 shrink-0 text-amber-500 mt-0.5" />
+            <span>{budgetWarning}</span>
           </div>
         )}
 
@@ -485,7 +504,7 @@ export function QuickEntry({
 
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
-            توضیحات اختیاری
+            توضیجات اختیاری
           </label>
           <input
             type="text"

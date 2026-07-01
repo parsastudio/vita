@@ -27,14 +27,13 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") {
     return;
   }
-
   const url = new URL(e.request.url);
-
+  const acceptHeader = e.request.headers.get("accept");
   if (
     url.pathname.startsWith("/api") ||
-    url.pathname.startsWith("/_next/data") ||
-    (e.request.headers.get("accept") &&
-      e.request.headers.get("accept").includes("text/html"))
+    url.pathname.includes("_next/data") ||
+    url.searchParams.has("_rsc") ||
+    (acceptHeader && acceptHeader.includes("text/html"))
   ) {
     e.respondWith(
       fetch(e.request)
@@ -55,7 +54,6 @@ self.addEventListener("fetch", (e) => {
     );
     return;
   }
-
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
       if (cachedResponse) {
