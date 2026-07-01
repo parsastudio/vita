@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { localDb } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
+import { v4 as uuidv4 } from "uuid";
 
 export function SentenceParser({
   onSaveSuccess,
@@ -21,15 +22,18 @@ export function SentenceParser({
     return text.split(/[\s,./#!$%\^&*;:{}=\-_`~()?]+/).filter(Boolean);
   }, [text]);
 
+  const wordsSerialized = words.join(" ");
+
   React.useEffect(() => {
-    if (words.length > 0) {
-      if (!selectedWord || !words.includes(selectedWord)) {
-        setSelectedWord(words[0]);
+    const wordsArray = wordsSerialized.split(" ").filter(Boolean);
+    if (wordsArray.length > 0) {
+      if (!selectedWord || !wordsArray.includes(selectedWord)) {
+        setSelectedWord(wordsArray[0]);
       }
     } else {
       setSelectedWord("");
     }
-  }, [words, selectedWord]);
+  }, [wordsSerialized, selectedWord]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +41,7 @@ export function SentenceParser({
 
     const userId = user?.id || "guest";
     await localDb.languageCards.put({
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       userId,
       originalText: text.trim(),
       translation: translation.trim(),

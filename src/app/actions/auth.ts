@@ -5,11 +5,28 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db/server";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 
 const SESSION_SECRET =
   process.env.SESSION_SECRET || "vita-space-default-secret-key-2026";
+
+if (
+  process.env.NODE_ENV === "production" &&
+  SESSION_SECRET === "vita-space-default-secret-key-2026"
+) {
+  throw new Error("SESSION_SECRET must be configured in production!");
+}
+
 const ENCRYPTION_KEY = crypto.scryptSync(SESSION_SECRET, "salt", 32);
 const IV_LENGTH = 16;
+
+const authSchema = z.object({
+  email: z.string().email("Invalid email format").max(255),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters long")
+    .max(100),
+});
 
 function hashPassword(password: string): { hash: string; salt: string } {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -50,8 +67,14 @@ function decryptSession(sessionText: string): string | null {
 
 export async function signUpAction(email: string, password: string) {
   try {
+    const lowerEmail = email.toLowerCase();
+    const validation = authSchema.safeParse({ email: lowerEmail, password });
+    if (!validation.success) {
+      return { success: false, error: validation.error.errors[0].message };
+    }
+
     const existingUser = await db.query.users.findFirst({
-      where: eq(users.email, email),
+      where: eq(users.email, lowerEmail),
     });
 
     if (existingUser) {
@@ -63,7 +86,7 @@ export async function signUpAction(email: string, password: string) {
 
     await db.insert(users).values({
       id: userId,
-      email,
+      email: lowerEmail,
       passwordHash: `${salt}:${hash}`,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -81,7 +104,7 @@ export async function signUpAction(email: string, password: string) {
 
     return {
       success: true,
-      user: { id: userId, email },
+      user: { id: userId, email: lowerEmail },
     };
   } catch (err: unknown) {
     const message =
@@ -95,8 +118,14 @@ export async function signUpAction(email: string, password: string) {
 
 export async function signInAction(email: string, password: string) {
   try {
+    const lowerEmail = email.toLowerCase();
+    const validation = authSchema.safeParse({ email: lowerEmail, password });
+    if (!validation.success) {
+      return { success: false, error: validation.error.errors[0].message };
+    }
+
     const userRecord = await db.query.users.findFirst({
-      where: eq(users.email, email),
+      where: eq(users.email, lowerEmail),
     });
 
     if (!userRecord) {

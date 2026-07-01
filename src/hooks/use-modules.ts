@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { localDb } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
+import { v4 as uuidv4 } from "uuid";
 
 export function useModules() {
   const { user } = useAuth();
@@ -24,7 +25,7 @@ export function useModules() {
         setEnabledModules(settings.enabledModules);
         setSettingsId(settings.id);
       } else {
-        const newId = crypto.randomUUID();
+        const newId = uuidv4();
         await localDb.userSettings.put({
           id: newId,
           userId,
@@ -48,7 +49,7 @@ export function useModules() {
 
     const userId = user?.id || "guest";
     await localDb.userSettings.put({
-      id: settingsId || crypto.randomUUID(),
+      id: settingsId || uuidv4(),
       userId,
       enabledModules: updated,
       updatedAt: new Date(),

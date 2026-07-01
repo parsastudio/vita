@@ -8,6 +8,7 @@ import {
 } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
+import { v4 as uuidv4 } from "uuid";
 
 export function FinanceDashboard({
   transactions,
@@ -89,7 +90,7 @@ export function FinanceDashboard({
       .first();
 
     await localDb.financeBudgets.put({
-      id: existing?.id || crypto.randomUUID(),
+      id: existing?.id || uuidv4(),
       userId,
       categoryOrTag: budgetCategory.trim(),
       limitAmount: limitNum,

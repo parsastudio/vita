@@ -96,7 +96,9 @@ async function migrateGuestData(newUserId: string) {
         }
       },
     );
-  } catch {}
+  } catch (error) {
+    console.error("Failed to migrate guest data safely:", error);
+  }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -166,6 +168,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     await signOutAction();
+    try {
+      await localDb.transaction(
+        "rw",
+        [
+          localDb.languageCards,
+          localDb.financeTransactions,
+          localDb.financeBudgets,
+          localDb.userSettings,
+          localDb.deletedRecords,
+        ],
+        async () => {
+          await Promise.all([
+            localDb.languageCards.clear(),
+            localDb.financeTransactions.clear(),
+            localDb.financeBudgets.clear(),
+            localDb.userSettings.clear(),
+            localDb.deletedRecords.clear(),
+          ]);
+        },
+      );
+    } catch (error) {
+      console.error("Failed to clear local tables during logout:", error);
+    }
     setUser(null);
     setIsGuest(false);
     setShowAuthModal(true);

@@ -1,5 +1,3 @@
-"use server";
-
 import { db } from "@/lib/db/server";
 import {
   languageCards,
@@ -7,7 +5,8 @@ import {
   financeBudgets,
   userSettings,
 } from "@/lib/db/schema";
-import { eq, and, gt, inArray } from "drizzle-orm";
+import { eq, and, gt, inArray, sql } from "drizzle-orm";
+import { getCurrentUserAction } from "@/app/actions/auth";
 
 interface SyncLanguageCard {
   id: string;
@@ -67,6 +66,12 @@ interface SyncPayload {
 
 export async function syncData(payload: SyncPayload) {
   const { userId, lastSyncedAt, ...changes } = payload;
+
+  const sessionUser = await getCurrentUserAction();
+  if (!sessionUser || sessionUser.id !== userId) {
+    throw new Error("Unauthorized");
+  }
+
   const lastSyncDate = lastSyncedAt ? new Date(lastSyncedAt) : new Date(0);
 
   if (changes.deletedRecords && changes.deletedRecords.length > 0) {
@@ -112,128 +117,117 @@ export async function syncData(payload: SyncPayload) {
     }
   }
 
-  for (const card of changes.languageCards) {
-    const existingGlobal = await db.query.languageCards.findFirst({
-      where: eq(languageCards.id, card.id),
-    });
+  const cardsToUpsert = changes.languageCards.map((card) => ({
+    id: card.id,
+    userId,
+    originalText: card.originalText,
+    translation: card.translation,
+    focusWord: card.focusWord,
+    isSentenceTranslation: card.isSentenceTranslation,
+    srsStatus: card.srsStatus,
+    nextReviewAt: new Date(card.nextReviewAt),
+    intervalDays: String(card.intervalDays),
+    easeFactor: String(card.easeFactor),
+    createdAt: new Date(card.createdAt),
+    updatedAt: new Date(card.updatedAt),
+  }));
 
-    if (existingGlobal && existingGlobal.userId !== userId) {
-      continue;
-    }
-
-    const cardData = {
-      id: card.id,
-      userId,
-      originalText: card.originalText,
-      translation: card.translation,
-      focusWord: card.focusWord,
-      isSentenceTranslation: card.isSentenceTranslation,
-      srsStatus: card.srsStatus,
-      nextReviewAt: new Date(card.nextReviewAt),
-      intervalDays: String(card.intervalDays),
-      easeFactor: String(card.easeFactor),
-      createdAt: new Date(card.createdAt),
-      updatedAt: new Date(card.updatedAt),
-    };
-
-    if (!existingGlobal) {
-      await db.insert(languageCards).values(cardData);
-    } else if (new Date(card.updatedAt) > new Date(existingGlobal.updatedAt)) {
-      await db
-        .update(languageCards)
-        .set(cardData)
-        .where(eq(languageCards.id, card.id));
-    }
+  if (cardsToUpsert.length > 0) {
+    await db
+      .insert(languageCards)
+      .values(cardsToUpsert)
+      .onConflictDoUpdate({
+        target: languageCards.id,
+        set: {
+          originalText: sql`EXCLUDED.original_text`,
+          translation: sql`EXCLUDED.translation`,
+          focusWord: sql`EXCLUDED.focus_word`,
+          isSentenceTranslation: sql`EXCLUDED.is_sentence_translation`,
+          srsStatus: sql`EXCLUDED.srs_status`,
+          nextReviewAt: sql`EXCLUDED.next_review_at`,
+          intervalDays: sql`EXCLUDED.interval_days`,
+          easeFactor: sql`EXCLUDED.ease_factor`,
+          updatedAt: sql`EXCLUDED.updated_at`,
+        },
+        where: sql`EXCLUDED.updated_at > language_cards.updated_at AND language_cards.user_id = ${userId}`,
+      });
   }
 
-  for (const tx of changes.financeTransactions) {
-    const existingGlobal = await db.query.financeTransactions.findFirst({
-      where: eq(financeTransactions.id, tx.id),
-    });
+  const txsToUpsert = changes.financeTransactions.map((tx) => ({
+    id: tx.id,
+    userId,
+    amount: String(tx.amount),
+    type: tx.type,
+    category: tx.category,
+    tags: tx.tags,
+    description: tx.description,
+    createdAt: new Date(tx.createdAt),
+    updatedAt: new Date(tx.updatedAt),
+  }));
 
-    if (existingGlobal && existingGlobal.userId !== userId) {
-      continue;
-    }
-
-    const txData = {
-      id: tx.id,
-      userId,
-      amount: String(tx.amount),
-      type: tx.type,
-      category: tx.category,
-      tags: tx.tags,
-      description: tx.description,
-      createdAt: new Date(tx.createdAt),
-      updatedAt: new Date(tx.updatedAt),
-    };
-
-    if (!existingGlobal) {
-      await db.insert(financeTransactions).values(txData);
-    } else if (new Date(tx.updatedAt) > new Date(existingGlobal.updatedAt)) {
-      await db
-        .update(financeTransactions)
-        .set(txData)
-        .where(eq(financeTransactions.id, tx.id));
-    }
+  if (txsToUpsert.length > 0) {
+    await db
+      .insert(financeTransactions)
+      .values(txsToUpsert)
+      .onConflictDoUpdate({
+        target: financeTransactions.id,
+        set: {
+          amount: sql`EXCLUDED.amount`,
+          type: sql`EXCLUDED.type`,
+          category: sql`EXCLUDED.category`,
+          tags: sql`EXCLUDED.tags`,
+          description: sql`EXCLUDED.description`,
+          updatedAt: sql`EXCLUDED.updated_at`,
+        },
+        where: sql`EXCLUDED.updated_at > finance_transactions.updated_at AND finance_transactions.user_id = ${userId}`,
+      });
   }
 
-  for (const budget of changes.financeBudgets) {
-    const existingGlobal = await db.query.financeBudgets.findFirst({
-      where: eq(financeBudgets.id, budget.id),
-    });
+  const budgetsToUpsert = changes.financeBudgets.map((b) => ({
+    id: b.id,
+    userId,
+    categoryOrTag: b.categoryOrTag,
+    limitAmount: String(b.limitAmount),
+    period: b.period,
+    createdAt: new Date(b.createdAt),
+    updatedAt: new Date(b.updatedAt),
+  }));
 
-    if (existingGlobal && existingGlobal.userId !== userId) {
-      continue;
-    }
-
-    const budgetData = {
-      id: budget.id,
-      userId,
-      categoryOrTag: budget.categoryOrTag,
-      limitAmount: String(budget.limitAmount),
-      period: budget.period,
-      createdAt: new Date(budget.createdAt),
-      updatedAt: new Date(budget.updatedAt),
-    };
-
-    if (!existingGlobal) {
-      await db.insert(financeBudgets).values(budgetData);
-    } else if (
-      new Date(budget.updatedAt) > new Date(existingGlobal.updatedAt)
-    ) {
-      await db
-        .update(financeBudgets)
-        .set(budgetData)
-        .where(eq(financeBudgets.id, budget.id));
-    }
+  if (budgetsToUpsert.length > 0) {
+    await db
+      .insert(financeBudgets)
+      .values(budgetsToUpsert)
+      .onConflictDoUpdate({
+        target: financeBudgets.id,
+        set: {
+          categoryOrTag: sql`EXCLUDED.category_or_tag`,
+          limitAmount: sql`EXCLUDED.limit_amount`,
+          period: sql`EXCLUDED.period`,
+          updatedAt: sql`EXCLUDED.updated_at`,
+        },
+        where: sql`EXCLUDED.updated_at > finance_budgets.updated_at AND finance_budgets.user_id = ${userId}`,
+      });
   }
 
-  for (const setting of changes.userSettings) {
-    const existingGlobal = await db.query.userSettings.findFirst({
-      where: eq(userSettings.id, setting.id),
-    });
+  const settingsToUpsert = changes.userSettings.map((s) => ({
+    id: s.id,
+    userId,
+    enabledModules: s.enabledModules,
+    updatedAt: new Date(s.updatedAt),
+  }));
 
-    if (existingGlobal && existingGlobal.userId !== userId) {
-      continue;
-    }
-
-    const settingData = {
-      id: setting.id,
-      userId,
-      enabledModules: setting.enabledModules,
-      updatedAt: new Date(setting.updatedAt),
-    };
-
-    if (!existingGlobal) {
-      await db.insert(userSettings).values(settingData);
-    } else if (
-      new Date(setting.updatedAt) > new Date(existingGlobal.updatedAt)
-    ) {
-      await db
-        .update(userSettings)
-        .set(settingData)
-        .where(eq(userSettings.id, setting.id));
-    }
+  if (settingsToUpsert.length > 0) {
+    await db
+      .insert(userSettings)
+      .values(settingsToUpsert)
+      .onConflictDoUpdate({
+        target: userSettings.id,
+        set: {
+          enabledModules: sql`EXCLUDED.enabled_modules`,
+          updatedAt: sql`EXCLUDED.updated_at`,
+        },
+        where: sql`EXCLUDED.updated_at > user_settings.updated_at AND user_settings.user_id = ${userId}`,
+      });
   }
 
   const newCards = await db.query.languageCards.findMany({

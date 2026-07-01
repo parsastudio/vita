@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { localDb, type FinanceTransaction } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
+import { v4 as uuidv4 } from "uuid";
 
 interface PresetQuick {
   label: string;
@@ -18,6 +19,40 @@ const PRESET_QUICKS: PresetQuick[] = [
   { label: "Salary", amount: 2500, type: "income", category: "Salary" },
   { label: "Groceries", amount: 45, type: "expense", category: "Food" },
 ];
+
+function toEnglishDigits(str: string): string {
+  const persianDigits = [
+    /۰/g,
+    /۱/g,
+    /۲/g,
+    /۳/g,
+    /۴/g,
+    /۵/g,
+    /۶/g,
+    /۷/g,
+    /۸/g,
+    /۹/g,
+  ];
+  const arabicDigits = [
+    /٠/g,
+    /١/g,
+    /٢/g,
+    /٣/g,
+    /٤/g,
+    /٥/g,
+    /٦/g,
+    /٧/g,
+    /٨/g,
+    /٩/g,
+  ];
+  let result = str;
+  for (let i = 0; i < 10; i++) {
+    result = result
+      .replace(persianDigits[i], String(i))
+      .replace(arabicDigits[i], String(i));
+  }
+  return result;
+}
 
 export function QuickEntry({
   transactions,
@@ -37,7 +72,8 @@ export function QuickEntry({
 
   const parsedNlp = useMemo(() => {
     if (!nlpText.trim()) return null;
-    const words = nlpText.split(/\s+/).filter(Boolean);
+    const normalizedText = toEnglishDigits(nlpText);
+    const words = normalizedText.split(/\s+/).filter(Boolean);
     let parsedAmount = 0;
     let parsedType: "income" | "expense" = "expense";
     let detectedTags: string[] = [];
@@ -148,7 +184,7 @@ export function QuickEntry({
   const handleNlpApply = async () => {
     if (!parsedNlp || parsedNlp.amount <= 0) return;
     const userId = user?.id || "guest";
-    const txId = crypto.randomUUID();
+    const txId = uuidv4();
 
     await localDb.financeTransactions.put({
       id: txId,
@@ -169,7 +205,7 @@ export function QuickEntry({
 
   const handlePresetClick = async (preset: PresetQuick) => {
     const userId = user?.id || "guest";
-    const txId = crypto.randomUUID();
+    const txId = uuidv4();
 
     await localDb.financeTransactions.put({
       id: txId,
@@ -189,7 +225,7 @@ export function QuickEntry({
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const numAmt = parseFloat(amount);
+    const numAmt = parseFloat(toEnglishDigits(amount));
     if (isNaN(numAmt) || numAmt <= 0 || !category.trim()) return;
 
     const userId = user?.id || "guest";
@@ -199,7 +235,7 @@ export function QuickEntry({
       .filter(Boolean);
 
     await localDb.financeTransactions.put({
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       userId,
       amount: numAmt,
       type,
@@ -316,13 +352,12 @@ export function QuickEntry({
               Amount
             </label>
             <input
-              type="number"
-              step="any"
+              type="text"
               required
               value={amount}
               onChange={(e) => {
                 setAmount(e.target.value);
-                const val = parseFloat(e.target.value);
+                const val = parseFloat(toEnglishDigits(e.target.value));
                 if (!isNaN(val) && val > 0 && category) {
                   checkBudgetThreshold(category, val, type);
                 }
@@ -341,7 +376,7 @@ export function QuickEntry({
                 type="button"
                 onClick={() => {
                   setType("expense");
-                  const val = parseFloat(amount);
+                  const val = parseFloat(toEnglishDigits(amount));
                   if (!isNaN(val) && val > 0 && category) {
                     checkBudgetThreshold(category, val, "expense");
                   }
@@ -383,7 +418,7 @@ export function QuickEntry({
               value={category}
               onChange={(e) => {
                 setCategory(e.target.value);
-                const val = parseFloat(amount);
+                const val = parseFloat(toEnglishDigits(amount));
                 if (!isNaN(val) && val > 0 && e.target.value) {
                   checkBudgetThreshold(e.target.value, val, type);
                 }
