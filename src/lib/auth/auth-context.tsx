@@ -85,17 +85,17 @@ async function migrateGuestData(newUserId: string) {
         await localDb.languageCards
           .where("userId")
           .equals("guest")
-          .modify({ userId: newUserId, synced: false });
+          .modify({ userId: newUserId, synced: false, updatedAt: new Date() });
 
         await localDb.financeTransactions
           .where("userId")
           .equals("guest")
-          .modify({ userId: newUserId, synced: false });
+          .modify({ userId: newUserId, synced: false, updatedAt: new Date() });
 
         await localDb.financeBudgets
           .where("userId")
           .equals("guest")
-          .modify({ userId: newUserId, synced: false });
+          .modify({ userId: newUserId, synced: false, updatedAt: new Date() });
 
         const existingSettings = await localDb.userSettings
           .where("userId")
@@ -264,7 +264,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useAuth must be used within a AuthProvider");
   }
   return context;
 }

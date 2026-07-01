@@ -24,6 +24,7 @@ export function FinanceDashboard({
   const [budgetCategory, setBudgetCategory] = useState("");
   const [budgetLimit, setBudgetLimit] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -58,6 +59,55 @@ export function FinanceDashboard({
       balance: income - expense,
       categories: categoriesArray,
     };
+  }, [transactions]);
+
+  const trends = useMemo(() => {
+    const monthlyData: Record<string, { income: number; expense: number }> = {};
+    const months = [
+      "فروردین",
+      "اردیبهشت",
+      "خرداد",
+      "تیر",
+      "مرداد",
+      "شهریور",
+      "مهر",
+      "آبان",
+      "آذر",
+      "دی",
+      "بهمن",
+      "اسفند",
+    ];
+
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mIdx = (d.getMonth() + 9) % 12;
+      const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+      monthlyData[key] = { income: 0, expense: 0 };
+    }
+
+    transactions.forEach((tx) => {
+      const txDate = new Date(tx.createdAt);
+      const key = `${txDate.getFullYear()}-${txDate.getMonth() + 1}`;
+      if (monthlyData[key]) {
+        const amt = Number(tx.amount);
+        if (tx.type === "income") {
+          monthlyData[key].income += amt;
+        } else {
+          monthlyData[key].expense += amt;
+        }
+      }
+    });
+
+    return Object.entries(monthlyData).map(([key, value]) => {
+      const [year, monthStr] = key.split("-");
+      const mIdx = (parseInt(monthStr) + 8) % 12;
+      return {
+        label: months[mIdx],
+        income: value.income,
+        expense: value.expense,
+      };
+    });
   }, [transactions]);
 
   const budgetStatuses = useMemo(() => {
@@ -200,6 +250,12 @@ export function FinanceDashboard({
     });
   }, [stats]);
 
+  const maxTrendVal = useMemo(() => {
+    const vals = trends.flatMap((t) => [t.income, t.expense]);
+    const max = Math.max(...vals, 100000);
+    return max * 1.1;
+  }, [trends]);
+
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -230,6 +286,47 @@ export function FinanceDashboard({
           >
             {mounted ? formatPersianNumber(stats.balance) : stats.balance} تومان
           </p>
+        </div>
+      </div>
+
+      <div className="p-6 border border-border bg-background rounded-xl space-y-4">
+        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider font-vazir">
+          مقایسه ت روند درآمد و هزینه‌های اخیر
+        </h3>
+        <div className="relative h-48 w-full flex items-end justify-between pt-6 gap-2">
+          {trends.map((t, idx) => {
+            const incH = (t.income / maxTrendVal) * 100;
+            const expH = (t.expense / maxTrendVal) * 100;
+            return (
+              <div
+                key={idx}
+                className="flex-1 flex flex-col items-center h-full justify-end gap-2 group/trend"
+              >
+                <div className="w-full flex justify-center items-end gap-1.5 h-full">
+                  <div
+                    style={{ height: `${Math.max(incH, 4)}%` }}
+                    className="w-3 sm:w-5 bg-green-500 rounded-t-md transition-all duration-500 group-hover/trend:opacity-80"
+                  />
+                  <div
+                    style={{ height: `${Math.max(expH, 4)}%` }}
+                    className="w-3 sm:w-5 bg-red-500 rounded-t-md transition-all duration-500 group-hover/trend:opacity-80"
+                  />
+                </div>
+                <span className="text-[10px] font-bold text-muted-foreground font-vazir mt-1">
+                  {t.label}
+                </span>
+
+                <div className="absolute bottom-16 bg-card border border-border p-2 rounded-lg shadow-xl opacity-0 group-hover/trend:opacity-100 transition-opacity pointer-events-none text-[10px] z-10 flex flex-col gap-1 font-vazir">
+                  <span className="text-green-600 font-bold">
+                    درآمد: {formatPersianNumber(t.income)} تومان
+                  </span>
+                  <span className="text-red-600 font-bold">
+                    هزینه: {formatPersianNumber(t.expense)} تومان
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -272,22 +369,40 @@ export function FinanceDashboard({
                       r="15.915"
                       fill="none"
                       stroke={seg.color}
-                      strokeWidth="3.2"
+                      strokeWidth={hoveredIdx === idx ? "4.2" : "3.2"}
                       strokeDasharray={seg.strokeDasharray}
                       strokeDashoffset={seg.strokeDashoffset}
-                      className="transition-all duration-500 ease-out"
+                      onMouseEnter={() => setHoveredIdx(idx)}
+                      onMouseLeave={() => setHoveredIdx(null)}
+                      className="transition-all duration-200 ease-out cursor-pointer"
                     />
                   ))}
                 </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold font-vazir">
-                    کل خرج‌ها
-                  </span>
-                  <span className="text-base font-bold text-foreground">
-                    {mounted
-                      ? formatPersianNumber(stats.expense)
-                      : stats.expense}
-                  </span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1 pointer-events-none">
+                  {hoveredIdx !== null ? (
+                    <>
+                      <span className="text-[9px] text-muted-foreground truncate max-w-[80px] font-bold font-vazir">
+                        {donutSegments[hoveredIdx].name}
+                      </span>
+                      <span className="text-xs font-bold text-foreground">
+                        {formatPersianNumber(
+                          donutSegments[hoveredIdx].percentage.toFixed(0),
+                        )}
+                        %
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold font-vazir">
+                        کل خرج‌ها
+                      </span>
+                      <span className="text-xs font-bold text-foreground">
+                        {mounted
+                          ? formatPersianNumber(stats.expense)
+                          : stats.expense}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -295,7 +410,9 @@ export function FinanceDashboard({
                 {donutSegments.map((seg, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between text-xs"
+                    onMouseEnter={() => setHoveredIdx(idx)}
+                    onMouseLeave={() => setHoveredIdx(null)}
+                    className={`flex items-center justify-between text-xs p-1 rounded-md transition-colors ${hoveredIdx === idx ? "bg-muted/60" : ""}`}
                   >
                     <div className="flex items-center gap-2">
                       <span

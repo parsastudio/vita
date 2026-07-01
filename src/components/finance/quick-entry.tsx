@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatPersianNumber } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
 import { Sparkles, AlertTriangle, ArrowDown, ArrowUp } from "lucide-react";
+import { z } from "zod";
 
 interface PresetQuick {
   label: string;
@@ -75,6 +76,20 @@ const PERSIAN_STOP_WORDS = new Set([
   "شد",
 ]);
 
+const formSchema = z.object({
+  amount: z.string().refine(
+    (val) => {
+      const parsed = parseFloat(toEnglishDigits(val).replace(/,/g, ""));
+      return !isNaN(parsed) && parsed > 0;
+    },
+    { message: "مبلغ وارد شده باید عددی بزرگتر از صفر باشد" },
+  ),
+  category: z.string().min(1, "انتخاب دسته‌بندی الزامی است"),
+  type: z.enum(["income", "expense"]),
+  tagsInput: z.string().optional(),
+  description: z.string().optional(),
+});
+
 export function QuickEntry({
   transactions,
   onSaveSuccess,
@@ -91,6 +106,7 @@ export function QuickEntry({
   const [tagsInput, setTagsInput] = useState("");
   const [description, setDescription] = useState("");
   const [budgetWarning, setBudgetWarning] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const parsedNlp = useMemo(() => {
     if (!nlpText.trim()) return null;
@@ -100,32 +116,50 @@ export function QuickEntry({
     let parsedType: "income" | "expense" = "expense";
     let detectedTags: string[] = [];
 
-    for (const word of words) {
-      const num = parseFloat(word.replace(/,/g, ""));
-      if (!isNaN(num) && num > 0) {
-        parsedAmount = num;
-      } else {
-        const lower = word.toLowerCase();
-        if (
-          [
-            "income",
-            "salary",
-            "earn",
-            "deposit",
-            "gift",
-            "حقوق",
-            "درآمد",
-            "واریز",
-          ].includes(lower)
-        ) {
-          parsedType = "income";
-        } else if (!PERSIAN_STOP_WORDS.has(word)) {
-          detectedTags.push(word);
+    const millionMatch = normalizedText.match(
+      /(\d+(?:\.\d+)?)\s*(میلیون|ملیون)/,
+    );
+    const thousandMatch = normalizedText.match(/(\d+(?:\.\d+)?)\s*(هزار)/);
+
+    if (millionMatch) {
+      parsedAmount = parseFloat(millionMatch[1]) * 1000000;
+    } else if (thousandMatch) {
+      parsedAmount = parseFloat(thousandMatch[1]) * 1000;
+    } else {
+      for (const word of words) {
+        const num = parseFloat(word.replace(/,/g, ""));
+        if (!isNaN(num) && num > 0) {
+          parsedAmount = num;
+          break;
         }
       }
     }
 
     if (parsedAmount <= 0) return null;
+
+    for (const word of words) {
+      if (
+        [
+          "income",
+          "salary",
+          "earn",
+          "deposit",
+          "gift",
+          "حقوق",
+          "درآمد",
+          "واریز",
+        ].includes(word.toLowerCase())
+      ) {
+        parsedType = "income";
+      } else if (
+        !PERSIAN_STOP_WORDS.has(word) &&
+        isNaN(parseFloat(word.replace(/,/g, ""))) &&
+        !word.includes("هزار") &&
+        !word.includes("میلیون")
+      ) {
+        detectedTags.push(word);
+      }
+    }
 
     const parsedCategory = detectedTags[0] || "عمومی";
     return {
@@ -341,9 +375,22 @@ export function QuickEntry({
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const numAmt = parseFloat(toEnglishDigits(amount));
-    if (isNaN(numAmt) || numAmt <= 0 || !category.trim()) return;
+    setValidationError(null);
 
+    const validation = formSchema.safeParse({
+      amount,
+      category,
+      type,
+      tagsInput,
+      description,
+    });
+
+    if (!validation.success) {
+      setValidationError(validation.error.errors[0].message);
+      return;
+    }
+
+    const numAmt = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
     const userId = user?.id || "guest";
     const tags = tagsInput
       .split(",")
@@ -403,7 +450,7 @@ export function QuickEntry({
             type="text"
             value={nlpText}
             onChange={(e) => setNlpText(e.target.value)}
-            placeholder="بنویسید مثلاً: ۵۰۰۰۰ تاکسی کار یا ۱۲۰۰۰۰۰ حقوق واریز..."
+            placeholder="بنویسید مثلاً: ۵۰ هزار تاکسی یا ۴.۵ میلیون حقوق واریز..."
             className="flex-1 h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
           />
           {parsedNlp && parsedNlp.amount > 0 && (
@@ -474,6 +521,13 @@ export function QuickEntry({
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block font-vazir">
           فرم ثبت تراکنش تفصیلی
         </span>
+
+        {validationError && (
+          <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-medium leading-relaxed font-vazir flex items-start gap-1.5">
+            <AlertTriangle className="size-4 shrink-0 text-red-500 mt-0.5" />
+            <span>{validationError}</span>
+          </div>
+        )}
 
         {budgetWarning && (
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-medium leading-relaxed font-vazir flex items-start gap-1.5 animate-in fade-in duration-300">

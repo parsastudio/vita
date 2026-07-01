@@ -101,7 +101,7 @@ export function AuthModal() {
           {isGuest && (
             <button
               onClick={() => setShowAuthModal(false)}
-              className="absolute top-4 left-4 p-1 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer"
+              className="absolute top-4 start-4 p-1 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer"
               aria-label="بستن"
             >
               <X className="size-4" />

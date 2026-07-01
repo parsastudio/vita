@@ -1,4 +1,4 @@
-const CACHE_NAME = "vita-cache-v1";
+const CACHE_NAME = "vita-cache-v2";
 const ASSETS = ["/", "/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
@@ -7,6 +7,7 @@ self.addEventListener("install", (e) => {
       return cache.addAll(ASSETS);
     }),
   );
+  self.skipWaiting();
 });
 
 self.addEventListener("activate", (e) => {
@@ -21,6 +22,7 @@ self.addEventListener("activate", (e) => {
       );
     }),
   );
+  self.clients.claim();
 });
 
 self.addEventListener("fetch", (e) => {

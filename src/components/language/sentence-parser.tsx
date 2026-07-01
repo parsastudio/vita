@@ -6,6 +6,16 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
+import { AlertTriangle } from "lucide-react";
+
+const cardFormSchema = z.object({
+  text: z.string().min(1, "متن انگلیسی وارد شده خالی است"),
+  translation: z.string().min(1, "ترجمه فارسی الزامی است"),
+  selectedWord: z
+    .string()
+    .min(1, "تعیین یک کلمه به عنوان کلمه اصلی اجباری است"),
+});
 
 export function SentenceParser({
   onSaveSuccess,
@@ -18,6 +28,7 @@ export function SentenceParser({
   const [translation, setTranslation] = useState("");
   const [selectedWord, setSelectedWord] = useState("");
   const [isSentenceTranslation, setIsSentenceTranslation] = useState(true);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const words = useMemo(() => {
     if (!text.trim()) return [];
@@ -39,7 +50,18 @@ export function SentenceParser({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() || !translation.trim()) return;
+    setValidationError(null);
+
+    const validation = cardFormSchema.safeParse({
+      text,
+      translation,
+      selectedWord,
+    });
+
+    if (!validation.success) {
+      setValidationError(validation.error.errors[0].message);
+      return;
+    }
 
     const userId = user?.id || "guest";
     await localDb.languageCards.put({
@@ -67,13 +89,20 @@ export function SentenceParser({
 
   return (
     <form onSubmit={handleSave} className="space-y-6">
+      {validationError && (
+        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-medium leading-relaxed font-vazir flex items-start gap-1.5">
+          <AlertTriangle className="size-4 shrink-0 text-red-500 mt-0.5" />
+          <span>{validationError}</span>
+        </div>
+      )}
+
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider font-vazir">
             کلمه یا جمله انگلیسی
           </label>
           {selectedWord && (
-            <span className="text-[10px] text-red-500 font-bold font-vazir">
+            <span className="text-[10px] text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full font-bold font-vazir">
               کلمه اصلی: {selectedWord}
             </span>
           )}
@@ -95,7 +124,7 @@ export function SentenceParser({
               انتخاب کلمه کلیدی اصلی
             </span>
             {selectedWord && (
-              <span className="text-xs text-destructive bg-destructive/10 px-2 py-0.5 rounded-full font-medium">
+              <span className="text-xs text-destructive bg-destructive/10 px-2.5 py-0.5 rounded-full font-medium">
                 کلمه اصلی: {selectedWord}
               </span>
             )}
@@ -108,7 +137,7 @@ export function SentenceParser({
                 onClick={() => setSelectedWord(word)}
                 className={`px-3 py-1.5 text-sm rounded-lg border transition-all cursor-pointer ${
                   selectedWord === word
-                    ? "border-destructive/40 bg-destructive/5 text-destructive font-semibold shadow-xs"
+                    ? "border-red-500/40 bg-red-500/5 text-red-600 font-semibold shadow-md shadow-red-500/10 ring-2 ring-red-500/20"
                     : "border-border bg-background hover:bg-muted text-foreground"
                 }`}
               >

@@ -15,7 +15,7 @@ export function DashboardGrid({
   languageWidget: React.ReactNode;
   financeWidget: React.ReactNode;
 }) {
-  const { user, isGuest, logout, disableGuestMode } = useAuth();
+  const { user, isGuest, logout, disableGuestMode, isLoading } = useAuth();
   const { theme, setTheme } = useTheme();
   const { enabledModules, toggleModule } = useModules();
   const { isSyncing, performSync } = useSync();
@@ -23,6 +23,7 @@ export function DashboardGrid({
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [widgetOrder, setWidgetOrder] = useState<string[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -34,6 +35,13 @@ export function DashboardGrid({
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
+    const savedOrder = localStorage.getItem("vita_widget_order");
+    if (savedOrder) {
+      setWidgetOrder(JSON.parse(savedOrder));
+    } else {
+      setWidgetOrder(["language", "finance"]);
+    }
+
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
@@ -43,6 +51,29 @@ export function DashboardGrid({
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
+
+  const moveWidget = (index: number, direction: "up" | "down") => {
+    const nextIndex = direction === "up" ? index - 1 : index + 1;
+    if (nextIndex < 0 || nextIndex >= widgetOrder.length) return;
+    const updated = [...widgetOrder];
+    const temp = updated[index];
+    updated[index] = updated[nextIndex];
+    updated[nextIndex] = temp;
+    setWidgetOrder(updated);
+    localStorage.setItem("vita_widget_order", JSON.stringify(updated));
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col gap-8 animate-pulse">
+        <div className="h-20 bg-muted/50 rounded-2xl w-full" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="h-96 bg-muted/40 rounded-2xl w-full" />
+          <div className="h-96 bg-muted/40 rounded-2xl w-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col gap-8">
@@ -260,31 +291,83 @@ export function DashboardGrid({
 
       <main className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         <AnimatePresence mode="popLayout">
-          {enabledModules.includes("language") && (
-            <motion.div
-              key="language"
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              layout
-              className="w-full"
-            >
-              {languageWidget}
-            </motion.div>
-          )}
-
-          {enabledModules.includes("finance") && (
-            <motion.div
-              key="finance"
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              layout
-              className="w-full"
-            >
-              {financeWidget}
-            </motion.div>
-          )}
+          {widgetOrder.map((moduleName, idx) => {
+            if (
+              moduleName === "language" &&
+              enabledModules.includes("language")
+            ) {
+              return (
+                <motion.div
+                  key="language"
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                  layout
+                  className="w-full relative group/widget"
+                >
+                  <div className="absolute top-4 left-24 z-10 flex gap-1 opacity-0 group-hover/widget:opacity-100 transition-opacity">
+                    <Button
+                      variant="outline"
+                      size="icon-xs"
+                      onClick={() => moveWidget(idx, "up")}
+                      disabled={idx === 0}
+                      className="rounded-full bg-background/80 backdrop-blur-xs"
+                    >
+                      ▲
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon-xs"
+                      onClick={() => moveWidget(idx, "down")}
+                      disabled={idx === widgetOrder.length - 1}
+                      className="rounded-full bg-background/80 backdrop-blur-xs"
+                    >
+                      ▼
+                    </Button>
+                  </div>
+                  {languageWidget}
+                </motion.div>
+              );
+            }
+            if (
+              moduleName === "finance" &&
+              enabledModules.includes("finance")
+            ) {
+              return (
+                <motion.div
+                  key="finance"
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                  layout
+                  className="w-full relative group/widget"
+                >
+                  <div className="absolute top-4 left-24 z-10 flex gap-1 opacity-0 group-hover/widget:opacity-100 transition-opacity">
+                    <Button
+                      variant="outline"
+                      size="icon-xs"
+                      onClick={() => moveWidget(idx, "up")}
+                      disabled={idx === 0}
+                      className="rounded-full bg-background/80 backdrop-blur-xs"
+                    >
+                      ▲
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon-xs"
+                      onClick={() => moveWidget(idx, "down")}
+                      disabled={idx === widgetOrder.length - 1}
+                      className="rounded-full bg-background/80 backdrop-blur-xs"
+                    >
+                      ▼
+                    </Button>
+                  </div>
+                  {financeWidget}
+                </motion.div>
+              );
+            }
+            return null;
+          })}
         </AnimatePresence>
 
         {enabledModules.length === 0 && (
