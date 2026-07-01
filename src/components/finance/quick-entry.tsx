@@ -5,6 +5,7 @@ import { localDb, type FinanceTransaction } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { formatPersianNumber } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
 
 interface PresetQuick {
@@ -15,10 +16,10 @@ interface PresetQuick {
 }
 
 const PRESET_QUICKS: PresetQuick[] = [
-  { label: "Coffee", amount: 5, type: "expense", category: "Food" },
-  { label: "Taxi", amount: 12, type: "expense", category: "Transport" },
-  { label: "Salary", amount: 2500, type: "income", category: "Salary" },
-  { label: "Groceries", amount: 45, type: "expense", category: "Food" },
+  { label: "قهوه", amount: 50000, type: "expense", category: "خوراک" },
+  { label: "تاکسی", amount: 40000, type: "expense", category: "رفت و آمد" },
+  { label: "حقوق", amount: 25000000, type: "income", category: "حقوق" },
+  { label: "سوپرمارکت", amount: 150000, type: "expense", category: "خوراک" },
 ];
 
 function toEnglishDigits(str: string): string {
@@ -95,6 +96,7 @@ export function QuickEntry({
             "gift",
             "حقوق",
             "درآمد",
+            "واریز",
           ].includes(lower)
         ) {
           parsedType = "income";
@@ -104,7 +106,7 @@ export function QuickEntry({
       }
     }
 
-    const parsedCategory = detectedTags[0] || "General";
+    const parsedCategory = detectedTags[0] || "عمومی";
     return {
       amount: parsedAmount,
       type: parsedType,
@@ -181,7 +183,7 @@ export function QuickEntry({
         const nextTotal = currentMonthExpenses + amtVal;
         if (nextTotal >= limit * 0.8) {
           setBudgetWarning(
-            `Warning: spending will reach ${((nextTotal / limit) * 100).toFixed(0)}% of your monthly budget (${limit}) for "${category}"`,
+            `هشدار: با ثبت این تراکنش، مخارج شما به ${((nextTotal / limit) * 100).toFixed(0)}٪ از سقف بودجه تعیین شده (${formatPersianNumber(limit)} تومان) برای دسته‌بندی "${category}" خواهد رسید.`,
           );
         } else {
           setBudgetWarning(null);
@@ -213,7 +215,7 @@ export function QuickEntry({
     });
 
     setNlpText("");
-    toast("Transaction added successfully via AI Box", "success");
+    toast("تراکنش به کمک دستیار هوشمند با موفقیت ثبت شد", "success");
     onSaveSuccess();
   };
 
@@ -228,13 +230,13 @@ export function QuickEntry({
       type: preset.type,
       category: preset.category,
       tags: [preset.category],
-      description: `Quick entry for ${preset.label}`,
+      description: `ثبت سریع برای ${preset.label}`,
       createdAt: new Date(),
       updatedAt: new Date(),
       synced: false,
     });
 
-    toast(`Quick transaction for ${preset.label} added`, "success");
+    toast(`تراکنش ثبت سریع "${preset.label}" انجام شد`, "success");
     onSaveSuccess();
   };
 
@@ -267,7 +269,7 @@ export function QuickEntry({
     setTagsInput("");
     setDescription("");
     setBudgetWarning(null);
-    toast("Transaction saved successfully", "success");
+    toast("تراکنش با موفقیت ثبت شد", "success");
     onSaveSuccess();
   };
 
@@ -275,11 +277,11 @@ export function QuickEntry({
     <div className="space-y-8">
       <div className="space-y-4 p-5 bg-gradient-to-r from-primary/5 via-violet-500/5 to-indigo-500/5 rounded-2xl border border-primary/10 backdrop-blur-md transition-all duration-300 hover:border-primary/20">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-primary uppercase tracking-wider">
-            Natural Language Quick Box
+          <label className="text-xs font-semibold text-primary uppercase tracking-wider font-vazir">
+            دستیار صوتی و متنی هوشمند ویتا
           </label>
           <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
-            AI Assistant Parser
+            پردازشگر طبیعی کلمات
           </span>
         </div>
         <div className="flex gap-2">
@@ -287,12 +289,12 @@ export function QuickEntry({
             type="text"
             value={nlpText}
             onChange={(e) => setNlpText(e.target.value)}
-            placeholder="Type e.g. '50 Taxi work' or '1200 Salary deposit'..."
+            placeholder="بنویسید مثلاً: ۵۰۰۰۰ تاکسی کار یا ۱۲۰۰۰۰۰ حقوق واریز..."
             className="flex-1 h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
           />
           {parsedNlp && parsedNlp.amount > 0 && (
             <Button type="button" onClick={handleNlpApply}>
-              Quick Add
+              ثبت هوشمند
             </Button>
           )}
         </div>
@@ -301,28 +303,29 @@ export function QuickEntry({
           <div className="p-4 bg-card/60 backdrop-blur-sm rounded-xl border border-primary/20 flex items-center justify-between text-xs transition-all animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div>
               <span className="font-medium text-muted-foreground">
-                Detected:
+                تشخیص سیستم:
               </span>{" "}
               <span
                 className={`font-bold ${parsedNlp.type === "income" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
               >
-                {parsedNlp.type === "income" ? "+" : "-"}${parsedNlp.amount}
+                {parsedNlp.type === "income" ? "+" : "-"}
+                {formatPersianNumber(parsedNlp.amount)} تومان
               </span>{" "}
-              in{" "}
+              در دسته‌بندی{" "}
               <span className="font-semibold text-foreground">
                 {parsedNlp.category}
               </span>
             </div>
             <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
-              Ready to commit
+              آماده ثبت نهایی
             </span>
           </div>
         )}
       </div>
 
       <div className="space-y-3">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
-          Frequent Transactions (1-Click Add)
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block font-vazir">
+          تراکنش‌های پرتکرار (ثبت با یک کلیک)
         </span>
         <div className="flex flex-wrap gap-2">
           {dynamicQuickActions.map((preset, idx) => (
@@ -330,18 +333,20 @@ export function QuickEntry({
               key={idx}
               type="button"
               onClick={() => handlePresetClick(preset)}
-              className="px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted text-xs text-foreground font-medium transition-all flex items-center gap-1.5 shadow-xs"
+              className="px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted text-xs text-foreground font-medium transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <span
                 className={
-                  preset.type === "income" ? "text-green-600" : "text-red-600"
+                  preset.type === "income"
+                    ? "text-green-600 font-bold"
+                    : "text-red-600 font-bold"
                 }
               >
                 {preset.type === "income" ? "↓" : "↑"}
               </span>
               <span>{preset.label}</span>
               <span className="text-muted-foreground font-bold">
-                ${preset.amount}
+                {formatPersianNumber(preset.amount)}
               </span>
             </button>
           ))}
@@ -352,12 +357,12 @@ export function QuickEntry({
         onSubmit={handleManualSubmit}
         className="space-y-5 pt-4 border-t border-border"
       >
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
-          Detailed Transaction Form
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block font-vazir">
+          فرم ثبت تراکنش تفصیلی
         </span>
 
         {budgetWarning && (
-          <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-medium animate-pulse">
+          <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-medium leading-relaxed">
             ⚠️ {budgetWarning}
           </div>
         )}
@@ -365,7 +370,7 @@ export function QuickEntry({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase">
-              Amount
+              مبلغ (تومان)
             </label>
             <input
               type="text"
@@ -379,30 +384,30 @@ export function QuickEntry({
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase">
-              Type
+              نوع تراکنش
             </label>
             <div className="grid grid-cols-2 gap-2 h-10">
               <button
                 type="button"
                 onClick={() => setType("expense")}
-                className={`rounded-lg border text-xs font-semibold transition-all ${
+                className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
                   type === "expense"
                     ? "border-red-500/30 bg-red-500/5 text-red-600"
                     : "border-border bg-background text-muted-foreground hover:bg-muted"
                 }`}
               >
-                Expense
+                هزینه
               </button>
               <button
                 type="button"
                 onClick={() => setType("income")}
-                className={`rounded-lg border text-xs font-semibold transition-all ${
+                className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
                   type === "income"
                     ? "border-green-500/30 bg-green-500/5 text-green-600"
                     : "border-border bg-background text-muted-foreground hover:bg-muted"
                 }`}
               >
-                Income
+                درآمد
               </button>
             </div>
           </div>
@@ -411,27 +416,27 @@ export function QuickEntry({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase">
-              Category
+              دسته‌بندی اصلی
             </label>
             <input
               type="text"
               required
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              placeholder="e.g. Food, Bills, Rent"
+              placeholder="مثال: خوراک، قبض آب، کرایه خانه"
               className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
             />
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase">
-              Tags (comma-separated)
+              برچسب‌ها (با کاما جدا کنید)
             </label>
             <input
               type="text"
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
-              placeholder="e.g. dinner, restaurant"
+              placeholder="مثال: ناهار، رستوران"
               className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
             />
           </div>
@@ -439,19 +444,19 @@ export function QuickEntry({
 
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase">
-            Description
+            توضیحات اختیاری
           </label>
           <input
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional details..."
+            placeholder="جزئیات بیشتر..."
             className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
           />
         </div>
 
         <Button type="submit" className="w-full">
-          Save Transaction
+          ذخیره و ثبت در دفتر مالی
         </Button>
       </form>
     </div>

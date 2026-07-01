@@ -9,6 +9,7 @@ import {
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { formatPersianNumber } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
 
 export function FinanceDashboard({
@@ -104,7 +105,7 @@ export function FinanceDashboard({
 
     setBudgetCategory("");
     setBudgetLimit("");
-    toast("Budget updated successfully", "success");
+    toast("بودجه دسته‌بندی با موفقیت تنظیم شد", "success");
   };
 
   const handleDeleteBudget = async (id: string) => {
@@ -121,23 +122,23 @@ export function FinanceDashboard({
         });
       },
     );
-    toast("Budget deleted", "info");
+    toast("بودجه دسته‌بندی حذف شد", "info");
   };
 
   const handleExportCSV = () => {
     if (transactions.length === 0) return;
     const headers = [
-      "ID",
-      "Type",
-      "Amount",
-      "Category",
-      "Tags",
-      "Description",
-      "Date",
+      "شناسه",
+      "نوع تراکنش",
+      "مبلغ",
+      "دسته‌بندی",
+      "برچسب‌ها",
+      "توضیحات",
+      "تاریخ ثبت",
     ];
     const rows = transactions.map((tx) => [
       tx.id,
-      tx.type,
+      tx.type === "income" ? "درآمد" : "هزینه",
       tx.amount,
       tx.category,
       (tx.tags || []).join("; "),
@@ -158,12 +159,12 @@ export function FinanceDashboard({
     link.setAttribute("href", encodedUri);
     link.setAttribute(
       "download",
-      `vita_transactions_${new Date().toISOString().slice(0, 10)}.csv`,
+      `vita_ledger_${new Date().toISOString().slice(0, 10)}.csv`,
     );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast("Transactions exported successfully", "success");
+    toast("خروجی اکسل با موفقیت دریافت شد", "success");
   };
 
   const donutSegments = useMemo(() => {
@@ -194,31 +195,31 @@ export function FinanceDashboard({
     <div className="space-y-8">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-5 border border-border bg-background rounded-xl">
-          <span className="text-xs font-semibold text-muted-foreground uppercase">
-            Total Income
+          <span className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
+            کل درآمدها
           </span>
           <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-            ${stats.income.toFixed(2)}
+            {formatPersianNumber(stats.income)} تومان
           </p>
         </div>
 
         <div className="p-5 border border-border bg-background rounded-xl">
-          <span className="text-xs font-semibold text-muted-foreground uppercase">
-            Total Expenses
+          <span className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
+            کل هزینه‌ها
           </span>
           <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
-            ${stats.expense.toFixed(2)}
+            {formatPersianNumber(stats.expense)} تومان
           </p>
         </div>
 
         <div className="p-5 border border-border bg-background rounded-xl">
-          <span className="text-xs font-semibold text-muted-foreground uppercase">
-            Net Balance
+          <span className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
+            تراز کل مالی
           </span>
           <p
             className={`text-2xl font-bold mt-1 ${stats.balance >= 0 ? "text-primary" : "text-destructive"}`}
           >
-            ${stats.balance.toFixed(2)}
+            {formatPersianNumber(stats.balance)} تومان
           </p>
         </div>
       </div>
@@ -226,11 +227,16 @@ export function FinanceDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         <div className="p-6 border border-border bg-background rounded-xl space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
-              Expense Distribution
+            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider font-vazir">
+              سهم دسته‌بندی هزینه‌ها
             </h3>
-            <Button variant="outline" size="xs" onClick={handleExportCSV}>
-              Export CSV
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={handleExportCSV}
+              className="font-vazir text-xs"
+            >
+              خروجی اکسل
             </Button>
           </div>
 
@@ -265,11 +271,11 @@ export function FinanceDashboard({
                   ))}
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold">
-                    Total Spent
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold font-vazir">
+                    کل خرج‌ها
                   </span>
                   <span className="text-base font-bold text-foreground">
-                    ${stats.expense.toFixed(0)}
+                    {formatPersianNumber(stats.expense)}
                   </span>
                 </div>
               </div>
@@ -285,30 +291,30 @@ export function FinanceDashboard({
                         className="w-2.5 h-2.5 rounded-full shrink-0"
                         style={{ backgroundColor: seg.color }}
                       />
-                      <span className="font-medium text-foreground">
+                      <span className="font-medium text-foreground font-vazir">
                         {seg.name}
                       </span>
                     </div>
-                    <div className="text-right text-muted-foreground">
+                    <div className="text-left text-muted-foreground">
                       <span className="font-semibold text-foreground">
-                        ${seg.value.toFixed(0)}
+                        {formatPersianNumber(seg.value)} تومان
                       </span>{" "}
-                      ({seg.percentage.toFixed(0)}%)
+                      ({formatPersianNumber(seg.percentage.toFixed(0))}٪)
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="text-center py-12 text-sm text-muted-foreground">
-              No expenses recorded yet to show breakdown.
+            <div className="text-center py-12 text-sm text-muted-foreground font-vazir">
+              هنوز هزینه‌ای ثبت نشده است تا سهم دسته‌بندی رندر شود.
             </div>
           )}
         </div>
 
         <div className="p-6 border border-border bg-background rounded-xl space-y-6">
-          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
-            Monthly Budgets
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider font-vazir">
+            مدیریت بودجه‌های ماهانه
           </h3>
 
           <form onSubmit={handleSetBudget} className="flex gap-2">
@@ -317,7 +323,7 @@ export function FinanceDashboard({
               required
               value={budgetCategory}
               onChange={(e) => setBudgetCategory(e.target.value)}
-              placeholder="Category name"
+              placeholder="نام دسته‌بندی"
               className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
             />
             <input
@@ -325,15 +331,15 @@ export function FinanceDashboard({
               required
               value={budgetLimit}
               onChange={(e) => setBudgetLimit(e.target.value)}
-              placeholder="Limit ($)"
-              className="w-24 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
+              placeholder="سقف بودجه (تومان)"
+              className="w-32 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
             />
-            <Button type="submit" size="sm">
-              Set
+            <Button type="submit" size="sm" className="font-vazir text-xs">
+              تنظیم
             </Button>
           </form>
 
-          <div className="space-y-4 max-h-[220px] overflow-y-auto pr-1">
+          <div className="space-y-4 max-h-[220px] overflow-y-auto pe-1">
             {budgetStatuses.map((b) => (
               <div
                 key={b.id}
@@ -341,20 +347,20 @@ export function FinanceDashboard({
               >
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-foreground">
+                    <span className="font-bold text-foreground font-vazir">
                       {b.category}
                     </span>
                     {b.ratio >= 0.8 && (
-                      <span className="text-[9px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">
-                        Warning
+                      <span className="text-[9px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse font-vazir">
+                        هشدار مصرف
                       </span>
                     )}
                   </div>
                   <button
                     onClick={() => handleDeleteBudget(b.id)}
-                    className="text-muted-foreground hover:text-destructive text-[10px] transition-colors"
+                    className="text-muted-foreground hover:text-destructive text-[10px] transition-colors font-vazir"
                   >
-                    Delete
+                    حذف
                   </button>
                 </div>
 
@@ -372,15 +378,19 @@ export function FinanceDashboard({
                 </div>
 
                 <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>${b.spent.toFixed(0)} spent</span>
-                  <span>Limit: ${b.limit.toFixed(0)}</span>
+                  <span>
+                    {formatPersianNumber(b.spent.toFixed(0))} تومان هزینه شده
+                  </span>
+                  <span>
+                    سقف: {formatPersianNumber(b.limit.toFixed(0))} تومان
+                  </span>
                 </div>
               </div>
             ))}
 
             {budgetStatuses.length === 0 && (
-              <div className="text-center py-6 text-xs text-muted-foreground">
-                No active category budgets. Set one above!
+              <div className="text-center py-6 text-xs text-muted-foreground font-vazir">
+                هیچ بودجه فعالی ثبت نشده است. از فیلد بالا اضافه کنید!
               </div>
             )}
           </div>

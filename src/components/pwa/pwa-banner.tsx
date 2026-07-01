@@ -10,19 +10,19 @@ export function PwaBanner() {
   if (isStandalone || !isInstallable) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 left-6 md:left-auto md:w-96 z-50 bg-card/90 backdrop-blur-xl border border-border p-6 rounded-2xl shadow-2xl flex flex-col gap-4 animate-in slide-in-from-bottom-5 duration-300">
+    <div className="fixed bottom-6 start-6 end-6 md:start-auto md:w-96 z-50 bg-card/90 backdrop-blur-xl border border-border p-6 rounded-2xl shadow-2xl flex flex-col gap-4 animate-in slide-in-from-bottom-5 duration-300">
       <div>
         <h4 className="font-bold text-sm text-foreground">
-          Get the native app experience
+          نصب نسخه وب‌اپلیکیشن (PWA)
         </h4>
-        <p className="text-xs text-muted-foreground mt-1">
-          Install vita space on your device for optimized offline workflows,
-          faster performance, and seamless dashboard controls.
+        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+          برنامه ویتا را روی دستگاه خود نصب کنید تا سرعت بالاتر، عملکرد پایدارتر
+          و کاربری ساده‌تر آفلاین را تجربه کنید.
         </p>
       </div>
       <div className="flex items-center gap-2">
         <Button size="sm" className="w-full" onClick={triggerInstall}>
-          Install App
+          نصب برنامه
         </Button>
       </div>
     </div>

@@ -8,6 +8,7 @@ import { QuickEntry } from "./quick-entry";
 import { FinanceDashboard } from "./finance-dashboard";
 import { TransactionList } from "./transaction-list";
 import { Button } from "@/components/ui/button";
+import { formatPersianNumber } from "@/lib/utils";
 
 export function FinanceWidget() {
   const { user } = useAuth();
@@ -30,14 +31,14 @@ export function FinanceWidget() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold font-vazir text-foreground">
-            Smart Finance
+            حسابداری شخصی هوشمند
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Decentralized transaction tracking & budget compliance
+            ردیابی غیرمتمرکز تراکنش‌ها و مدیریت بودجه ماهانه
           </p>
         </div>
-        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-          {txCount} Trans
+        <span className="text-[10px] px-2.5 py-1 rounded-full bg-primary/10 text-primary font-bold">
+          {formatPersianNumber(txCount)} تراکنش
         </span>
       </div>
 
@@ -46,24 +47,27 @@ export function FinanceWidget() {
           variant={activeTab === "add" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("add")}
+          className="font-vazir text-xs"
         >
-          Add Record
+          ثبت سریع تراکنش
         </Button>
 
         <Button
           variant={activeTab === "stats" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("stats")}
+          className="font-vazir text-xs"
         >
-          Insights
+          تحلیل و بودجه‌بندی
         </Button>
 
         <Button
           variant={activeTab === "list" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("list")}
+          className="font-vazir text-xs"
         >
-          Ledger
+          دفتر کل معاملات
         </Button>
       </div>
 

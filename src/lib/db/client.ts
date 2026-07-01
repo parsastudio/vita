@@ -77,6 +77,8 @@ class VitaLocalDatabase extends Dexie {
 
 export const localDb = new VitaLocalDatabase();
 
-localDb.open().catch((err) => {
-  console.error("Failed to open IndexedDB gracefully:", err);
-});
+if (typeof window !== "undefined") {
+  localDb.open().catch((err) => {
+    console.error(err);
+  });
+}

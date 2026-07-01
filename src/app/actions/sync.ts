@@ -122,7 +122,7 @@ export async function syncData(payload: SyncPayload) {
       id: r.id,
       userId,
       tableName: r.tableName,
-      deletedAt: serverTimestamp,
+      deletedAt: new Date(r.deletedAt),
     }));
 
     await db.insert(deletedRecords).values(tbs).onConflictDoNothing();
@@ -140,7 +140,7 @@ export async function syncData(payload: SyncPayload) {
     intervalDays: String(card.intervalDays),
     easeFactor: String(card.easeFactor),
     createdAt: new Date(card.createdAt),
-    updatedAt: serverTimestamp,
+    updatedAt: new Date(card.updatedAt),
   }));
 
   if (cardsToUpsert.length > 0) {
@@ -173,7 +173,7 @@ export async function syncData(payload: SyncPayload) {
     tags: tx.tags,
     description: tx.description,
     createdAt: new Date(tx.createdAt),
-    updatedAt: serverTimestamp,
+    updatedAt: new Date(tx.updatedAt),
   }));
 
   if (txsToUpsert.length > 0) {
@@ -201,7 +201,7 @@ export async function syncData(payload: SyncPayload) {
     limitAmount: String(b.limitAmount),
     period: b.period,
     createdAt: new Date(b.createdAt),
-    updatedAt: serverTimestamp,
+    updatedAt: new Date(b.updatedAt),
   }));
 
   if (budgetsToUpsert.length > 0) {
@@ -224,7 +224,7 @@ export async function syncData(payload: SyncPayload) {
     id: s.id,
     userId,
     enabledModules: s.enabledModules,
-    updatedAt: serverTimestamp,
+    updatedAt: new Date(s.updatedAt),
   }));
 
   if (settingsToUpsert.length > 0) {

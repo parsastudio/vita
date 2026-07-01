@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { formatPersianNumber } from "@/lib/utils";
 
 export function SrsReviewer({
   cards,
@@ -22,11 +23,11 @@ export function SrsReviewer({
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <span className="text-4xl">🎉</span>
-        <h3 className="mt-4 text-lg font-bold text-foreground">
-          All caught up!
+        <h3 className="mt-4 text-lg font-bold text-foreground font-vazir">
+          تمامی کارت‌ها مرور شدند!
         </h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          No language cards are scheduled for review right now.
+        <p className="text-sm text-muted-foreground mt-1 font-vazir">
+          در حال حاضر هیچ کارتی در جعبه لایتنر شما نیاز به مرور ندارد.
         </p>
       </div>
     );
@@ -52,19 +53,25 @@ export function SrsReviewer({
       intervalDays = 0;
       easeFactor = Math.max(1.3, easeFactor - 0.2);
       nextReviewAt.setHours(nextReviewAt.getHours() + 1);
-      toast("Scheduled card for immediate review", "info");
+      toast("کارت مجدداً به چرخه مرور سریع بازگشت", "info");
     } else if (rating === "medium") {
       intervalDays = intervalDays === 0 ? 2 : intervalDays * 2;
       nextReviewAt.setDate(nextReviewAt.getDate() + intervalDays);
-      toast(`Scheduled card for ${intervalDays} days later`, "success");
+      toast(
+        `کارت برای ${formatPersianNumber(intervalDays)} روز بعد برنامه‌ریزی شد`,
+        "success",
+      );
     } else if (rating === "easy") {
       intervalDays =
         intervalDays === 0 ? 6 : Math.round(intervalDays * easeFactor);
       easeFactor = easeFactor + 0.15;
       nextReviewAt.setDate(nextReviewAt.getDate() + intervalDays);
-      toast(`Scheduled card for ${intervalDays} days later`, "success");
+      toast(
+        `کارت با موفقیت برای ${formatPersianNumber(intervalDays)} روز بعد برنامه‌ریزی شد`,
+        "success",
+      );
     } else if (rating === "archived") {
-      toast("Card archived successfully", "success");
+      toast("کارت با موفقیت بایگانی (فراگرفته‌شده) شد", "success");
     }
 
     await localDb.languageCards.update(currentCard.id, {
@@ -87,17 +94,18 @@ export function SrsReviewer({
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between border-b border-border pb-4">
-        <span className="text-xs font-semibold text-muted-foreground uppercase">
-          Review Session
+        <span className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
+          جلسه مرور لایتنر
         </span>
-        <span className="text-xs font-medium text-muted-foreground">
-          Card {index + 1} of {cards.length}
+        <span className="text-xs font-medium text-muted-foreground font-vazir">
+          کارت {formatPersianNumber(index + 1)} از{" "}
+          {formatPersianNumber(cards.length)}
         </span>
       </div>
 
       <div className="space-y-6 text-center">
         <div className="space-y-4">
-          <p className="text-3xl font-bold tracking-tight text-foreground select-none">
+          <p className="text-3xl font-bold tracking-tight text-foreground select-none ltr">
             {currentCard.originalText}
           </p>
           <div className="flex justify-center gap-2">
@@ -105,7 +113,7 @@ export function SrsReviewer({
               variant="outline"
               size="icon-sm"
               onClick={handleSpeak}
-              aria-label="Pronounce original text"
+              aria-label="تلفظ صوتی کلمه"
             >
               🔊
             </Button>
@@ -115,19 +123,19 @@ export function SrsReviewer({
         {!showAnswer ? (
           <Button
             size="lg"
-            className="w-full mt-8"
+            className="w-full mt-8 font-vazir"
             onClick={() => setShowAnswer(true)}
           >
-            Show Translation
+            نمایش ترجمه فارسی
           </Button>
         ) : (
-          <div className="space-y-8 pt-4 border-t border-border">
+          <div className="space-y-8 pt-4 border-t border-border animate-in fade-in duration-300">
             <div className="space-y-2">
               <p className="text-xl font-bold text-primary font-vazir">
                 {currentCard.translation}
               </p>
-              <p className="text-xs text-muted-foreground font-medium">
-                Focus Word:{" "}
+              <p className="text-xs text-muted-foreground font-medium font-vazir">
+                کلمه تمرکزی اصلی:{" "}
                 <span className="text-destructive font-semibold">
                   {currentCard.focusWord}
                 </span>
@@ -137,31 +145,31 @@ export function SrsReviewer({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Button
                 variant="outline"
-                className="hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
+                className="hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 font-vazir text-xs"
                 onClick={() => handleSrsAction("hard")}
               >
-                Hard
+                سخت (مرور سریع)
               </Button>
               <Button
                 variant="outline"
-                className="hover:bg-blue-500/10 hover:text-blue-500 hover:border-blue-500/30"
+                className="hover:bg-blue-500/10 hover:text-blue-500 hover:border-blue-500/30 font-vazir text-xs"
                 onClick={() => handleSrsAction("medium")}
               >
-                Medium
+                متوسط
               </Button>
               <Button
                 variant="outline"
-                className="hover:bg-green-500/10 hover:text-green-500 hover:border-green-500/30"
+                className="hover:bg-green-500/10 hover:text-green-500 hover:border-green-500/30 font-vazir text-xs"
                 onClick={() => handleSrsAction("easy")}
               >
-                Easy
+                آسان
               </Button>
               <Button
                 variant="outline"
-                className="hover:bg-muted/50"
+                className="hover:bg-muted/50 font-vazir text-xs"
                 onClick={() => handleSrsAction("archived")}
               >
-                Archive
+                یاد گرفتم (آرشیو)
               </Button>
             </div>
           </div>

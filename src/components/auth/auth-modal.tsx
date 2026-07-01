@@ -20,11 +20,11 @@ export function AuthModal() {
   const validateForm = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError("Please enter a valid email address.");
+      setError("لطفاً یک آدرس ایمیل معتبر وارد کنید.");
       return false;
     }
     if (password.length < 8) {
-      setError("Password must be at least 8 characters long.");
+      setError("رمز عبور باید حداقل ۸ کاراکتر باشد.");
       return false;
     }
     return true;
@@ -46,8 +46,8 @@ export function AuthModal() {
       if (response.success) {
         toast(
           isSignUp
-            ? "Account created successfully!"
-            : "Signed in successfully!",
+            ? "حساب کاربری با موفقیت ساخته شد!"
+            : "ورود با موفقیت انجام شد!",
           "success",
         );
       } else if (response.error) {
@@ -55,8 +55,8 @@ export function AuthModal() {
         toast(response.error, "error");
       }
     } catch {
-      setError("An unexpected error occurred. Please try again.");
-      toast("Authentication failed.", "error");
+      setError("یک خطای غیرمنتظره رخ داد. مجدداً تلاش کنید.");
+      toast("احراز هویت با خطا مواجه شد.", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -81,13 +81,13 @@ export function AuthModal() {
         >
           <div className="flex flex-col items-center text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <span className="text-xl font-bold">v</span>
+              <span className="text-xl font-bold">و</span>
             </div>
             <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-              Welcome to vita
+              خوش آمدید به ویتا
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Your decentralized, offline-first personal environment
+              فضای شخصی هوشمند، غیرمتمرکز و اول‌-آفلاین شما
             </p>
           </div>
 
@@ -100,7 +100,7 @@ export function AuthModal() {
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Email address
+                آدرس ایمیل
               </label>
               <input
                 type="email"
@@ -115,7 +115,7 @@ export function AuthModal() {
 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Password
+                رمز عبور
               </label>
               <input
                 type="password"
@@ -135,10 +135,10 @@ export function AuthModal() {
               disabled={isSubmitting}
             >
               {isSubmitting
-                ? "Processing..."
+                ? "در حال پردازش..."
                 : isSignUp
-                  ? "Create account"
-                  : "Sign in to your account"}
+                  ? "ایجاد حساب کاربری"
+                  : "ورود به حساب"}
             </Button>
           </form>
 
@@ -147,7 +147,7 @@ export function AuthModal() {
               <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-3 text-muted-foreground">Or</span>
+              <span className="bg-card px-3 text-muted-foreground">یا</span>
             </div>
           </div>
 
@@ -159,10 +159,10 @@ export function AuthModal() {
               disabled={isSubmitting}
               onClick={() => {
                 enableGuestMode();
-                toast("Continuing as guest", "info");
+                toast("ورود به عنوان مهمان", "info");
               }}
             >
-              Continue as Guest
+              ادامه به عنوان مهمان
             </Button>
 
             <button
@@ -174,8 +174,8 @@ export function AuthModal() {
               className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             >
               {isSignUp
-                ? "Already have an account? Sign in"
-                : "Don't have an account yet? Sign up"}
+                ? "قبلاً ثبت‌نام کرده‌اید؟ وارد شوید"
+                : "هنوز حسابی ندارید؟ ثبت‌نام کنید"}
             </button>
           </div>
         </motion.div>

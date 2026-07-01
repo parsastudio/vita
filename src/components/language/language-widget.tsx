@@ -8,6 +8,7 @@ import { SentenceParser } from "./sentence-parser";
 import { SrsReviewer } from "./srs-reviewer";
 import { WordList } from "./word-list";
 import { Button } from "@/components/ui/button";
+import { formatPersianNumber } from "@/lib/utils";
 
 export function LanguageWidget() {
   const { user } = useAuth();
@@ -36,14 +37,14 @@ export function LanguageWidget() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold font-vazir text-foreground">
-            Language learning
+            یادگیری هوشمند زبان
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Decentralized Spaced Repetition Space
+            جعبه مرور لایتنر هوشمند (SRS) غیرمتمرکز
           </p>
         </div>
-        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-          {cardCount} Cards
+        <span className="text-[10px] px-2.5 py-1 rounded-full bg-primary/10 text-primary font-bold">
+          {formatPersianNumber(cardCount)} کارت
         </span>
       </div>
 
@@ -52,20 +53,21 @@ export function LanguageWidget() {
           variant={activeTab === "add" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("add")}
+          className="font-vazir text-xs"
         >
-          Add Card
+          افزودن کارت جمله
         </Button>
 
         <Button
           variant={activeTab === "review" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("review")}
-          className="relative"
+          className="relative font-vazir text-xs"
         >
-          Review
+          مرور کارت‌ها
           {reviewCount > 0 && (
             <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-[9px] text-white flex items-center justify-center rounded-full font-bold">
-              {reviewCount}
+              {formatPersianNumber(reviewCount)}
             </span>
           )}
         </Button>
@@ -74,8 +76,9 @@ export function LanguageWidget() {
           variant={activeTab === "list" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("list")}
+          className="font-vazir text-xs"
         >
-          All Cards
+          لیست کارت‌ها
         </Button>
       </div>
 

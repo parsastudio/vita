@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { localDb, type FinanceTransaction } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { formatPersianNumber, formatPersianDate } from "@/lib/utils";
 
 export function TransactionList({
   transactions,
@@ -40,7 +41,7 @@ export function TransactionList({
         });
       },
     );
-    toast("Transaction deleted", "info");
+    toast("تراکنش با موفقیت حذف شد", "info");
   };
 
   return (
@@ -50,26 +51,30 @@ export function TransactionList({
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search descriptions, tags, categories..."
+          placeholder="جستجو در توضیحات، تگ‌ها و دسته‌بندی‌ها..."
           className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
         />
 
         <div className="flex flex-wrap gap-1.5">
-          {["all", "expense", "income"].map((type) => (
+          {[
+            { key: "all", label: "همه" },
+            { key: "expense", label: "هزینه‌ها" },
+            { key: "income", label: "درآمدها" },
+          ].map((filter) => (
             <Button
-              key={type}
-              variant={filterType === type ? "default" : "outline"}
+              key={filter.key}
+              variant={filterType === filter.key ? "default" : "outline"}
               size="xs"
-              onClick={() => setFilterType(type)}
-              className="capitalize"
+              onClick={() => setFilterType(filter.key)}
+              className="font-vazir text-xs"
             >
-              {type}
+              {filter.label}
             </Button>
           ))}
         </div>
       </div>
 
-      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+      <div className="space-y-3 max-h-[400px] overflow-y-auto pe-1">
         {filtered.map((tx) => (
           <div
             key={tx.id}
@@ -77,21 +82,21 @@ export function TransactionList({
           >
             <div className="space-y-1 flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-sm text-foreground break-words">
+                <span className="font-semibold text-sm text-foreground break-words font-vazir">
                   {tx.category}
                 </span>
                 <span
-                  className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full ${
+                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
                     tx.type === "income"
                       ? "bg-green-500/10 text-green-600 dark:text-green-400"
                       : "bg-red-500/10 text-red-600 dark:text-red-400"
                   }`}
                 >
-                  {tx.type}
+                  {tx.type === "income" ? "درآمد" : "هزینه"}
                 </span>
               </div>
               {tx.description && (
-                <p className="text-xs text-muted-foreground break-words">
+                <p className="text-xs text-muted-foreground break-words font-vazir">
                   {tx.description}
                 </p>
               )}
@@ -100,7 +105,7 @@ export function TransactionList({
                   {tx.tags.map((tag: string, idx: number) => (
                     <span
                       key={idx}
-                      className="text-[9px] bg-muted px-1.5 py-0.5 rounded-sm text-muted-foreground font-mono"
+                      className="text-[9px] bg-muted px-1.5 py-0.5 rounded-sm text-muted-foreground font-vazir"
                     >
                       #{tag}
                     </span>
@@ -108,7 +113,7 @@ export function TransactionList({
                 </div>
               )}
               <span className="text-[9px] text-muted-foreground block font-mono">
-                {new Date(tx.createdAt).toLocaleString()}
+                {formatPersianDate(tx.createdAt)}
               </span>
             </div>
 
@@ -120,14 +125,14 @@ export function TransactionList({
                     : "text-red-600 dark:text-red-400"
                 }`}
               >
-                {tx.type === "income" ? "+" : "-"}$
-                {Number(tx.amount).toFixed(2)}
+                {tx.type === "income" ? "+" : "-"}
+                {formatPersianNumber(Number(tx.amount))} تومان
               </span>
               <Button
                 variant="destructive"
                 size="icon-xs"
                 onClick={() => handleDelete(tx.id)}
-                aria-label={`Delete transaction for ${tx.category}`}
+                aria-label="حذف تراکنش"
               >
                 🗑️
               </Button>
@@ -136,8 +141,8 @@ export function TransactionList({
         ))}
 
         {filtered.length === 0 && (
-          <div className="text-center py-8 text-sm text-muted-foreground">
-            No transaction records found.
+          <div className="text-center py-8 text-sm text-muted-foreground font-vazir">
+            هیچ تراکنشی یافت نشد.
           </div>
         )}
       </div>

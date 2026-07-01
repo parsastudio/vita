@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Vazirmatn } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
@@ -23,8 +23,19 @@ const vazirmatn = Vazirmatn({
 });
 
 export const metadata: Metadata = {
-  title: "vita - Personal Intelligent Space",
-  description: "Your personalized, modular, offline-first dashboard",
+  title: "ویتا - فضای شخصی هوشمند",
+  description: "فضای شخصی مدرن، ماژولار و اول‌-آفلاین شما",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "ویتا",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#8B5CF6",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -34,7 +45,8 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="fa"
+      dir="rtl"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${vazirmatn.variable} h-full antialiased`}
     >

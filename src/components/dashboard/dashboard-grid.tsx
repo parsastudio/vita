@@ -48,7 +48,7 @@ export function DashboardGrid({
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold tracking-tight text-foreground font-vazir">
-              vita space
+              ویتا اسپیس
             </h1>
 
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/60 border border-border text-[10px] font-semibold">
@@ -58,7 +58,7 @@ export function DashboardGrid({
                 }`}
               />
               <span className="text-muted-foreground uppercase">
-                {isOnline ? "Online" : "Offline"}
+                {isOnline ? "آنلاین" : "آفلاین"}
               </span>
             </div>
 
@@ -68,18 +68,20 @@ export function DashboardGrid({
                 disabled={isSyncing}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary hover:bg-primary/20 transition-all cursor-pointer disabled:opacity-50"
               >
-                <span>{isSyncing ? "Syncing..." : "Synced ✓"}</span>
+                <span>
+                  {isSyncing ? "در حال همگام‌سازی..." : "همگام‌سازی ابر ✓"}
+                </span>
               </button>
             )}
 
             {isGuest && (
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                <span>Local DB Only</span>
+                <span>ذخیره محلی (IndexedDB)</span>
               </div>
             )}
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Your secure personal tools, working offline by default.
+            فضای شخصی و امن شما، فعال به صورت آفلاین به طور پیش‌فرض
           </p>
         </div>
 
@@ -90,7 +92,7 @@ export function DashboardGrid({
             onClick={toggleTheme}
             className="rounded-full border-border bg-background text-foreground"
           >
-            <span className="sr-only">Toggle Theme</span>
+            <span className="sr-only">تغییر تم</span>
             {theme === "dark" ? (
               <svg
                 className="size-4"
@@ -128,7 +130,7 @@ export function DashboardGrid({
               onClick={disableGuestMode}
               className="rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white border-none text-xs px-4 h-8 font-semibold shadow-md shadow-indigo-500/20 animate-pulse"
             >
-              Save Progress to Cloud
+              ذخیره ابری پیشرفت‌ها
             </Button>
           ) : (
             <div className="relative">
@@ -151,11 +153,11 @@ export function DashboardGrid({
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-xl p-4 shadow-xl z-20 space-y-3"
+                      className="absolute left-0 mt-2 w-56 bg-card border border-border rounded-xl p-4 shadow-xl z-20 space-y-3"
                     >
                       <div className="border-b border-border pb-2">
                         <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-                          Signed in as
+                          وارد شده با ایمیل
                         </span>
                         <span className="text-xs font-semibold text-foreground truncate block mt-0.5">
                           {user?.email}
@@ -167,9 +169,9 @@ export function DashboardGrid({
                           setShowUserMenu(false);
                           performSync();
                         }}
-                        className="w-full text-left text-xs text-foreground hover:text-primary transition-colors py-1 block font-medium"
+                        className="w-full text-right text-xs text-foreground hover:text-primary transition-colors py-1 block font-medium"
                       >
-                        Force Cloud Sync
+                        همگام‌سازی اجباری ابر
                       </button>
 
                       <button
@@ -177,9 +179,9 @@ export function DashboardGrid({
                           setShowUserMenu(false);
                           logout();
                         }}
-                        className="w-full text-left text-xs text-destructive hover:text-destructive/80 transition-colors py-1 block font-semibold border-t border-border pt-2"
+                        className="w-full text-right text-xs text-destructive hover:text-destructive/80 transition-colors py-1 block font-semibold border-t border-border pt-2"
                       >
-                        Sign Out
+                        خروج از حساب
                       </button>
                     </motion.div>
                   </>
@@ -193,7 +195,7 @@ export function DashboardGrid({
             onClick={() => setShowSettings(!showSettings)}
             className="rounded-full gap-2 text-sm"
           >
-            Configure Spaces
+            تنظیمات فضاها
           </Button>
 
           <AnimatePresence>
@@ -207,19 +209,19 @@ export function DashboardGrid({
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-72 bg-card border border-border rounded-xl p-5 shadow-xl z-20"
+                  className="absolute left-0 mt-2 w-72 bg-card border border-border rounded-xl p-5 shadow-xl z-20"
                 >
-                  <h3 className="font-semibold text-sm text-foreground mb-4">
-                    Toggle Modules
+                  <h3 className="font-semibold text-sm text-foreground mb-4 font-vazir">
+                    فعال‌سازی ماژول‌ها
                   </h3>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium">
-                          Language Space
+                        <span className="text-sm font-medium font-vazir">
+                          فضای یادگیری زبان
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                          Word parsing & SRS
+                        <span className="text-xs text-muted-foreground leading-relaxed">
+                          سیستم مرور لایتنر هوشمند
                         </span>
                       </div>
                       <input
@@ -232,11 +234,11 @@ export function DashboardGrid({
 
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium">
-                          Finance Space
+                        <span className="text-sm font-medium font-vazir">
+                          فضای حسابداری هوشمند
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                          Smart financial tracker
+                        <span className="text-xs text-muted-foreground leading-relaxed">
+                          مدیریت تراکنش‌ها و بودجه‌ها
                         </span>
                       </div>
                       <input
@@ -285,13 +287,15 @@ export function DashboardGrid({
 
         {enabledModules.length === 0 && (
           <div className="lg:col-span-2 flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-2xl">
-            <p className="text-muted-foreground">All spaces are disabled.</p>
+            <p className="text-muted-foreground">
+              تمامی فضاهای کاربری غیرفعال هستند.
+            </p>
             <Button
               variant="link"
               onClick={() => setShowSettings(true)}
-              className="mt-2 text-sm"
+              className="mt-2 text-sm font-vazir"
             >
-              Click here to configure spaces.
+              پیکربندی و فعال‌سازی فضاها
             </Button>
           </div>
         )}
