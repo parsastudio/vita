@@ -6,11 +6,8 @@ export interface LanguageCard {
   originalText: string;
   translation: string;
   focusWord: string;
-  isSentenceTranslation: boolean;
-  srsStatus: "hard" | "medium" | "easy" | "archived";
-  nextReviewAt: Date;
-  intervalDays: number;
-  easeFactor: number;
+  srsStatus: "active" | "archived";
+  difficulty: number;
   createdAt: Date;
   updatedAt: Date;
   synced: boolean;
@@ -65,7 +62,7 @@ class VitaLocalDatabase extends Dexie {
   constructor() {
     super("VitaLocalDatabase");
     this.version(1).stores({
-      languageCards: "id, userId, srsStatus, nextReviewAt, updatedAt, synced",
+      languageCards: "id, userId, srsStatus, updatedAt, synced",
       financeTransactions:
         "id, userId, type, category, createdAt, updatedAt, synced",
       financeBudgets: "id, userId, categoryOrTag, updatedAt, synced",

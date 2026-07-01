@@ -29,13 +29,10 @@ export const languageCards = pgTable(
     originalText: text("original_text").notNull(),
     translation: text("translation").notNull(),
     focusWord: varchar("focus_word", { length: 255 }).notNull(),
-    isSentenceTranslation: boolean("is_sentence_translation")
-      .default(false)
+    srsStatus: varchar("srs_status", { length: 50 })
+      .default("active")
       .notNull(),
-    srsStatus: varchar("srs_status", { length: 50 }).default("hard").notNull(),
-    nextReviewAt: timestamp("next_review_at", { withTimezone: true }).notNull(),
-    intervalDays: numeric("interval_days").default("0").notNull(),
-    easeFactor: numeric("ease_factor").default("2.5").notNull(),
+    difficulty: numeric("difficulty").default("0.5").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

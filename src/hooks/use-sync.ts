@@ -149,15 +149,8 @@ export function useSync() {
                   originalText: card.originalText,
                   translation: card.translation,
                   focusWord: card.focusWord,
-                  isSentenceTranslation: card.isSentenceTranslation,
-                  srsStatus: card.srsStatus as
-                    | "hard"
-                    | "medium"
-                    | "easy"
-                    | "archived",
-                  intervalDays: Number(card.intervalDays),
-                  easeFactor: Number(card.easeFactor),
-                  nextReviewAt: new Date(card.nextReviewAt),
+                  srsStatus: card.srsStatus as "active" | "archived",
+                  difficulty: Number(card.difficulty),
                   createdAt: new Date(card.createdAt),
                   updatedAt: new Date(card.updatedAt),
                   synced: true,
