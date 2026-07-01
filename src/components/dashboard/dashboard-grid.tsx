@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useDashboardState } from "./use-dashboard-state";
 import { Button } from "@/components/ui/button";
-import { ChevronUp, ChevronDown, Monitor, Moon, Sun } from "lucide-react";
+import { Monitor, Moon, Sun, BookOpen, Wallet } from "lucide-react";
 import { LogoutModal } from "@/components/auth/logout-modal";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -20,11 +20,8 @@ export function DashboardGrid({
   const {
     user,
     isGuest,
-    logout,
-    disableGuestMode,
     isLoading,
     enabledModules,
-    toggleModule,
     isSyncing,
     performSync,
     showSettings,
@@ -33,40 +30,41 @@ export function DashboardGrid({
     setShowUserMenu,
     isOnline,
     mounted,
-    widgetOrder,
-    moveWidget,
+    activeWidget,
+    setActiveWidget,
+    logout,
   } = useDashboardState();
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
+  const isLanguageEnabled = enabledModules.includes("language");
+  const isFinanceEnabled = enabledModules.includes("finance");
+
+  React.useEffect(() => {
+    if (isLanguageEnabled && !isFinanceEnabled && activeWidget !== "language") {
+      setActiveWidget("language");
+    } else if (
+      isFinanceEnabled &&
+      !isLanguageEnabled &&
+      activeWidget !== "finance"
+    ) {
+      setActiveWidget("finance");
+    }
+  }, [isLanguageEnabled, isFinanceEnabled, activeWidget, setActiveWidget]);
+
   if (isLoading) {
-    const skeletonColumns =
-      enabledModules.length > 1
-        ? "lg:grid-cols-2"
-        : "lg:grid-cols-1 max-w-3xl mx-auto w-full";
     return (
-      <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col gap-8 animate-pulse">
+      <div className="flex-1 w-full max-w-3xl mx-auto px-4 py-8 md:py-12 flex flex-col gap-8 animate-pulse">
         <div className="h-20 bg-muted/50 rounded-2xl w-full" />
-        <div className={`grid grid-cols-1 ${skeletonColumns} gap-8`}>
-          {enabledModules.map((_, idx) => (
-            <div key={idx} className="h-96 bg-muted/40 rounded-2xl w-full" />
-          ))}
-          {enabledModules.length === 0 && (
-            <div className="h-96 bg-muted/40 rounded-2xl w-full" />
-          )}
-        </div>
+        <div className="h-96 bg-muted/40 rounded-2xl w-full" />
       </div>
     );
   }
 
-  const activeModulesCount = enabledModules.filter((m) =>
-    widgetOrder.includes(m),
-  ).length;
-
   return (
-    <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col gap-8">
+    <div className="flex-1 w-full max-w-3xl mx-auto px-4 py-8 md:py-12 flex flex-col gap-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-border pb-6 gap-4">
         <div>
           <div className="flex items-center gap-3">
@@ -130,7 +128,7 @@ export function DashboardGrid({
           {isGuest ? (
             <Button
               variant="default"
-              onClick={disableGuestMode}
+              onClick={performSync}
               className="rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white border-none text-xs px-4 h-8 font-semibold shadow-md shadow-indigo-500/20 animate-pulse font-vazir"
             >
               ذخیره ابری پیشرفت‌ها
@@ -259,127 +257,119 @@ export function DashboardGrid({
         </div>
       </header>
 
-      <main
-        className={`grid grid-cols-1 ${
-          activeModulesCount > 1
-            ? "lg:grid-cols-2"
-            : "lg:grid-cols-1 max-w-3xl mx-auto w-full"
-        } gap-8 items-start`}
-      >
-        <AnimatePresence mode="popLayout">
-          {widgetOrder.map((moduleName, idx) => {
-            if (
-              moduleName === "language" &&
-              enabledModules.includes("language")
-            ) {
-              return (
-                <motion.div
-                  key="language"
-                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                  layout
-                  className="w-full relative group/widget"
-                >
-                  {activeModulesCount > 1 && (
-                    <div className="absolute top-4 left-24 z-10 flex gap-1 opacity-0 group-hover/widget:opacity-100 transition-opacity">
-                      <Button
-                        variant="outline"
-                        size="icon-xs"
-                        onClick={() => moveWidget(idx, "up")}
-                        disabled={idx === 0}
-                        className="rounded-full bg-background/80 backdrop-blur-xs"
-                      >
-                        <ChevronUp className="size-3" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon-xs"
-                        onClick={() => moveWidget(idx, "down")}
-                        disabled={idx === widgetOrder.length - 1}
-                        className="rounded-full bg-background/80 backdrop-blur-xs"
-                      >
-                        <ChevronDown className="size-3" />
-                      </Button>
-                    </div>
-                  )}
-                  <ErrorBoundary
-                    fallback={
-                      <div className="p-6 border border-destructive/20 bg-destructive/5 text-destructive rounded-2xl text-center font-vazir text-xs">
-                        خطایی در اجرای فضای یادگیری زبان رخ داده است.
-                      </div>
-                    }
-                  >
-                    {languageWidget}
-                  </ErrorBoundary>
-                </motion.div>
-              );
-            }
-            if (
-              moduleName === "finance" &&
-              enabledModules.includes("finance")
-            ) {
-              return (
-                <motion.div
-                  key="finance"
-                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                  layout
-                  className="w-full relative group/widget"
-                >
-                  {activeModulesCount > 1 && (
-                    <div className="absolute top-4 left-24 z-10 flex gap-1 opacity-0 group-hover/widget:opacity-100 transition-opacity">
-                      <Button
-                        variant="outline"
-                        size="icon-xs"
-                        onClick={() => moveWidget(idx, "up")}
-                        disabled={idx === 0}
-                        className="rounded-full bg-background/80 backdrop-blur-xs"
-                      >
-                        <ChevronUp className="size-3" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon-xs"
-                        onClick={() => moveWidget(idx, "down")}
-                        disabled={idx === widgetOrder.length - 1}
-                        className="rounded-full bg-background/80 backdrop-blur-xs"
-                      >
-                        <ChevronDown className="size-3" />
-                      </Button>
-                    </div>
-                  )}
-                  <ErrorBoundary
-                    fallback={
-                      <div className="p-6 border border-destructive/20 bg-destructive/5 text-destructive rounded-2xl text-center font-vazir text-xs">
-                        خطایی در اجرای فضای حسابداری هوشمند رخ داده است.
-                      </div>
-                    }
-                  >
-                    {financeWidget}
-                  </ErrorBoundary>
-                </motion.div>
-              );
-            }
-            return null;
-          })}
-        </AnimatePresence>
+      {enabledModules.length > 0 && (
+        <div className="w-full flex justify-center border-b border-border pb-1">
+          <div className="relative flex p-1 bg-muted rounded-xl w-full max-w-md">
+            {isLanguageEnabled && (
+              <button
+                onClick={() => setActiveWidget("language")}
+                className={`relative flex-1 py-2 text-xs font-bold font-vazir rounded-lg transition-colors flex items-center justify-center gap-2 z-10 cursor-pointer ${
+                  activeWidget === "language"
+                    ? "text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {activeWidget === "language" && (
+                  <motion.div
+                    layoutId="active-tab"
+                    className="absolute inset-0 bg-primary rounded-lg -z-10"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <BookOpen className="size-4" />
+                یادگیری زبان
+              </button>
+            )}
 
-        {enabledModules.length === 0 && (
-          <div className="lg:col-span-2 flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-2xl w-full">
-            <p className="text-muted-foreground font-vazir">
-              تمامی فضاهای کاربری غیرفعال هستند.
-            </p>
-            <Button
-              variant="link"
-              onClick={() => setShowSettings(true)}
-              className="mt-2 text-sm font-vazir"
-            >
-              پیکربندی و فعال‌سازی فضاها
-            </Button>
+            {isFinanceEnabled && (
+              <button
+                onClick={() => setActiveWidget("finance")}
+                className={`relative flex-1 py-2 text-xs font-bold font-vazir rounded-lg transition-colors flex items-center justify-center gap-2 z-10 cursor-pointer ${
+                  activeWidget === "finance"
+                    ? "text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {activeWidget === "finance" && (
+                  <motion.div
+                    layoutId="active-tab"
+                    className="absolute inset-0 bg-primary rounded-lg -z-10"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <Wallet className="size-4" />
+                حسابداری شخصی
+              </button>
+            )}
           </div>
-        )}
+        </div>
+      )}
+
+      <main className="w-full flex flex-col gap-8 items-start">
+        <AnimatePresence mode="wait">
+          {activeWidget === "language" && isLanguageEnabled && (
+            <motion.div
+              key="language-pane"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.2 }}
+              className="w-full"
+            >
+              <ErrorBoundary
+                fallback={
+                  <div className="p-6 border border-destructive/20 bg-destructive/5 text-destructive rounded-2xl text-center font-vazir text-xs">
+                    خطایی در اجرای فضای یادگیری زبان رخ داده است.
+                  </div>
+                }
+              >
+                {languageWidget}
+              </ErrorBoundary>
+            </motion.div>
+          )}
+
+          {activeWidget === "finance" && isFinanceEnabled && (
+            <motion.div
+              key="finance-pane"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.2 }}
+              className="w-full"
+            >
+              <ErrorBoundary
+                fallback={
+                  <div className="p-6 border border-destructive/20 bg-destructive/5 text-destructive rounded-2xl text-center font-vazir text-xs">
+                    خطایی در اجرای فضای حسابداری هوشمند رخ داده است.
+                  </div>
+                }
+              >
+                {financeWidget}
+              </ErrorBoundary>
+            </motion.div>
+          )}
+
+          {enabledModules.length === 0 && (
+            <motion.div
+              key="empty-pane"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="w-full flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-2xl"
+            >
+              <p className="text-muted-foreground font-vazir">
+                تمامی فضاهای کاربری غیرفعال هستند.
+              </p>
+              <Button
+                variant="link"
+                onClick={() => setShowSettings(true)}
+                className="mt-2 text-sm font-vazir"
+              >
+                پیکربندی و فعال‌سازی فضاها
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
       <LogoutModal />
     </div>

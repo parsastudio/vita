@@ -145,15 +145,6 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
                     {card.focusWord}
                   </span>
                 </p>
-                <span
-                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm ${
-                    card.isSentenceTranslation
-                      ? "bg-violet-500/10 text-violet-600 dark:text-violet-400"
-                      : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                  }`}
-                >
-                  {card.isSentenceTranslation ? "ترجمه جمله" : "ترجمه کلمه"}
-                </span>
               </div>
             </div>
 
@@ -161,7 +152,7 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
               <Button
                 variant="ghost"
                 size="icon-xs"
-                onClick={() => handleSpeak(card.originalText)}
+                onClick={() => handleSpeak(card.focusWord)}
                 aria-label="تلفظ انگلیسی"
                 className="rounded-full hover:scale-105 transition-transform"
               >

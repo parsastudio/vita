@@ -44,9 +44,7 @@ export function SrsReviewer({
     try {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(
-          currentCard.originalText,
-        );
+        const utterance = new SpeechSynthesisUtterance(currentCard.focusWord);
         utterance.lang = "en-US";
         let voices = window.speechSynthesis.getVoices();
 
@@ -182,17 +180,6 @@ export function SrsReviewer({
                       {currentCard.focusWord}
                     </span>
                   </p>
-                  <span
-                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                      currentCard.isSentenceTranslation
-                        ? "bg-violet-500/10 text-violet-600 dark:text-violet-400"
-                        : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                    }`}
-                  >
-                    {currentCard.isSentenceTranslation
-                      ? "ترجمه کل جمله"
-                      : "ترجمه کلمه تمرکزی"}
-                  </span>
                 </div>
               </div>
 

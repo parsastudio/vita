@@ -26,7 +26,6 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
   const [text, setText] = useState("");
   const [translation, setTranslation] = useState("");
   const [selectedWord, setSelectedWord] = useState("");
-  const [isSentenceTranslation, setIsSentenceTranslation] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const words = useMemo(() => {
@@ -73,7 +72,7 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
         originalText: text.trim(),
         translation: translation.trim(),
         focusWord: selectedWord,
-        isSentenceTranslation,
+        isSentenceTranslation: true,
         srsStatus: "hard",
         nextReviewAt: new Date(),
         intervalDays: 0,
@@ -86,7 +85,6 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
 
     setText("");
     setTranslation("");
-    setIsSentenceTranslation(true);
     toast("کارت جدید لایتنر با موفقیت اضافه شد", "success");
     onSaveSuccess();
   };
@@ -165,32 +163,6 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
           className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
           placeholder="ترجمه فارسی را وارد کنید..."
         />
-      </div>
-
-      <div className="flex items-center gap-6">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="radio"
-            checked={isSentenceTranslation}
-            onChange={() => setIsSentenceTranslation(true)}
-            className="h-4 w-4 text-primary border-border focus:ring-primary"
-          />
-          <span className="text-xs text-foreground font-medium font-vazir">
-            ترجمه مربوط به کل جمله است
-          </span>
-        </label>
-
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="radio"
-            checked={!isSentenceTranslation}
-            onChange={() => setIsSentenceTranslation(false)}
-            className="h-4 w-4 text-primary border-border focus:ring-primary"
-          />
-          <span className="text-xs text-foreground font-medium font-vazir">
-            ترجمه فقط مربوط به کلمه اصلی است
-          </span>
-        </label>
       </div>
 
       <Button type="submit" className="w-full font-vazir">

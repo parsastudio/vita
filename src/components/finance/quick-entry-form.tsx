@@ -16,7 +16,7 @@ const formSchema = z.object({
     },
     { message: "مبلغ وارد شده باید عددی بزرگتر از صفر باشد" },
   ),
-  category: z.string().min(1, "انتخاب دسته‌بندی الزامی است"),
+  category: z.string().min(1, "عنوان تراکنش الزامی است"),
   type: z.enum(["income", "expense"]),
   tagsInput: z.string().optional(),
   description: z.string().optional(),
@@ -142,7 +142,7 @@ export function QuickEntryForm({
         const nextTotal = currentMonthExpenses + amtVal;
         if (nextTotal >= limit * 0.8) {
           setBudgetWarning(
-            `هشدار: با ثبت این تراکنش، مخارج شما به ${((nextTotal / limit) * 100).toFixed(0)}٪ از سقف بودجه تعیین شده (${formatPersianNumber(limit)} تومان) برای دسته‌بندی یا تگ "${budget.categoryOrTag}" خواهد رسید.`,
+            `هشدار: با ثبت این تراکنش، مخارج شما به ${((nextTotal / limit) * 100).toFixed(0)}٪ از سقف بودجه تعیین شده (${formatPersianNumber(limit)} تومان) برای عنوان یا تگ "${budget.categoryOrTag}" خواهد رسید.`,
           );
         } else {
           setBudgetWarning(null);
@@ -190,7 +190,7 @@ export function QuickEntryForm({
     setTagsInput((sug.tags || []).join(", "));
     setDescription(sug.description);
     toast(
-      `دسته‌بندی و تگ بر اساس مبلغ به عنوان "${sug.category}" اعمال شد`,
+      `عنوان و تگ بر اساس مبلغ به عنوان "${sug.category}" اعمال شد`,
       "info",
     );
   };
@@ -247,7 +247,7 @@ export function QuickEntryForm({
           {amountSuggestions.length > 0 && (
             <div className="pt-2 animate-in fade-in duration-200">
               <span className="text-[10px] font-semibold text-muted-foreground block mb-1 font-vazir">
-                حدس دسته‌بندی بر اساس مبلغ وارد شده:
+                حدس عنوان بر اساس مبلغ وارد شده:
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {amountSuggestions.map((sug, idx) => (
@@ -299,14 +299,14 @@ export function QuickEntryForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
-            دسته‌بندی اصلی
+            عنوان خرج / درآمد
           </label>
           <input
             type="text"
             required
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            placeholder="مثال: خوراک، قبض آب، کرایه خانه"
+            placeholder="مثال: خرید شیر، تاکسی، حقوق"
             className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
           />
         </div>
@@ -319,7 +319,7 @@ export function QuickEntryForm({
             type="text"
             value={tagsInput}
             onChange={(e) => setTagsInput(e.target.value)}
-            placeholder="مثال: ناهار، رستوران"
+            placeholder="مثال: خونه، غذا، رفت و آمد"
             className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
           />
         </div>
@@ -327,7 +327,7 @@ export function QuickEntryForm({
 
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
-          توضیجات اختیاری
+          توضیحات اختیاری
         </label>
         <input
           type="text"

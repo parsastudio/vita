@@ -13,6 +13,9 @@ export function useDashboardState() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [activeWidget, setActiveWidget] = useState<"language" | "finance">(
+    "language",
+  );
   const [widgetOrder, setWidgetOrder] = useState<string[]>([
     "language",
     "finance",
@@ -33,11 +36,21 @@ export function useDashboardState() {
       setWidgetOrder(JSON.parse(savedOrder));
     }
 
+    const savedActive = localStorage.getItem("vita_active_widget");
+    if (savedActive === "language" || savedActive === "finance") {
+      setActiveWidget(savedActive);
+    }
+
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
+
+  const changeActiveWidget = (widget: "language" | "finance") => {
+    setActiveWidget(widget);
+    localStorage.setItem("vita_active_widget", widget);
+  };
 
   const moveWidget = (index: number, direction: "up" | "down") => {
     const nextIndex = direction === "up" ? index - 1 : index + 1;
@@ -68,5 +81,7 @@ export function useDashboardState() {
     mounted,
     widgetOrder,
     moveWidget,
+    activeWidget,
+    setActiveWidget: changeActiveWidget,
   };
 }

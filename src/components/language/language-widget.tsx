@@ -26,13 +26,22 @@ export function LanguageWidget() {
   }, [userId]);
 
   const reviewCards = useMemo<LanguageCard[]>(() => {
-    if (!cards) return [];
+    if (!cards || cards.length === 0) return [];
     const now = new Date();
-    return cards.filter((card) => {
-      return (
-        card.srsStatus !== "archived" && new Date(card.nextReviewAt) <= now
-      );
-    });
+    const activeCards = cards.filter((card) => card.srsStatus !== "archived");
+    if (activeCards.length === 0) return [];
+
+    const strictlyDue = activeCards.filter(
+      (card) => new Date(card.nextReviewAt) <= now,
+    );
+    if (strictlyDue.length > 0) {
+      return strictlyDue;
+    }
+
+    return [...activeCards].sort(
+      (a, b) =>
+        new Date(a.nextReviewAt).getTime() - new Date(b.nextReviewAt).getTime(),
+    );
   }, [cards]);
 
   const cardCount = cards?.length || 0;
