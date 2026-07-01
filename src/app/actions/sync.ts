@@ -12,6 +12,15 @@ import { eq, and, gt, inArray, sql } from "drizzle-orm";
 import { getCurrentUserAction } from "@/app/actions/auth";
 import { z } from "zod";
 
+function parseDate(val: unknown): Date {
+  if (val instanceof Date) return val;
+  if (typeof val === "string" || typeof val === "number") {
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) return d;
+  }
+  return new Date();
+}
+
 const syncLanguageCardSchema = z.object({
   id: z.string().uuid(),
   originalText: z.string(),
@@ -19,8 +28,8 @@ const syncLanguageCardSchema = z.object({
   focusWord: z.string(),
   srsStatus: z.string(),
   difficulty: z.number().or(z.string()),
-  createdAt: z.string().or(z.date()),
-  updatedAt: z.string().or(z.date()),
+  createdAt: z.unknown(),
+  updatedAt: z.unknown(),
 });
 
 const syncFinanceTransactionSchema = z.object({
@@ -29,9 +38,9 @@ const syncFinanceTransactionSchema = z.object({
   type: z.string(),
   category: z.string(),
   tags: z.array(z.string()),
-  description: z.string(),
-  createdAt: z.string().or(z.date()),
-  updatedAt: z.string().or(z.date()),
+  description: z.string().optional().nullable().default(""),
+  createdAt: z.unknown(),
+  updatedAt: z.unknown(),
 });
 
 const syncFinanceBudgetSchema = z.object({
@@ -39,25 +48,25 @@ const syncFinanceBudgetSchema = z.object({
   categoryOrTag: z.string(),
   limitAmount: z.number().or(z.string()),
   period: z.string(),
-  createdAt: z.string().or(z.date()),
-  updatedAt: z.string().or(z.date()),
+  createdAt: z.unknown(),
+  updatedAt: z.unknown(),
 });
 
 const syncUserSettingsSchema = z.object({
   id: z.string().uuid(),
   enabledModules: z.array(z.string()),
-  updatedAt: z.string().or(z.date()),
+  updatedAt: z.unknown(),
 });
 
 const syncDeletedRecordSchema = z.object({
   id: z.string().uuid(),
   tableName: z.string(),
-  deletedAt: z.string().or(z.date()),
+  deletedAt: z.unknown(),
 });
 
 const syncPayloadSchema = z.object({
   userId: z.string().uuid(),
-  lastSyncedAt: z.string().nullable(),
+  lastSyncedAt: z.string().nullable().optional(),
   languageCards: z.array(syncLanguageCardSchema),
   financeTransactions: z.array(syncFinanceTransactionSchema),
   financeBudgets: z.array(syncFinanceBudgetSchema),
@@ -68,6 +77,10 @@ const syncPayloadSchema = z.object({
 export async function syncData(rawPayload: unknown) {
   const parsed = syncPayloadSchema.safeParse(rawPayload);
   if (!parsed.success) {
+    console.error(
+      "Sync payload validation failed:",
+      JSON.stringify(parsed.error.format(), null, 2),
+    );
     throw new Error("Invalid sync payload structure");
   }
 
@@ -129,7 +142,7 @@ export async function syncData(rawPayload: unknown) {
         id: r.id,
         userId,
         tableName: r.tableName,
-        deletedAt: new Date(r.deletedAt),
+        deletedAt: parseDate(r.deletedAt),
       }));
 
       await tx.insert(deletedRecords).values(tbs).onConflictDoNothing();
@@ -143,8 +156,8 @@ export async function syncData(rawPayload: unknown) {
       focusWord: card.focusWord,
       srsStatus: card.srsStatus,
       difficulty: String(card.difficulty),
-      createdAt: new Date(card.createdAt),
-      updatedAt: new Date(card.updatedAt),
+      createdAt: parseDate(card.createdAt),
+      updatedAt: parseDate(card.updatedAt),
     }));
 
     if (cardsToUpsert.length > 0) {
@@ -172,9 +185,9 @@ export async function syncData(rawPayload: unknown) {
       type: t.type,
       category: t.category,
       tags: t.tags,
-      description: t.description,
-      createdAt: new Date(t.createdAt),
-      updatedAt: new Date(t.updatedAt),
+      description: t.description || "",
+      createdAt: parseDate(t.createdAt),
+      updatedAt: parseDate(t.updatedAt),
     }));
 
     if (txsToUpsert.length > 0) {
@@ -201,8 +214,8 @@ export async function syncData(rawPayload: unknown) {
       categoryOrTag: b.categoryOrTag,
       limitAmount: String(b.limitAmount),
       period: b.period,
-      createdAt: new Date(b.createdAt),
-      updatedAt: new Date(b.updatedAt),
+      createdAt: parseDate(b.createdAt),
+      updatedAt: parseDate(b.updatedAt),
     }));
 
     if (budgetsToUpsert.length > 0) {
@@ -225,7 +238,7 @@ export async function syncData(rawPayload: unknown) {
       id: s.id,
       userId,
       enabledModules: s.enabledModules,
-      updatedAt: new Date(s.updatedAt),
+      updatedAt: parseDate(s.updatedAt),
     }));
 
     if (settingsToUpsert.length > 0) {
