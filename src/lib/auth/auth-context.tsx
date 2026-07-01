@@ -36,6 +36,41 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+async function getUnsyncedCount(userId: string): Promise<number> {
+  const unsyncedCards = await localDb.languageCards
+    .where("userId")
+    .equals(userId)
+    .filter((c) => !c.synced)
+    .count();
+  const unsyncedTransactions = await localDb.financeTransactions
+    .where("userId")
+    .equals(userId)
+    .filter((t) => !t.synced)
+    .count();
+  const unsyncedBudgets = await localDb.financeBudgets
+    .where("userId")
+    .equals(userId)
+    .filter((b) => !b.synced)
+    .count();
+  const unsyncedSettings = await localDb.userSettings
+    .where("userId")
+    .equals(userId)
+    .filter((s) => !s.synced)
+    .count();
+  const unsyncedDeletes = await localDb.deletedRecords
+    .where("synced")
+    .equals(false)
+    .count();
+
+  return (
+    unsyncedCards +
+    unsyncedTransactions +
+    unsyncedBudgets +
+    unsyncedSettings +
+    unsyncedDeletes
+  );
+}
+
 async function migrateGuestData(newUserId: string) {
   try {
     await localDb.transaction(
@@ -97,7 +132,7 @@ async function migrateGuestData(newUserId: string) {
       },
     );
   } catch (error) {
-    console.error("Failed to migrate guest data safely:", error);
+    console.error(error);
   }
 }
 
@@ -167,6 +202,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    if (user) {
+      const unsyncedCount = await getUnsyncedCount(user.id);
+      if (unsyncedCount > 0) {
+        const confirmLogout = window.confirm(
+          "هشدار: داده‌های همگام‌سازی نشده با ابر شناسایی شدند. در صورت خروج از حساب، این داده‌ها برای همیشه حذف خواهند شد. آیا مایل به خروج هستید؟",
+        );
+        if (!confirmLogout) return;
+      }
+    }
+
     await signOutAction();
     try {
       await localDb.transaction(
@@ -189,7 +234,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       );
     } catch (error) {
-      console.error("Failed to clear local tables during logout:", error);
+      console.error(error);
     }
     setUser(null);
     setIsGuest(false);

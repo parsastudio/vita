@@ -58,10 +58,14 @@ export function FinanceDashboard({
   const budgetStatuses = useMemo(() => {
     return budgets.map((b) => {
       const limit = Number(b.limitAmount);
+      const target = b.categoryOrTag.toLowerCase();
+
       const spent = transactions
         .filter((tx) => {
           if (tx.type !== "expense") return false;
-          return tx.category.toLowerCase() === b.categoryOrTag.toLowerCase();
+          const matchCategory = tx.category.toLowerCase() === target;
+          const matchTag = tx.tags.some((t) => t.toLowerCase() === target);
+          return matchCategory || matchTag;
         })
         .reduce((sum, tx) => sum + Number(tx.amount), 0);
 
@@ -295,7 +299,7 @@ export function FinanceDashboard({
                         {seg.name}
                       </span>
                     </div>
-                    <div className="text-left text-muted-foreground">
+                    <div className="text-start text-muted-foreground font-vazir">
                       <span className="font-semibold text-foreground">
                         {formatPersianNumber(seg.value)} تومان
                       </span>{" "}
@@ -323,16 +327,16 @@ export function FinanceDashboard({
               required
               value={budgetCategory}
               onChange={(e) => setBudgetCategory(e.target.value)}
-              placeholder="نام دسته‌بندی"
-              className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
+              placeholder="دسته‌بندی یا برچسب"
+              className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
             />
             <input
               type="number"
               required
               value={budgetLimit}
               onChange={(e) => setBudgetLimit(e.target.value)}
-              placeholder="سقف بودجه (تومان)"
-              className="w-32 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
+              placeholder="سقف بودجه"
+              className="w-32 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
             />
             <Button type="submit" size="sm" className="font-vazir text-xs">
               تنظیم
@@ -377,7 +381,7 @@ export function FinanceDashboard({
                   />
                 </div>
 
-                <div className="flex justify-between text-[10px] text-muted-foreground">
+                <div className="flex justify-between text-[10px] text-muted-foreground font-vazir">
                   <span>
                     {formatPersianNumber(b.spent.toFixed(0))} تومان هزینه شده
                   </span>

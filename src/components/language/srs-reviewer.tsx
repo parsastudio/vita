@@ -5,6 +5,7 @@ import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { formatPersianNumber } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function SrsReviewer({
   cards,
@@ -103,78 +104,87 @@ export function SrsReviewer({
         </span>
       </div>
 
-      <div className="space-y-6 text-center">
-        <div className="space-y-4">
-          <p className="text-3xl font-bold tracking-tight text-foreground select-none ltr">
-            {currentCard.originalText}
-          </p>
-          <div className="flex justify-center gap-2">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={index + (showAnswer ? "-ans" : "-ques")}
+          initial={{ opacity: 0, y: 15, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -15, scale: 0.98 }}
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+          className="space-y-6 text-center"
+        >
+          <div className="space-y-4">
+            <p className="text-3xl font-bold tracking-tight text-foreground select-none ltr">
+              {currentCard.originalText}
+            </p>
+            <div className="flex justify-center gap-2">
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={handleSpeak}
+                aria-label="تلفظ صوتی کلمه"
+              >
+                🔊
+              </Button>
+            </div>
+          </div>
+
+          {!showAnswer ? (
             <Button
-              variant="outline"
-              size="icon-sm"
-              onClick={handleSpeak}
-              aria-label="تلفظ صوتی کلمه"
+              size="lg"
+              className="w-full mt-8 font-vazir"
+              onClick={() => setShowAnswer(true)}
             >
-              🔊
+              نمایش ترجمه فارسی
             </Button>
-          </div>
-        </div>
+          ) : (
+            <div className="space-y-8 pt-4 border-t border-border animate-in fade-in duration-300">
+              <div className="space-y-2">
+                <p className="text-xl font-bold text-primary font-vazir">
+                  {currentCard.translation}
+                </p>
+                <p className="text-xs text-muted-foreground font-medium font-vazir">
+                  کلمه تمرکزی اصلی:{" "}
+                  <span className="text-destructive font-semibold">
+                    {currentCard.focusWord}
+                  </span>
+                </p>
+              </div>
 
-        {!showAnswer ? (
-          <Button
-            size="lg"
-            className="w-full mt-8 font-vazir"
-            onClick={() => setShowAnswer(true)}
-          >
-            نمایش ترجمه فارسی
-          </Button>
-        ) : (
-          <div className="space-y-8 pt-4 border-t border-border animate-in fade-in duration-300">
-            <div className="space-y-2">
-              <p className="text-xl font-bold text-primary font-vazir">
-                {currentCard.translation}
-              </p>
-              <p className="text-xs text-muted-foreground font-medium font-vazir">
-                کلمه تمرکزی اصلی:{" "}
-                <span className="text-destructive font-semibold">
-                  {currentCard.focusWord}
-                </span>
-              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Button
+                  variant="outline"
+                  className="hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 font-vazir text-xs"
+                  onClick={() => handleSrsAction("hard")}
+                >
+                  سخت (مرور سریع)
+                </Button>
+                <Button
+                  variant="outline"
+                  className="hover:bg-blue-500/10 hover:text-blue-500 hover:border-blue-500/30 font-vazir text-xs"
+                  onClick={() => handleSrsAction("medium")}
+                >
+                  متوسط
+                </Button>
+                <Button
+                  variant="outline"
+                  className="hover:bg-green-500/10 hover:text-green-500 hover:border-green-500/30 font-vazir text-xs"
+                  onClick={() => handleSrsAction("easy")}
+                >
+                  آسان
+                </Button>
+                <Button
+                  variant="outline"
+                  className="hover:bg-muted/50 font-vazir text-xs"
+                  onClick={() => handleSrsAction("archived")}
+                >
+                  یاد گرفتم (آرشیو)
+                </Button>
+              </div>
             </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <Button
-                variant="outline"
-                className="hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 font-vazir text-xs"
-                onClick={() => handleSrsAction("hard")}
-              >
-                سخت (مرور سریع)
-              </Button>
-              <Button
-                variant="outline"
-                className="hover:bg-blue-500/10 hover:text-blue-500 hover:border-blue-500/30 font-vazir text-xs"
-                onClick={() => handleSrsAction("medium")}
-              >
-                متوسط
-              </Button>
-              <Button
-                variant="outline"
-                className="hover:bg-green-500/10 hover:text-green-500 hover:border-green-500/30 font-vazir text-xs"
-                onClick={() => handleSrsAction("easy")}
-              >
-                آسان
-              </Button>
-              <Button
-                variant="outline"
-                className="hover:bg-muted/50 font-vazir text-xs"
-                onClick={() => handleSrsAction("archived")}
-              >
-                یاد گرفتم (آرشیو)
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

@@ -117,7 +117,12 @@ export function QuickEntry({
   }, [nlpText]);
 
   const dynamicQuickActions = useMemo<PresetQuick[]>(() => {
-    if (!transactions || transactions.length === 0) return PRESET_QUICKS;
+    if (!transactions || transactions.length === 0) {
+      return PRESET_QUICKS.map((p) => ({
+        ...p,
+        label: `${p.label} - ${formatPersianNumber(p.amount)} تومان`,
+      }));
+    }
     const recentTxs = transactions.slice(-100);
     const freqMap: Record<string, { count: number; tx: FinanceTransaction }> =
       {};
@@ -130,16 +135,25 @@ export function QuickEntry({
     });
 
     const sorted = Object.values(freqMap).sort((a, b) => b.count - a.count);
-    const result = sorted.slice(0, 4).map((item) => ({
-      label: item.tx.category,
-      amount: item.tx.amount,
-      type: item.tx.type,
-      category: item.tx.category,
-    }));
+    const result = sorted.slice(0, 4).map((item) => {
+      const displayLabel = item.tx.description || item.tx.category;
+      return {
+        label: `${displayLabel} - ${formatPersianNumber(item.tx.amount)} تومان`,
+        amount: item.tx.amount,
+        type: item.tx.type,
+        category: item.tx.category,
+      };
+    });
 
-    return result.length < 4
-      ? [...result, ...PRESET_QUICKS.slice(0, 4 - result.length)]
-      : result;
+    if (result.length < 4) {
+      const remaining = PRESET_QUICKS.slice(0, 4 - result.length).map((p) => ({
+        ...p,
+        label: `${p.label} - ${formatPersianNumber(p.amount)} تومان`,
+      }));
+      return [...result, ...remaining];
+    }
+
+    return result;
   }, [transactions]);
 
   useEffect(() => {
@@ -155,12 +169,18 @@ export function QuickEntry({
         return;
       }
       const userId = user?.id || "guest";
+      const tags = tagsInput
+        .split(",")
+        .map((t) => t.trim().toLowerCase())
+        .filter(Boolean);
+
       const budget = await localDb.financeBudgets
         .where("userId")
         .equals(userId)
         .filter(
           (b) =>
-            b.categoryOrTag.toLowerCase() === category.trim().toLowerCase(),
+            b.categoryOrTag.toLowerCase() === category.trim().toLowerCase() ||
+            tags.includes(b.categoryOrTag.toLowerCase()),
         )
         .first();
 
@@ -169,8 +189,13 @@ export function QuickEntry({
         const currentMonthExpenses = transactions
           .filter((tx) => {
             if (tx.type !== "expense") return false;
-            if (tx.category.toLowerCase() !== category.trim().toLowerCase())
-              return false;
+            const matchCategory =
+              tx.category.toLowerCase() === budget.categoryOrTag.toLowerCase();
+            const matchTag = tx.tags.some(
+              (t) => t.toLowerCase() === budget.categoryOrTag.toLowerCase(),
+            );
+            if (!matchCategory && !matchTag) return false;
+
             const txDate = new Date(tx.createdAt);
             const now = new Date();
             return (
@@ -183,7 +208,7 @@ export function QuickEntry({
         const nextTotal = currentMonthExpenses + amtVal;
         if (nextTotal >= limit * 0.8) {
           setBudgetWarning(
-            `هشدار: با ثبت این تراکنش، مخارج شما به ${((nextTotal / limit) * 100).toFixed(0)}٪ از سقف بودجه تعیین شده (${formatPersianNumber(limit)} تومان) برای دسته‌بندی "${category}" خواهد رسید.`,
+            `هشدار: با ثبت این تراکنش، مخارج شما به ${((nextTotal / limit) * 100).toFixed(0)}٪ از سقف بودجه تعیین شده (${formatPersianNumber(limit)} تومان) برای دسته‌بندی یا تگ "${budget.categoryOrTag}" خواهد رسید.`,
           );
         } else {
           setBudgetWarning(null);
@@ -194,7 +219,7 @@ export function QuickEntry({
     }, 300);
 
     return () => clearTimeout(delayDebounce);
-  }, [amount, category, type, transactions, user]);
+  }, [amount, category, tagsInput, type, transactions, user]);
 
   const handleNlpApply = async () => {
     if (!parsedNlp || parsedNlp.amount <= 0) return;
@@ -219,6 +244,17 @@ export function QuickEntry({
     onSaveSuccess();
   };
 
+  const handleNlpToForm = () => {
+    if (!parsedNlp || parsedNlp.amount <= 0) return;
+    setAmount(String(parsedNlp.amount));
+    setType(parsedNlp.type);
+    setCategory(parsedNlp.category);
+    setTagsInput(parsedNlp.tags.join(", "));
+    setDescription(parsedNlp.description);
+    setNlpText("");
+    toast("اطلاعات پردازش شده با موفقیت در فرم بارگذاری شد", "info");
+  };
+
   const handlePresetClick = async (preset: PresetQuick) => {
     const userId = user?.id || "guest";
     const txId = uuidv4();
@@ -230,13 +266,16 @@ export function QuickEntry({
       type: preset.type,
       category: preset.category,
       tags: [preset.category],
-      description: `ثبت سریع برای ${preset.label}`,
+      description: `ثبت سریع برای ${preset.label.split(" - ")[0]}`,
       createdAt: new Date(),
       updatedAt: new Date(),
       synced: false,
     });
 
-    toast(`تراکنش ثبت سریع "${preset.label}" انجام شد`, "success");
+    toast(
+      `تراکنش ثبت سریع "${preset.label.split(" - ")[0]}" انجام شد`,
+      "success",
+    );
     onSaveSuccess();
   };
 
@@ -280,7 +319,7 @@ export function QuickEntry({
           <label className="text-xs font-semibold text-primary uppercase tracking-wider font-vazir">
             دستیار صوتی و متنی هوشمند ویتا
           </label>
-          <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+          <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium font-vazir">
             پردازشگر طبیعی کلمات
           </span>
         </div>
@@ -290,18 +329,23 @@ export function QuickEntry({
             value={nlpText}
             onChange={(e) => setNlpText(e.target.value)}
             placeholder="بنویسید مثلاً: ۵۰۰۰۰ تاکسی کار یا ۱۲۰۰۰۰۰ حقوق واریز..."
-            className="flex-1 h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
+            className="flex-1 h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
           />
           {parsedNlp && parsedNlp.amount > 0 && (
-            <Button type="button" onClick={handleNlpApply}>
-              ثبت هوشمند
-            </Button>
+            <div className="flex gap-1">
+              <Button type="button" onClick={handleNlpToForm} variant="outline">
+                اعمال روی فرم
+              </Button>
+              <Button type="button" onClick={handleNlpApply}>
+                ثبت مستقیم
+              </Button>
+            </div>
           )}
         </div>
 
         {parsedNlp && parsedNlp.amount > 0 && (
           <div className="p-4 bg-card/60 backdrop-blur-sm rounded-xl border border-primary/20 flex items-center justify-between text-xs transition-all animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div>
+            <div className="font-vazir">
               <span className="font-medium text-muted-foreground">
                 تشخیص سیستم:
               </span>{" "}
@@ -316,8 +360,8 @@ export function QuickEntry({
                 {parsedNlp.category}
               </span>
             </div>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
-              آماده ثبت نهایی
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold font-vazir">
+              آماده اقدام
             </span>
           </div>
         )}
@@ -333,7 +377,7 @@ export function QuickEntry({
               key={idx}
               type="button"
               onClick={() => handlePresetClick(preset)}
-              className="px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted text-xs text-foreground font-medium transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted text-xs text-foreground font-medium transition-all flex items-center gap-1.5 shadow-xs cursor-pointer font-vazir"
             >
               <span
                 className={
@@ -345,9 +389,6 @@ export function QuickEntry({
                 {preset.type === "income" ? "↓" : "↑"}
               </span>
               <span>{preset.label}</span>
-              <span className="text-muted-foreground font-bold">
-                {formatPersianNumber(preset.amount)}
-              </span>
             </button>
           ))}
         </div>
@@ -362,14 +403,14 @@ export function QuickEntry({
         </span>
 
         {budgetWarning && (
-          <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-medium leading-relaxed">
+          <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-medium leading-relaxed font-vazir">
             ⚠️ {budgetWarning}
           </div>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground uppercase">
+            <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
               مبلغ (تومان)
             </label>
             <input
@@ -378,19 +419,19 @@ export function QuickEntry({
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
-              className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
+              className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground uppercase">
+            <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
               نوع تراکنش
             </label>
             <div className="grid grid-cols-2 gap-2 h-10">
               <button
                 type="button"
                 onClick={() => setType("expense")}
-                className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${
                   type === "expense"
                     ? "border-red-500/30 bg-red-500/5 text-red-600"
                     : "border-border bg-background text-muted-foreground hover:bg-muted"
@@ -401,7 +442,7 @@ export function QuickEntry({
               <button
                 type="button"
                 onClick={() => setType("income")}
-                className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${
                   type === "income"
                     ? "border-green-500/30 bg-green-500/5 text-green-600"
                     : "border-border bg-background text-muted-foreground hover:bg-muted"
@@ -415,7 +456,7 @@ export function QuickEntry({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground uppercase">
+            <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
               دسته‌بندی اصلی
             </label>
             <input
@@ -424,12 +465,12 @@ export function QuickEntry({
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="مثال: خوراک، قبض آب، کرایه خانه"
-              className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
+              className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground uppercase">
+            <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
               برچسب‌ها (با کاما جدا کنید)
             </label>
             <input
@@ -437,13 +478,13 @@ export function QuickEntry({
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               placeholder="مثال: ناهار، رستوران"
-              className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
+              className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
             />
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-muted-foreground uppercase">
+          <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
             توضیحات اختیاری
           </label>
           <input
@@ -451,11 +492,11 @@ export function QuickEntry({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="جزئیات بیشتر..."
-            className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
+            className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
           />
         </div>
 
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full font-vazir">
           ذخیره و ثبت در دفتر مالی
         </Button>
       </form>

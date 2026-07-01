@@ -1,5 +1,5 @@
 const CACHE_NAME = "vita-cache-v1";
-const ASSETS = ["/", "/manifest.json"];
+const ASSETS = ["/", "/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(

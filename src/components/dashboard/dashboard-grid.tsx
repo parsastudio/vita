@@ -22,8 +22,10 @@ export function DashboardGrid({
   const [showSettings, setShowSettings] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (typeof window === "undefined") return;
     setIsOnline(navigator.onLine);
     const handleOnline = () => setIsOnline(true);
@@ -80,7 +82,7 @@ export function DashboardGrid({
               </div>
             )}
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1 font-vazir">
             فضای شخصی و امن شما، فعال به صورت آفلاین به طور پیش‌فرض
           </p>
         </div>
@@ -93,7 +95,7 @@ export function DashboardGrid({
             className="rounded-full border-border bg-background text-foreground"
           >
             <span className="sr-only">تغییر تم</span>
-            {theme === "dark" ? (
+            {mounted && theme === "dark" ? (
               <svg
                 className="size-4"
                 fill="none"
@@ -128,7 +130,7 @@ export function DashboardGrid({
             <Button
               variant="default"
               onClick={disableGuestMode}
-              className="rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white border-none text-xs px-4 h-8 font-semibold shadow-md shadow-indigo-500/20 animate-pulse"
+              className="rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white border-none text-xs px-4 h-8 font-semibold shadow-md shadow-indigo-500/20 animate-pulse font-vazir"
             >
               ذخیره ابری پیشرفت‌ها
             </Button>
@@ -153,13 +155,13 @@ export function DashboardGrid({
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute left-0 mt-2 w-56 bg-card border border-border rounded-xl p-4 shadow-xl z-20 space-y-3"
+                      className="absolute start-0 mt-2 w-56 bg-card border border-border rounded-xl p-4 shadow-xl z-20 space-y-3"
                     >
                       <div className="border-b border-border pb-2">
-                        <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground block font-vazir">
                           وارد شده با ایمیل
                         </span>
-                        <span className="text-xs font-semibold text-foreground truncate block mt-0.5">
+                        <span className="text-xs font-semibold text-foreground truncate block mt-0.5 font-mono">
                           {user?.email}
                         </span>
                       </div>
@@ -169,7 +171,7 @@ export function DashboardGrid({
                           setShowUserMenu(false);
                           performSync();
                         }}
-                        className="w-full text-right text-xs text-foreground hover:text-primary transition-colors py-1 block font-medium"
+                        className="w-full text-start text-xs text-foreground hover:text-primary transition-colors py-1 block font-medium font-vazir"
                       >
                         همگام‌سازی اجباری ابر
                       </button>
@@ -179,7 +181,7 @@ export function DashboardGrid({
                           setShowUserMenu(false);
                           logout();
                         }}
-                        className="w-full text-right text-xs text-destructive hover:text-destructive/80 transition-colors py-1 block font-semibold border-t border-border pt-2"
+                        className="w-full text-start text-xs text-destructive hover:text-destructive/80 transition-colors py-1 block font-semibold border-t border-border pt-2 font-vazir"
                       >
                         خروج از حساب
                       </button>
@@ -193,7 +195,7 @@ export function DashboardGrid({
           <Button
             variant="outline"
             onClick={() => setShowSettings(!showSettings)}
-            className="rounded-full gap-2 text-sm"
+            className="rounded-full gap-2 text-sm font-vazir"
           >
             تنظیمات فضاها
           </Button>
@@ -209,7 +211,7 @@ export function DashboardGrid({
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute left-0 mt-2 w-72 bg-card border border-border rounded-xl p-5 shadow-xl z-20"
+                  className="absolute start-0 mt-2 w-72 bg-card border border-border rounded-xl p-5 shadow-xl z-20"
                 >
                   <h3 className="font-semibold text-sm text-foreground mb-4 font-vazir">
                     فعال‌سازی ماژول‌ها
@@ -220,7 +222,7 @@ export function DashboardGrid({
                         <span className="text-sm font-medium font-vazir">
                           فضای یادگیری زبان
                         </span>
-                        <span className="text-xs text-muted-foreground leading-relaxed">
+                        <span className="text-xs text-muted-foreground leading-relaxed font-vazir">
                           سیستم مرور لایتنر هوشمند
                         </span>
                       </div>
@@ -237,7 +239,7 @@ export function DashboardGrid({
                         <span className="text-sm font-medium font-vazir">
                           فضای حسابداری هوشمند
                         </span>
-                        <span className="text-xs text-muted-foreground leading-relaxed">
+                        <span className="text-xs text-muted-foreground leading-relaxed font-vazir">
                           مدیریت تراکنش‌ها و بودجه‌ها
                         </span>
                       </div>
@@ -287,7 +289,7 @@ export function DashboardGrid({
 
         {enabledModules.length === 0 && (
           <div className="lg:col-span-2 flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-2xl">
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground font-vazir">
               تمامی فضاهای کاربری غیرفعال هستند.
             </p>
             <Button
