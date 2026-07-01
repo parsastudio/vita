@@ -1,11 +1,14 @@
 "use server";
 
 import crypto from "crypto";
+import { promisify } from "util";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db/server";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+
+const pbkdf2Async = promisify(crypto.pbkdf2);
 
 const SESSION_SECRET =
   process.env.SESSION_SECRET || "vita-space-default-secret-key-2026";
@@ -18,7 +21,7 @@ if (
 }
 
 const ENCRYPTION_KEY = crypto.scryptSync(SESSION_SECRET, "salt", 32);
-const IV_LENGTH = 16;
+const IV_LENGTH = 12;
 
 const authSchema = z.object({
   email: z.string().email("Invalid email format").max(255),
@@ -28,35 +31,43 @@ const authSchema = z.object({
     .max(100),
 });
 
-function hashPassword(password: string): { hash: string; salt: string } {
+async function hashPassword(
+  password: string,
+): Promise<{ hash: string; salt: string }> {
   const salt = crypto.randomBytes(16).toString("hex");
-  const hash = crypto
-    .pbkdf2Sync(password, salt, 100000, 64, "sha512")
-    .toString("hex");
+  const derivedKey = await pbkdf2Async(password, salt, 100000, 64, "sha512");
+  const hash = derivedKey.toString("hex");
   return { hash, salt };
 }
 
-function verifyPassword(password: string, salt: string, hash: string): boolean {
-  const verifyHash = crypto
-    .pbkdf2Sync(password, salt, 100000, 64, "sha512")
-    .toString("hex");
+async function verifyPassword(
+  password: string,
+  salt: string,
+  hash: string,
+): Promise<boolean> {
+  const derivedKey = await pbkdf2Async(password, salt, 100000, 64, "sha512");
+  const verifyHash = derivedKey.toString("hex");
   return verifyHash === hash;
 }
 
 function encryptSession(userId: string): string {
   const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv("aes-256-cbc", ENCRYPTION_KEY, iv);
+  const cipher = crypto.createCipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
   let encrypted = cipher.update(userId, "utf8", "hex");
   encrypted += cipher.final("hex");
-  return iv.toString("hex") + ":" + encrypted;
+  const authTag = cipher.getAuthTag().toString("hex");
+  return iv.toString("hex") + ":" + authTag + ":" + encrypted;
 }
 
 function decryptSession(sessionText: string): string | null {
   try {
     const parts = sessionText.split(":");
-    const iv = Buffer.from(parts.shift() || "", "hex");
-    const encryptedText = Buffer.from(parts.join(":"), "hex");
-    const decipher = crypto.createDecipheriv("aes-256-cbc", ENCRYPTION_KEY, iv);
+    if (parts.length < 3) return null;
+    const iv = Buffer.from(parts[0], "hex");
+    const authTag = Buffer.from(parts[1], "hex");
+    const encryptedText = Buffer.from(parts[2], "hex");
+    const decipher = crypto.createDecipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
+    decipher.setAuthTag(authTag);
     let decrypted = decipher.update(encryptedText, "hex", "utf8");
     decrypted += decipher.final("utf8");
     return decrypted;
@@ -81,7 +92,7 @@ export async function signUpAction(email: string, password: string) {
       return { success: false, error: "Email is already registered" };
     }
 
-    const { hash, salt } = hashPassword(password);
+    const { hash, salt } = await hashPassword(password);
     const userId = crypto.randomUUID();
 
     await db.insert(users).values({
@@ -133,7 +144,8 @@ export async function signInAction(email: string, password: string) {
     }
 
     const [salt, storedHash] = userRecord.passwordHash.split(":");
-    if (!verifyPassword(password, salt, storedHash)) {
+    const isMatch = await verifyPassword(password, salt, storedHash);
+    if (!isMatch) {
       return { success: false, error: "Invalid email or password" };
     }
 

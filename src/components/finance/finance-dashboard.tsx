@@ -8,6 +8,7 @@ import {
 } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 
 export function FinanceDashboard({
@@ -18,6 +19,7 @@ export function FinanceDashboard({
   budgets: FinanceBudget[];
 }) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [budgetCategory, setBudgetCategory] = useState("");
   const [budgetLimit, setBudgetLimit] = useState("");
 
@@ -102,6 +104,7 @@ export function FinanceDashboard({
 
     setBudgetCategory("");
     setBudgetLimit("");
+    toast("Budget updated successfully", "success");
   };
 
   const handleDeleteBudget = async (id: string) => {
@@ -118,6 +121,7 @@ export function FinanceDashboard({
         });
       },
     );
+    toast("Budget deleted", "info");
   };
 
   const handleExportCSV = () => {
@@ -159,6 +163,7 @@ export function FinanceDashboard({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    toast("Transactions exported successfully", "success");
   };
 
   const donutSegments = useMemo(() => {

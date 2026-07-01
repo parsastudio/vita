@@ -4,6 +4,7 @@ import {
   financeTransactions,
   financeBudgets,
   userSettings,
+  deletedRecords,
 } from "@/lib/db/schema";
 import { eq, and, gt, inArray, sql } from "drizzle-orm";
 import { getCurrentUserAction } from "@/app/actions/auth";
@@ -72,6 +73,7 @@ export async function syncData(payload: SyncPayload) {
     throw new Error("Unauthorized");
   }
 
+  const serverTimestamp = new Date();
   const lastSyncDate = lastSyncedAt ? new Date(lastSyncedAt) : new Date(0);
 
   if (changes.deletedRecords && changes.deletedRecords.length > 0) {
@@ -115,6 +117,15 @@ export async function syncData(payload: SyncPayload) {
           ),
         );
     }
+
+    const tbs = changes.deletedRecords.map((r) => ({
+      id: r.id,
+      userId,
+      tableName: r.tableName,
+      deletedAt: serverTimestamp,
+    }));
+
+    await db.insert(deletedRecords).values(tbs).onConflictDoNothing();
   }
 
   const cardsToUpsert = changes.languageCards.map((card) => ({
@@ -129,7 +140,7 @@ export async function syncData(payload: SyncPayload) {
     intervalDays: String(card.intervalDays),
     easeFactor: String(card.easeFactor),
     createdAt: new Date(card.createdAt),
-    updatedAt: new Date(card.updatedAt),
+    updatedAt: serverTimestamp,
   }));
 
   if (cardsToUpsert.length > 0) {
@@ -162,7 +173,7 @@ export async function syncData(payload: SyncPayload) {
     tags: tx.tags,
     description: tx.description,
     createdAt: new Date(tx.createdAt),
-    updatedAt: new Date(tx.updatedAt),
+    updatedAt: serverTimestamp,
   }));
 
   if (txsToUpsert.length > 0) {
@@ -190,7 +201,7 @@ export async function syncData(payload: SyncPayload) {
     limitAmount: String(b.limitAmount),
     period: b.period,
     createdAt: new Date(b.createdAt),
-    updatedAt: new Date(b.updatedAt),
+    updatedAt: serverTimestamp,
   }));
 
   if (budgetsToUpsert.length > 0) {
@@ -213,7 +224,7 @@ export async function syncData(payload: SyncPayload) {
     id: s.id,
     userId,
     enabledModules: s.enabledModules,
-    updatedAt: new Date(s.updatedAt),
+    updatedAt: serverTimestamp,
   }));
 
   if (settingsToUpsert.length > 0) {
@@ -258,14 +269,22 @@ export async function syncData(payload: SyncPayload) {
     ),
   });
 
+  const pulledDeletes = await db.query.deletedRecords.findMany({
+    where: and(
+      eq(deletedRecords.userId, userId),
+      gt(deletedRecords.deletedAt, lastSyncDate),
+    ),
+  });
+
   return {
     success: true,
-    serverTimestamp: new Date().toISOString(),
+    serverTimestamp: serverTimestamp.toISOString(),
     pulled: {
       languageCards: newCards,
       financeTransactions: newTransactions,
       financeBudgets: newBudgets,
       userSettings: newSettings,
+      deletedRecords: pulledDeletes,
     },
   };
 }

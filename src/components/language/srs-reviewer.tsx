@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 export function SrsReviewer({
   cards,
@@ -13,6 +14,7 @@ export function SrsReviewer({
 }) {
   const [index, setIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
+  const { toast } = useToast();
 
   const currentCard = cards[index];
 
@@ -50,14 +52,19 @@ export function SrsReviewer({
       intervalDays = 0;
       easeFactor = Math.max(1.3, easeFactor - 0.2);
       nextReviewAt.setHours(nextReviewAt.getHours() + 1);
+      toast("Scheduled card for immediate review", "info");
     } else if (rating === "medium") {
       intervalDays = intervalDays === 0 ? 2 : intervalDays * 2;
       nextReviewAt.setDate(nextReviewAt.getDate() + intervalDays);
+      toast(`Scheduled card for ${intervalDays} days later`, "success");
     } else if (rating === "easy") {
       intervalDays =
         intervalDays === 0 ? 6 : Math.round(intervalDays * easeFactor);
       easeFactor = easeFactor + 0.15;
       nextReviewAt.setDate(nextReviewAt.getDate() + intervalDays);
+      toast(`Scheduled card for ${intervalDays} days later`, "success");
+    } else if (rating === "archived") {
+      toast("Card archived successfully", "success");
     }
 
     await localDb.languageCards.update(currentCard.id, {

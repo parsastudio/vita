@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { localDb } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 
 export function SentenceParser({
@@ -12,6 +13,7 @@ export function SentenceParser({
   onSaveSuccess: () => void;
 }) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [text, setText] = useState("");
   const [translation, setTranslation] = useState("");
   const [selectedWord, setSelectedWord] = useState("");
@@ -59,6 +61,7 @@ export function SentenceParser({
     setText("");
     setTranslation("");
     setIsSentenceTranslation(true);
+    toast("Card added to spaced repetition review", "success");
     onSaveSuccess();
   };
 

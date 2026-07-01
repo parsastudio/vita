@@ -75,3 +75,12 @@ export const userSettings = pgTable("user_settings", {
     .defaultNow()
     .notNull(),
 });
+
+export const deletedRecords = pgTable("deleted_records", {
+  id: uuid("id").primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+  tableName: varchar("table_name", { length: 255 }).notNull(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});

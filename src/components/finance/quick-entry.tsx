@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { localDb, type FinanceTransaction } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 
 interface PresetQuick {
@@ -62,6 +63,7 @@ export function QuickEntry({
   onSaveSuccess: () => void;
 }) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [nlpText, setNlpText] = useState("");
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<"income" | "expense">("expense");
@@ -114,9 +116,10 @@ export function QuickEntry({
 
   const dynamicQuickActions = useMemo<PresetQuick[]>(() => {
     if (!transactions || transactions.length === 0) return PRESET_QUICKS;
+    const recentTxs = transactions.slice(-100);
     const freqMap: Record<string, { count: number; tx: FinanceTransaction }> =
       {};
-    transactions.forEach((tx) => {
+    recentTxs.forEach((tx) => {
       const key = `${tx.category}-${tx.amount}-${tx.type}`;
       if (!freqMap[key]) {
         freqMap[key] = { count: 0, tx };
@@ -137,49 +140,59 @@ export function QuickEntry({
       : result;
   }, [transactions]);
 
-  const checkBudgetThreshold = async (
-    cat: string,
-    amt: number,
-    txType: string,
-  ) => {
-    if (txType !== "expense") {
+  useEffect(() => {
+    const amtVal = parseFloat(toEnglishDigits(amount));
+    if (isNaN(amtVal) || amtVal <= 0 || !category.trim()) {
       setBudgetWarning(null);
       return;
     }
-    const userId = user?.id || "guest";
-    const budget = await localDb.financeBudgets
-      .where("userId")
-      .equals(userId)
-      .filter((b) => b.categoryOrTag.toLowerCase() === cat.toLowerCase())
-      .first();
 
-    if (budget) {
-      const limit = Number(budget.limitAmount);
-      const currentMonthExpenses = transactions
-        .filter((tx) => {
-          if (tx.type !== "expense") return false;
-          if (tx.category.toLowerCase() !== cat.toLowerCase()) return false;
-          const txDate = new Date(tx.createdAt);
-          const now = new Date();
-          return (
-            txDate.getMonth() === now.getMonth() &&
-            txDate.getFullYear() === now.getFullYear()
+    const delayDebounce = setTimeout(async () => {
+      if (type !== "expense") {
+        setBudgetWarning(null);
+        return;
+      }
+      const userId = user?.id || "guest";
+      const budget = await localDb.financeBudgets
+        .where("userId")
+        .equals(userId)
+        .filter(
+          (b) =>
+            b.categoryOrTag.toLowerCase() === category.trim().toLowerCase(),
+        )
+        .first();
+
+      if (budget) {
+        const limit = Number(budget.limitAmount);
+        const currentMonthExpenses = transactions
+          .filter((tx) => {
+            if (tx.type !== "expense") return false;
+            if (tx.category.toLowerCase() !== category.trim().toLowerCase())
+              return false;
+            const txDate = new Date(tx.createdAt);
+            const now = new Date();
+            return (
+              txDate.getMonth() === now.getMonth() &&
+              txDate.getFullYear() === now.getFullYear()
+            );
+          })
+          .reduce((sum, tx) => sum + Number(tx.amount), 0);
+
+        const nextTotal = currentMonthExpenses + amtVal;
+        if (nextTotal >= limit * 0.8) {
+          setBudgetWarning(
+            `Warning: spending will reach ${((nextTotal / limit) * 100).toFixed(0)}% of your monthly budget (${limit}) for "${category}"`,
           );
-        })
-        .reduce((sum, tx) => sum + Number(tx.amount), 0);
-
-      const nextTotal = currentMonthExpenses + amt;
-      if (nextTotal >= limit * 0.8) {
-        setBudgetWarning(
-          `Warning: spending will reach ${((nextTotal / limit) * 100).toFixed(0)}% of your monthly budget (${limit}) for "${cat}"`,
-        );
+        } else {
+          setBudgetWarning(null);
+        }
       } else {
         setBudgetWarning(null);
       }
-    } else {
-      setBudgetWarning(null);
-    }
-  };
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [amount, category, type, transactions, user]);
 
   const handleNlpApply = async () => {
     if (!parsedNlp || parsedNlp.amount <= 0) return;
@@ -200,6 +213,7 @@ export function QuickEntry({
     });
 
     setNlpText("");
+    toast("Transaction added successfully via AI Box", "success");
     onSaveSuccess();
   };
 
@@ -220,6 +234,7 @@ export function QuickEntry({
       synced: false,
     });
 
+    toast(`Quick transaction for ${preset.label} added`, "success");
     onSaveSuccess();
   };
 
@@ -252,6 +267,7 @@ export function QuickEntry({
     setTagsInput("");
     setDescription("");
     setBudgetWarning(null);
+    toast("Transaction saved successfully", "success");
     onSaveSuccess();
   };
 
@@ -355,13 +371,7 @@ export function QuickEntry({
               type="text"
               required
               value={amount}
-              onChange={(e) => {
-                setAmount(e.target.value);
-                const val = parseFloat(toEnglishDigits(e.target.value));
-                if (!isNaN(val) && val > 0 && category) {
-                  checkBudgetThreshold(category, val, type);
-                }
-              }}
+              onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
               className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
             />
@@ -374,13 +384,7 @@ export function QuickEntry({
             <div className="grid grid-cols-2 gap-2 h-10">
               <button
                 type="button"
-                onClick={() => {
-                  setType("expense");
-                  const val = parseFloat(toEnglishDigits(amount));
-                  if (!isNaN(val) && val > 0 && category) {
-                    checkBudgetThreshold(category, val, "expense");
-                  }
-                }}
+                onClick={() => setType("expense")}
                 className={`rounded-lg border text-xs font-semibold transition-all ${
                   type === "expense"
                     ? "border-red-500/30 bg-red-500/5 text-red-600"
@@ -391,10 +395,7 @@ export function QuickEntry({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setType("income");
-                  setBudgetWarning(null);
-                }}
+                onClick={() => setType("income")}
                 className={`rounded-lg border text-xs font-semibold transition-all ${
                   type === "income"
                     ? "border-green-500/30 bg-green-500/5 text-green-600"
@@ -416,13 +417,7 @@ export function QuickEntry({
               type="text"
               required
               value={category}
-              onChange={(e) => {
-                setCategory(e.target.value);
-                const val = parseFloat(toEnglishDigits(amount));
-                if (!isNaN(val) && val > 0 && e.target.value) {
-                  checkBudgetThreshold(e.target.value, val, type);
-                }
-              }}
+              onChange={(e) => setCategory(e.target.value)}
               placeholder="e.g. Food, Bills, Rent"
               className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
             />

@@ -4,11 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import { localDb } from "@/lib/db/client";
 import { syncData } from "@/app/actions/sync";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 export function useSync() {
   const { user, isGuest } = useAuth();
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const performSync = useCallback(async () => {
     if (!user || isGuest || isSyncing) return;
@@ -52,7 +54,11 @@ export function useSync() {
         financeTransactions: unsyncedTransactions,
         financeBudgets: unsyncedBudgets,
         userSettings: unsyncedSettings,
-        deletedRecords: unsyncedDeletes,
+        deletedRecords: unsyncedDeletes.map((d) => ({
+          id: d.id,
+          tableName: d.tableName,
+          deletedAt: d.deletedAt,
+        })),
       });
 
       if (response && response.success) {
@@ -94,6 +100,21 @@ export function useSync() {
                 .where("id")
                 .anyOf(deleteIds)
                 .delete();
+            }
+
+            if (
+              response.pulled.deletedRecords &&
+              response.pulled.deletedRecords.length > 0
+            ) {
+              for (const r of response.pulled.deletedRecords) {
+                if (r.tableName === "languageCards") {
+                  await localDb.languageCards.delete(r.id);
+                } else if (r.tableName === "financeTransactions") {
+                  await localDb.financeTransactions.delete(r.id);
+                } else if (r.tableName === "financeBudgets") {
+                  await localDb.financeBudgets.delete(r.id);
+                }
+              }
             }
 
             for (const card of response.pulled.languageCards) {
@@ -161,14 +182,16 @@ export function useSync() {
         );
 
         localStorage.setItem(lastSyncedKey, response.serverTimestamp);
+        toast("Sync with cloud completed successfully", "success");
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : "Sync failed";
       setError(errMsg);
+      toast("Cloud sync failed. Working locally.", "error");
     } finally {
       setIsSyncing(false);
     }
-  }, [user, isGuest, isSyncing]);
+  }, [user, isGuest, isSyncing, toast]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

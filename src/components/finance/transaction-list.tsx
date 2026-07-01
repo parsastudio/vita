@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { localDb, type FinanceTransaction } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 export function TransactionList({
   transactions,
@@ -11,6 +12,7 @@ export function TransactionList({
 }) {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
+  const { toast } = useToast();
 
   const filtered = transactions.filter((tx) => {
     const matchesSearch =
@@ -38,6 +40,7 @@ export function TransactionList({
         });
       },
     );
+    toast("Transaction deleted", "info");
   };
 
   return (

@@ -4,9 +4,11 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 export function AuthModal() {
   const { showAuthModal, enableGuestMode, signIn, signUp } = useAuth();
+  const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,11 +17,25 @@ export function AuthModal() {
 
   if (!showAuthModal) return null;
 
+  const validateForm = () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address.");
+      return false;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
-
     setError(null);
+
+    if (!validateForm()) return;
+
     setIsSubmitting(true);
 
     try {
@@ -27,11 +43,20 @@ export function AuthModal() {
         ? await signUp(email, password)
         : await signIn(email, password);
 
-      if (!response.success && response.error) {
+      if (response.success) {
+        toast(
+          isSignUp
+            ? "Account created successfully!"
+            : "Signed in successfully!",
+          "success",
+        );
+      } else if (response.error) {
         setError(response.error);
+        toast(response.error, "error");
       }
     } catch {
       setError("An unexpected error occurred. Please try again.");
+      toast("Authentication failed.", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -132,7 +157,10 @@ export function AuthModal() {
               size="lg"
               className="w-full"
               disabled={isSubmitting}
-              onClick={enableGuestMode}
+              onClick={() => {
+                enableGuestMode();
+                toast("Continuing as guest", "info");
+              }}
             >
               Continue as Guest
             </Button>
