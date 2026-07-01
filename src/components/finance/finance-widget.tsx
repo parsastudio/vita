@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { localDb } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -24,12 +25,18 @@ const FinanceDashboard = dynamic(
 
 export function FinanceWidget() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"add" | "stats" | "list">("add");
-  const [mounted, setMounted] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const activeTab =
+    (searchParams.get("tab") as "add" | "stats" | "list") || "add";
+
+  const setActiveTab = (tab: "add" | "stats" | "list") => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   const userId = user?.id || "guest";
 
@@ -55,7 +62,7 @@ export function FinanceWidget() {
           </p>
         </div>
         <span className="text-[10px] px-2.5 py-1 rounded-full bg-primary/10 text-primary font-bold">
-          {mounted ? formatPersianNumber(txCount) : txCount} تراکنش
+          {formatPersianNumber(txCount)} تراکنش
         </span>
       </div>
 
@@ -64,7 +71,7 @@ export function FinanceWidget() {
           variant={activeTab === "add" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("add")}
-          className="font-vazir text-xs"
+          className="font-vazir text-xs font-semibold"
         >
           ثبت سریع تراکنش
         </Button>
@@ -73,7 +80,7 @@ export function FinanceWidget() {
           variant={activeTab === "stats" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("stats")}
-          className="font-vazir text-xs"
+          className="font-vazir text-xs font-semibold"
         >
           تحلیل و بودجه‌بندی
         </Button>
@@ -82,7 +89,7 @@ export function FinanceWidget() {
           variant={activeTab === "list" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("list")}
-          className="font-vazir text-xs"
+          className="font-vazir text-xs font-semibold"
         >
           دفتر کل معاملات
         </Button>

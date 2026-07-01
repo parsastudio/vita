@@ -22,6 +22,7 @@ export function DashboardGrid({
     isGuest,
     isLoading,
     enabledModules,
+    toggleModule,
     isSyncing,
     performSync,
     showSettings,

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { formatPersianNumber } from "@/lib/utils";
+import { ArrowUpLeft, ArrowDownRight, Wallet } from "lucide-react";
 
 interface StatsCardsProps {
   income: number;
@@ -18,35 +19,50 @@ export function StatsCards({
 }: StatsCardsProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <div className="p-5 border border-border bg-background rounded-xl">
-        <span className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
-          کل درآمدها
-        </span>
-        <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-          {mounted ? formatPersianNumber(income) : income} تومان
-        </p>
+      <div className="p-5 border border-border bg-background rounded-xl flex items-center justify-between gap-4 transition-all hover:border-border/80">
+        <div className="space-y-1">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block font-vazir">
+            کل درآمدهای ثبت‌شده
+          </span>
+          <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+            {mounted ? formatPersianNumber(income) : income} تومان
+          </p>
+        </div>
+        <div className="size-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+          <ArrowDownRight className="size-5" />
+        </div>
       </div>
 
-      <div className="p-5 border border-border bg-background rounded-xl">
-        <span className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
-          کل هزینه‌ها
-        </span>
-        <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
-          {mounted ? formatPersianNumber(expense) : expense} تومان
-        </p>
+      <div className="p-5 border border-border bg-background rounded-xl flex items-center justify-between gap-4 transition-all hover:border-border/80">
+        <div className="space-y-1">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block font-vazir">
+            کل هزینه‌های جاری
+          </span>
+          <p className="text-xl font-bold text-rose-600 dark:text-rose-400">
+            {mounted ? formatPersianNumber(expense) : expense} تومان
+          </p>
+        </div>
+        <div className="size-10 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+          <ArrowUpLeft className="size-5" />
+        </div>
       </div>
 
-      <div className="p-5 border border-border bg-background rounded-xl">
-        <span className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
-          تراز کل مالی
-        </span>
-        <p
-          className={`text-2xl font-bold mt-1 ${
-            balance >= 0 ? "text-primary" : "text-destructive"
-          }`}
+      <div className="p-5 border border-border bg-background rounded-xl flex items-center justify-between gap-4 transition-all hover:border-border/80">
+        <div className="space-y-1">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block font-vazir">
+            تراز مالی کل
+          </span>
+          <p
+            className={`text-xl font-bold ${balance >= 0 ? "text-primary" : "text-destructive"}`}
+          >
+            {mounted ? formatPersianNumber(balance) : balance} تومان
+          </p>
+        </div>
+        <div
+          className={`size-10 rounded-full flex items-center justify-center shrink-0 ${balance >= 0 ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}
         >
-          {mounted ? formatPersianNumber(balance) : balance} تومان
-        </p>
+          <Wallet className="size-5" />
+        </div>
       </div>
     </div>
   );

@@ -16,6 +16,7 @@ export function TransactionList({
   const [filterType, setFilterType] = useState<string>("all");
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -62,7 +63,7 @@ export function TransactionList({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="جستجو در توضیحات، تگ‌ها و دسته‌بندی‌ها..."
-          className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all"
+          className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
         />
 
         <div className="flex flex-wrap gap-1.5">
@@ -76,7 +77,7 @@ export function TransactionList({
               variant={filterType === filter.key ? "default" : "outline"}
               size="xs"
               onClick={() => setFilterType(filter.key)}
-              className="font-vazir text-xs"
+              className="font-vazir text-xs font-semibold"
             >
               {filter.label}
             </Button>
@@ -141,15 +142,43 @@ export function TransactionList({
                   : tx.amount}{" "}
                 تومان
               </span>
-              <Button
-                variant="destructive"
-                size="icon-xs"
-                onClick={() => handleDelete(tx.id)}
-                aria-label="حذف تراکنش"
-                className="hover:scale-105 transition-transform"
-              >
-                <Trash2 className="size-3.5 text-destructive" />
-              </Button>
+
+              {confirmDeleteId === tx.id ? (
+                <div className="flex items-center gap-1.5 animate-in fade-in duration-200">
+                  <span className="text-[10px] font-bold text-destructive font-vazir">
+                    مطمئنید؟
+                  </span>
+                  <Button
+                    variant="destructive"
+                    size="xs"
+                    onClick={() => {
+                      handleDelete(tx.id);
+                      setConfirmDeleteId(null);
+                    }}
+                    className="h-6 px-2 text-[10px] font-bold font-vazir"
+                  >
+                    بله
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    onClick={() => setConfirmDeleteId(null)}
+                    className="h-6 px-2 text-[10px] font-bold font-vazir"
+                  >
+                    خیر
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="destructive"
+                  size="icon-xs"
+                  onClick={() => setConfirmDeleteId(tx.id)}
+                  aria-label="حذف تراکنش"
+                  className="hover:scale-105 transition-transform"
+                >
+                  <Trash2 className="size-3.5 text-destructive" />
+                </Button>
+              )}
             </div>
           </div>
         ))}

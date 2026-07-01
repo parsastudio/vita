@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useMemo, useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { localDb, type LanguageCard } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -12,12 +13,18 @@ import { formatPersianNumber } from "@/lib/utils";
 
 export function LanguageWidget() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"add" | "review" | "list">("add");
-  const [mounted, setMounted] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const activeTab =
+    (searchParams.get("tab") as "add" | "review" | "list") || "add";
+
+  const setActiveTab = (tab: "add" | "review" | "list") => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   const userId = user?.id || "guest";
 
@@ -62,7 +69,7 @@ export function LanguageWidget() {
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 bg-primary/10 border border-primary/20 text-primary rounded-full px-3 py-1 text-xs font-bold font-vazir">
-          <span>{mounted ? formatPersianNumber(cardCount) : cardCount}</span>
+          <span>{formatPersianNumber(cardCount)}</span>
           <span>کارت فعال</span>
         </div>
       </div>
@@ -72,7 +79,7 @@ export function LanguageWidget() {
           variant={activeTab === "add" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("add")}
-          className="font-vazir text-xs"
+          className="font-vazir text-xs font-semibold"
         >
           افزودن کارت جمله
         </Button>
@@ -81,12 +88,12 @@ export function LanguageWidget() {
           variant={activeTab === "review" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("review")}
-          className="relative font-vazir text-xs"
+          className="relative font-vazir text-xs font-semibold"
         >
           مرور کارت‌ها
           {reviewCount > 0 && (
             <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-[9px] text-white flex items-center justify-center rounded-full font-bold">
-              {mounted ? formatPersianNumber(reviewCount) : reviewCount}
+              {formatPersianNumber(reviewCount)}
             </span>
           )}
         </Button>
@@ -95,7 +102,7 @@ export function LanguageWidget() {
           variant={activeTab === "list" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("list")}
-          className="font-vazir text-xs"
+          className="font-vazir text-xs font-semibold"
         >
           لیست کارت‌ها
         </Button>

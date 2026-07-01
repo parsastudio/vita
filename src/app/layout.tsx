@@ -51,7 +51,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${vazirmatn.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-primary/10">
+      <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-primary/10 overflow-x-hidden">
         <ErrorBoundary>
           <Providers>
             <GuestBanner />

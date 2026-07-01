@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useModules } from "@/hooks/use-modules";
 import { useSync } from "@/hooks/use-sync";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -13,13 +14,17 @@ export function useDashboardState() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [mounted, setMounted] = useState(false);
-  const [activeWidget, setActiveWidget] = useState<"language" | "finance">(
-    "language",
-  );
   const [widgetOrder, setWidgetOrder] = useState<string[]>([
     "language",
     "finance",
   ]);
+
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const activeWidget =
+    (searchParams.get("space") as "language" | "finance") || "language";
 
   useEffect(() => {
     setMounted(true);
@@ -36,11 +41,6 @@ export function useDashboardState() {
       setWidgetOrder(JSON.parse(savedOrder));
     }
 
-    const savedActive = localStorage.getItem("vita_active_widget");
-    if (savedActive === "language" || savedActive === "finance") {
-      setActiveWidget(savedActive);
-    }
-
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
@@ -48,8 +48,10 @@ export function useDashboardState() {
   }, []);
 
   const changeActiveWidget = (widget: "language" | "finance") => {
-    setActiveWidget(widget);
-    localStorage.setItem("vita_active_widget", widget);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("space", widget);
+    params.delete("tab");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   const moveWidget = (index: number, direction: "up" | "down") => {

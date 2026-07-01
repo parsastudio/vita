@@ -6,12 +6,13 @@ import {
   type FinanceTransaction,
   type FinanceBudget,
 } from "@/lib/db/client";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { formatPersianNumber, getJalaliDateParts } from "@/lib/utils";
+import { getJalaliDateParts } from "@/lib/utils";
 import { StatsCards } from "./stats-cards";
 import { TrendChart } from "./trend-chart";
 import { BudgetManager } from "./budget-manager";
+import { FinanceInsights } from "./finance-insights";
+import { CategoryDistribution } from "./category-distribution";
 import { v4 as uuidv4 } from "uuid";
 
 interface FinanceDashboardProps {
@@ -26,10 +27,12 @@ export function FinanceDashboard({
   userId,
 }: FinanceDashboardProps) {
   const { toast } = useToast();
+  const [subTab, setSubTab] = useState<"overview" | "categories" | "budgets">(
+    "overview",
+  );
   const [budgetCategory, setBudgetCategory] = useState("");
   const [budgetLimit, setBudgetLimit] = useState("");
   const [mounted, setMounted] = useState(false);
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -235,30 +238,6 @@ export function FinanceDashboard({
     toast("خروجی اکسل با موفقیت دریافت شد", "success");
   };
 
-  const donutSegments = useMemo(() => {
-    let accumulatedPercent = 0;
-    const colors = [
-      "#8B5CF6",
-      "#10B981",
-      "#3B82F6",
-      "#F59E0B",
-      "#EF4444",
-      "#EC4899",
-      "#6B7280",
-    ];
-    return stats.categories.map((cat, idx) => {
-      const currentPercent = cat.percentage;
-      const strokeDashoffset = 100 - accumulatedPercent;
-      accumulatedPercent += currentPercent;
-      return {
-        ...cat,
-        color: colors[idx % colors.length],
-        strokeDashoffset,
-        strokeDasharray: `${currentPercent} ${100 - currentPercent}`,
-      };
-    });
-  }, [stats]);
-
   const maxTrendVal = useMemo(() => {
     const vals = trends.flatMap((t) => [t.income, t.expense]);
     const max = Math.max(...vals, 100000);
@@ -266,143 +245,83 @@ export function FinanceDashboard({
   }, [trends]);
 
   return (
-    <div className="space-y-8">
-      <StatsCards
-        income={stats.income}
-        expense={stats.expense}
-        balance={stats.balance}
-        mounted={mounted}
-      />
+    <div className="space-y-6">
+      <div className="flex gap-1.5 bg-muted/50 p-1 border border-border rounded-xl max-w-sm">
+        <button
+          onClick={() => setSubTab("overview")}
+          className={`flex-1 py-1.5 text-[11px] font-semibold font-vazir rounded-lg transition-colors ${
+            subTab === "overview"
+              ? "bg-background text-primary shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          خلاصه وضعیت
+        </button>
+        <button
+          onClick={() => setSubTab("categories")}
+          className={`flex-1 py-1.5 text-[11px] font-semibold font-vazir rounded-lg transition-colors ${
+            subTab === "categories"
+              ? "bg-background text-primary shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          تحلیل مخارج
+        </button>
+        <button
+          onClick={() => setSubTab("budgets")}
+          className={`flex-1 py-1.5 text-[11px] font-semibold font-vazir rounded-lg transition-colors ${
+            subTab === "budgets"
+              ? "bg-background text-primary shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          بودجه‌بندی
+        </button>
+      </div>
 
-      <TrendChart trends={trends} maxTrendVal={maxTrendVal} />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <div className="p-6 border border-border bg-background rounded-xl space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider font-vazir">
-              سهم عنوان هزینه‌ها
-            </h3>
-            <Button
-              variant="outline"
-              size="xs"
-              onClick={handleExportCSV}
-              className="font-vazir text-xs"
-            >
-              خروجی اکسل
-            </Button>
+      <div className="space-y-6">
+        {subTab === "overview" && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <StatsCards
+              income={stats.income}
+              expense={stats.expense}
+              balance={stats.balance}
+              mounted={mounted}
+            />
+            <TrendChart trends={trends} maxTrendVal={maxTrendVal} />
+            <FinanceInsights
+              transactions={transactions}
+              income={stats.income}
+              expense={stats.expense}
+            />
           </div>
+        )}
 
-          {stats.categories.length > 0 ? (
-            <div className="flex flex-col sm:flex-row items-center gap-8 justify-center">
-              <div className="relative w-36 h-36 shrink-0">
-                <svg
-                  viewBox="0 0 36 36"
-                  className="w-full h-full transform -rotate-90"
-                >
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="15.915"
-                    fill="none"
-                    stroke="transparent"
-                    strokeWidth="3"
-                  />
-                  {donutSegments.map((seg, idx) => (
-                    <circle
-                      key={idx}
-                      cx="18"
-                      cy="18"
-                      r="15.915"
-                      fill="none"
-                      stroke={seg.color}
-                      strokeWidth={hoveredIdx === idx ? "4.2" : "3.2"}
-                      strokeDasharray={seg.strokeDasharray}
-                      strokeDashoffset={seg.strokeDashoffset}
-                      onMouseEnter={() => setHoveredIdx(idx)}
-                      onMouseLeave={() => setHoveredIdx(null)}
-                      className="transition-all duration-200 ease-out cursor-pointer"
-                    />
-                  ))}
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1 pointer-events-none">
-                  {hoveredIdx !== null ? (
-                    <>
-                      <span className="text-[9px] text-muted-foreground truncate max-w-[80px] font-bold font-vazir">
-                        {donutSegments[hoveredIdx].name}
-                      </span>
-                      <span className="text-xs font-bold text-foreground">
-                        {formatPersianNumber(
-                          donutSegments[hoveredIdx].percentage.toFixed(0),
-                        )}
-                        %
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-[10px] text-muted-foreground uppercase font-bold font-vazir">
-                        کل خرج‌ها
-                      </span>
-                      <span className="text-xs font-bold text-foreground">
-                        {mounted
-                          ? formatPersianNumber(stats.expense)
-                          : stats.expense}
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
+        {subTab === "categories" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <CategoryDistribution
+              categories={stats.categories}
+              totalExpense={stats.expense}
+              onExportCSV={handleExportCSV}
+              mounted={mounted}
+            />
+          </div>
+        )}
 
-              <div className="flex-1 w-full space-y-2">
-                {donutSegments.map((seg, idx) => (
-                  <div
-                    key={idx}
-                    onMouseEnter={() => setHoveredIdx(idx)}
-                    onMouseLeave={() => setHoveredIdx(null)}
-                    className={`flex items-center justify-between text-xs p-1 rounded-md transition-colors ${
-                      hoveredIdx === idx ? "bg-muted/60" : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: seg.color }}
-                      />
-                      <span className="font-medium text-foreground font-vazir">
-                        {seg.name}
-                      </span>
-                    </div>
-                    <div className="text-start text-muted-foreground font-vazir">
-                      <span className="font-semibold text-foreground">
-                        {mounted ? formatPersianNumber(seg.value) : seg.value}{" "}
-                        تومان
-                      </span>{" "}
-                      (
-                      {mounted
-                        ? formatPersianNumber(seg.percentage.toFixed(0))
-                        : seg.percentage.toFixed(0)}
-                      ٪)
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-12 text-sm text-muted-foreground font-vazir">
-              هنوز هزینه‌ای ثبت نشده است تا سهم عنوان رندر شود.
-            </div>
-          )}
-        </div>
-
-        <BudgetManager
-          budgetCategory={budgetCategory}
-          setBudgetCategory={setBudgetCategory}
-          budgetLimit={budgetLimit}
-          setBudgetLimit={setBudgetLimit}
-          handleSetBudget={handleSetBudget}
-          budgetStatuses={budgetStatuses}
-          handleDeleteBudget={handleDeleteBudget}
-          mounted={mounted}
-        />
+        {subTab === "budgets" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <BudgetManager
+              budgetCategory={budgetCategory}
+              setBudgetCategory={setBudgetCategory}
+              budgetLimit={budgetLimit}
+              setBudgetLimit={setBudgetLimit}
+              handleSetBudget={handleSetBudget}
+              budgetStatuses={budgetStatuses}
+              handleDeleteBudget={handleDeleteBudget}
+              mounted={mounted}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
