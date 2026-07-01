@@ -15,6 +15,7 @@ export function AuthModal() {
     enableGuestMode,
     signIn,
     signUp,
+    isLoading,
   } = useAuth();
   const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(false);
@@ -22,9 +23,14 @@ export function AuthModal() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (showAuthModal) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (showAuthModal && mounted) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -32,9 +38,9 @@ export function AuthModal() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showAuthModal]);
+  }, [showAuthModal, mounted]);
 
-  if (!showAuthModal) return null;
+  if (!mounted || isLoading || !showAuthModal) return null;
 
   const validateForm = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -200,7 +206,7 @@ export function AuthModal() {
                 setError(null);
                 setIsSignUp(!isSignUp);
               }}
-              className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 cursor-pointer"
             >
               {isSignUp
                 ? "قبلاً ثبت‌نام کرده‌اید؟ وارد شوید"

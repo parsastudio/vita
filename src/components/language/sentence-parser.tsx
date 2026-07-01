@@ -112,7 +112,8 @@ export function SentenceParser({
           rows={3}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="w-full p-3 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all resize-none ltr"
+          dir="ltr"
+          className="w-full p-3 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all resize-none"
           placeholder="Type or paste the English sentence here..."
         />
       </div>
@@ -129,7 +130,7 @@ export function SentenceParser({
               </span>
             )}
           </div>
-          <div className="flex flex-wrap gap-2 ltr">
+          <div className="flex flex-wrap gap-2" dir="ltr">
             {words.map((word, idx) => (
               <button
                 key={idx}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { localDb } from "@/lib/db/client";
 import { syncData } from "@/app/actions/sync";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -219,16 +219,25 @@ export function useSync() {
     }
   }, [user, isGuest, isSyncing, toast]);
 
+  const syncRef = useRef(performSync);
+  useEffect(() => {
+    syncRef.current = performSync;
+  }, [performSync]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    window.addEventListener("online", performSync);
-    performSync();
+    const handleOnline = () => {
+      syncRef.current();
+    };
+
+    window.addEventListener("online", handleOnline);
+    handleOnline();
 
     return () => {
-      window.removeEventListener("online", performSync);
+      window.removeEventListener("online", handleOnline);
     };
-  }, [performSync]);
+  }, []);
 
   return { performSync, isSyncing, error };
 }

@@ -376,7 +376,11 @@ export function QuickEntry({
                 تشخیص سیستم:
               </span>{" "}
               <span
-                className={`font-bold ${parsedNlp.type === "income" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                className={`font-bold ${
+                  parsedNlp.type === "income"
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-red-600 dark:text-red-400"
+                }`}
               >
                 {parsedNlp.type === "income" ? "+" : "-"}
                 {formatPersianNumber(parsedNlp.amount)} تومان
@@ -451,7 +455,8 @@ export function QuickEntry({
               value={amount}
               onChange={handleAmountChange}
               placeholder="0"
-              className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir ltr"
+              dir="ltr"
+              className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
             />
 
             {amountSuggestions.length > 0 && (

@@ -170,7 +170,7 @@ export async function syncData(rawPayload: unknown) {
             easeFactor: sql`EXCLUDED.ease_factor`,
             updatedAt: sql`EXCLUDED.updated_at`,
           },
-          where: sql`EXCLUDED.updated_at > language_cards.updated_at AND language_cards.user_id = ${userId}`,
+          where: sql`EXCLUDED.updated_at > ${languageCards.updatedAt} AND ${languageCards.userId} = ${userId}`,
         });
     }
 
@@ -200,7 +200,7 @@ export async function syncData(rawPayload: unknown) {
             description: sql`EXCLUDED.description`,
             updatedAt: sql`EXCLUDED.updated_at`,
           },
-          where: sql`EXCLUDED.updated_at > finance_transactions.updated_at AND finance_transactions.user_id = ${userId}`,
+          where: sql`EXCLUDED.updated_at > ${financeTransactions.updatedAt} AND ${financeTransactions.userId} = ${userId}`,
         });
     }
 
@@ -226,7 +226,7 @@ export async function syncData(rawPayload: unknown) {
             period: sql`EXCLUDED.period`,
             updatedAt: sql`EXCLUDED.updated_at`,
           },
-          where: sql`EXCLUDED.updated_at > finance_budgets.updated_at AND finance_budgets.user_id = ${userId}`,
+          where: sql`EXCLUDED.updated_at > ${financeBudgets.updatedAt} AND ${financeBudgets.userId} = ${userId}`,
         });
     }
 
@@ -247,7 +247,7 @@ export async function syncData(rawPayload: unknown) {
             enabledModules: sql`EXCLUDED.enabled_modules`,
             updatedAt: sql`EXCLUDED.updated_at`,
           },
-          where: sql`EXCLUDED.updated_at > user_settings.updated_at AND user_settings.user_id = ${userId}`,
+          where: sql`EXCLUDED.updated_at > ${userSettings.updatedAt} AND ${userSettings.userId} = ${userId}`,
         });
     }
   });

@@ -63,10 +63,14 @@ export function parseNaturalLanguageTransaction(
 ): ParsedNlp | null {
   if (!nlpText.trim()) return null;
   const normalizedText = toEnglishDigits(nlpText);
-  const words = normalizedText.split(/\s+/).filter(Boolean);
+  const rawWords = normalizedText.split(/\s+/).filter(Boolean);
+  const words = rawWords
+    .map((w) => w.replace(/[.,،\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim())
+    .filter(Boolean);
+
   let parsedAmount = 0;
   let parsedType: "income" | "expense" = "expense";
-  let detectedTags: string[] = [];
+  const detectedTags: string[] = [];
 
   const millionMatch = normalizedText.match(/(\d+(?:\.\d+)?)\s*(میلیون|ملیون)/);
   const thousandMatch = normalizedText.match(/(\d+(?:\.\d+)?)\s*(هزار)/);

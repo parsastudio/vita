@@ -75,6 +75,10 @@ export function DashboardGrid({
     );
   }
 
+  const activeModulesCount = enabledModules.filter((m) =>
+    widgetOrder.includes(m),
+  ).length;
+
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col gap-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-border pb-6 gap-4">
@@ -293,7 +297,13 @@ export function DashboardGrid({
         </div>
       </header>
 
-      <main className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+      <main
+        className={`grid grid-cols-1 ${
+          activeModulesCount > 1
+            ? "lg:grid-cols-2"
+            : "lg:grid-cols-1 max-w-3xl mx-auto w-full"
+        } gap-8 items-start`}
+      >
         <AnimatePresence mode="popLayout">
           {widgetOrder.map((moduleName, idx) => {
             if (
@@ -375,7 +385,7 @@ export function DashboardGrid({
         </AnimatePresence>
 
         {enabledModules.length === 0 && (
-          <div className="lg:col-span-2 flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-2xl">
+          <div className="lg:col-span-2 flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-2xl w-full">
             <p className="text-muted-foreground font-vazir">
               تمامی فضاهای کاربری غیرفعال هستند.
             </p>
