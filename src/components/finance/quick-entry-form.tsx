@@ -57,41 +57,63 @@ export function QuickEntryForm({
 }: QuickEntryFormProps) {
   const [budgetWarning, setBudgetWarning] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [showTagsDropdown, setShowTagsDropdown] = useState(false);
 
   const amountSuggestions = useMemo(() => {
     let amtVal = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
     if (isNaN(amtVal) || amtVal <= 0 || !transactions.length) return [];
-
-    if (amtVal < 1000) {
-      amtVal = amtVal * 1000;
-    }
-
-    const similar = transactions.filter((tx) => {
-      const diff = Math.abs(Number(tx.amount) - amtVal);
-      return diff <= amtVal * 0.15;
-    });
-
-    const uniqueSuggestions: Array<{
+    if (amtVal < 1000) amtVal = amtVal * 1000;
+    const similar = transactions.filter(
+      (tx) => Math.abs(Number(tx.amount) - amtVal) <= amtVal * 0.15,
+    );
+    const suggestions: Array<{
       category: string;
       tags: string[];
       description: string;
     }> = [];
-    const seenCategories = new Set<string>();
-
+    const seen = new Set<string>();
     for (const tx of similar) {
-      const catKey = tx.category.trim().toLowerCase();
-      if (!seenCategories.has(catKey)) {
-        seenCategories.add(catKey);
-        uniqueSuggestions.push({
+      const key = tx.category.trim().toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        suggestions.push({
           category: tx.category,
           tags: tx.tags,
           description: tx.description || "",
         });
       }
-      if (uniqueSuggestions.length >= 3) break;
+      if (suggestions.length >= 3) break;
     }
-    return uniqueSuggestions;
+    return suggestions;
   }, [amount, transactions]);
+
+  const sortedFrequentTags = useMemo(() => {
+    if (!transactions || transactions.length === 0) return [];
+    const freq: Record<string, number> = {};
+    transactions.forEach((tx) => {
+      if (tx.tags && Array.isArray(tx.tags)) {
+        tx.tags.forEach((tag) => {
+          const t = tag.trim();
+          if (t) freq[t] = (freq[t] || 0) + 1;
+        });
+      }
+    });
+    return Object.entries(freq)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name]) => name);
+  }, [transactions]);
+
+  const currentTagQuery = useMemo(() => {
+    const parts = tagsInput.split(",");
+    return parts[parts.length - 1].trim();
+  }, [tagsInput]);
+
+  const filteredTags = useMemo(() => {
+    if (!currentTagQuery) return sortedFrequentTags;
+    return sortedFrequentTags.filter((tag) =>
+      tag.toLowerCase().includes(currentTagQuery.toLowerCase()),
+    );
+  }, [sortedFrequentTags, currentTagQuery]);
 
   useEffect(() => {
     let amtVal = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
@@ -99,7 +121,6 @@ export function QuickEntryForm({
       setBudgetWarning(null);
       return;
     }
-
     const delayDebounce = setTimeout(async () => {
       if (type !== "expense") {
         setBudgetWarning(null);
@@ -109,11 +130,7 @@ export function QuickEntryForm({
         .split(",")
         .map((t) => t.trim().toLowerCase())
         .filter(Boolean);
-
-      if (amtVal < 1000) {
-        amtVal = amtVal * 1000;
-      }
-
+      if (amtVal < 1000) amtVal = amtVal * 1000;
       const budget = await localDb.financeBudgets
         .where("userId")
         .equals(userId)
@@ -123,7 +140,6 @@ export function QuickEntryForm({
             tags.includes(b.categoryOrTag.toLowerCase()),
         )
         .first();
-
       if (budget) {
         const limit = Number(budget.limitAmount);
         const currentMonthExpenses = transactions
@@ -135,18 +151,13 @@ export function QuickEntryForm({
               (t) => t.toLowerCase() === budget.categoryOrTag.toLowerCase(),
             );
             if (!matchCategory && !matchTag) return false;
-
-            const txDate = new Date(tx.createdAt);
-            const now = new Date();
-            const txParts = getJalaliDateParts(txDate);
-            const nowParts = getJalaliDateParts(now);
-
+            const txParts = getJalaliDateParts(new Date(tx.createdAt));
+            const nowParts = getJalaliDateParts(new Date());
             return (
               txParts.month === nowParts.month && txParts.year === nowParts.year
             );
           })
           .reduce((sum, tx) => sum + Number(tx.amount), 0);
-
         const nextTotal = currentMonthExpenses + amtVal;
         if (nextTotal >= limit * 0.8) {
           setBudgetWarning(
@@ -159,14 +170,12 @@ export function QuickEntryForm({
         setBudgetWarning(null);
       }
     }, 300);
-
     return () => clearTimeout(delayDebounce);
   }, [amount, category, tagsInput, type, transactions, userId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError(null);
-
     const validation = formSchema.safeParse({
       amount,
       category,
@@ -174,20 +183,16 @@ export function QuickEntryForm({
       tagsInput,
       description,
     });
-
     if (!validation.success) {
       setValidationError(validation.error.errors[0].message);
       return;
     }
-
     const numAmt = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
     const finalAmt = numAmt < 1000 ? numAmt * 1000 : numAmt;
-
     const tags = (tagsInput || "")
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
-
     onSave(finalAmt, tags);
   };
 
@@ -203,6 +208,17 @@ export function QuickEntryForm({
       `عنوان و تگ بر اساس مبلغ به عنوان "${sug.category}" اعمال شد`,
       "info",
     );
+  };
+
+  const handleSelectTag = (tag: string) => {
+    const parts = tagsInput.split(",");
+    parts[parts.length - 1] = tag;
+    const joined = parts
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .join(", ");
+    setTagsInput(joined ? joined + ", " : tag + ", ");
+    setShowTagsDropdown(false);
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -224,21 +240,18 @@ export function QuickEntryForm({
       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block font-vazir">
         فرم ثبت تراکنش تفصیلی
       </span>
-
       {validationError && (
         <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-medium leading-relaxed font-vazir flex items-start gap-1.5">
           <AlertTriangle className="size-4 shrink-0 text-red-500 mt-0.5" />
           <span>{validationError}</span>
         </div>
       )}
-
       {budgetWarning && (
         <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-medium leading-relaxed font-vazir flex items-start gap-1.5">
           <AlertTriangle className="size-4 shrink-0 text-amber-500 mt-0.5" />
           <span>{budgetWarning}</span>
         </div>
       )}
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
@@ -253,7 +266,6 @@ export function QuickEntryForm({
             dir="ltr"
             className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
           />
-
           {amountSuggestions.length > 0 && (
             <div className="pt-2 animate-in fade-in duration-200">
               <span className="text-[10px] font-semibold text-muted-foreground block mb-1 font-vazir">
@@ -274,7 +286,6 @@ export function QuickEntryForm({
             </div>
           )}
         </div>
-
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
             نوع تراکنش
@@ -283,29 +294,20 @@ export function QuickEntryForm({
             <button
               type="button"
               onClick={() => setType("expense")}
-              className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${
-                type === "expense"
-                  ? "border-red-500/30 bg-red-500/5 text-red-600"
-                  : "border-border bg-background text-muted-foreground hover:bg-muted"
-              }`}
+              className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${type === "expense" ? "border-red-500/30 bg-red-500/5 text-red-600" : "border-border bg-background text-muted-foreground hover:bg-muted"}`}
             >
               هزینه
             </button>
             <button
               type="button"
               onClick={() => setType("income")}
-              className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${
-                type === "income"
-                  ? "border-green-500/30 bg-green-500/5 text-green-600"
-                  : "border-border bg-background text-muted-foreground hover:bg-muted"
-              }`}
+              className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${type === "income" ? "border-green-500/30 bg-green-500/5 text-green-600" : "border-border bg-background text-muted-foreground hover:bg-muted"}`}
             >
               درآمد
             </button>
           </div>
         </div>
       </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
@@ -320,8 +322,7 @@ export function QuickEntryForm({
             className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
           />
         </div>
-
-        <div className="space-y-1.5">
+        <div className="relative space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
             برچسب‌ها (با کاما جدا کنید)
           </label>
@@ -329,12 +330,27 @@ export function QuickEntryForm({
             type="text"
             value={tagsInput}
             onChange={(e) => setTagsInput(e.target.value)}
+            onFocus={() => setShowTagsDropdown(true)}
+            onBlur={() => setTimeout(() => setShowTagsDropdown(false), 220)}
             placeholder="مثال: خونه، غذا، رفت و آمد"
             className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
           />
+          {showTagsDropdown && filteredTags.length > 0 && (
+            <div className="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-card border border-border rounded-lg shadow-lg">
+              {filteredTags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onMouseDown={() => handleSelectTag(tag)}
+                  className="w-full text-right px-3 py-2.5 text-xs hover:bg-muted text-foreground transition-colors cursor-pointer font-vazir"
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
           توضیحات اختیاری
@@ -347,7 +363,6 @@ export function QuickEntryForm({
           className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
         />
       </div>
-
       <Button type="submit" className="w-full font-vazir">
         ذخیره و ثبت در دفتر مالی
       </Button>

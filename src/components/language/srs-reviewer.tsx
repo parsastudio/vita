@@ -17,16 +17,18 @@ export function SrsReviewer({
 }) {
   const [index, setIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [sessionCards, setSessionCards] = useState<LanguageCard[]>([]);
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    setSessionCards(cards);
+  }, [cards]);
 
-  const currentCard = cards[index];
+  const currentCard = sessionCards[index];
 
-  if (!currentCard) {
+  if (!currentCard || sessionCards.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in duration-300">
         <span className="text-4xl">🎉</span>
@@ -114,10 +116,25 @@ export function SrsReviewer({
     });
 
     setShowAnswer(false);
-    if (index + 1 >= cards.length) {
-      onReviewComplete();
+
+    let updatedSession = [...sessionCards];
+    if (rating === "archived") {
+      updatedSession = updatedSession.filter((c) => c.id !== currentCard.id);
+      setSessionCards(updatedSession);
+      if (updatedSession.length === 0) {
+        return;
+      }
+      if (index >= updatedSession.length) {
+        setIndex(0);
+      }
     } else {
-      setIndex(index + 1);
+      if (index + 1 >= sessionCards.length) {
+        const shuffled = [...sessionCards].sort(() => Math.random() - 0.5);
+        setSessionCards(shuffled);
+        setIndex(0);
+      } else {
+        setIndex(index + 1);
+      }
     }
   };
 
@@ -129,7 +146,9 @@ export function SrsReviewer({
         </span>
         <span className="text-xs font-medium text-muted-foreground font-vazir">
           کارت {mounted ? formatPersianNumber(index + 1) : index + 1} از{" "}
-          {mounted ? formatPersianNumber(cards.length) : cards.length}
+          {mounted
+            ? formatPersianNumber(sessionCards.length)
+            : sessionCards.length}
         </span>
       </div>
 
