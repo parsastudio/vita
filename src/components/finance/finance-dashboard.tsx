@@ -6,126 +6,24 @@ import {
   type FinanceTransaction,
   type FinanceBudget,
 } from "@/lib/db/client";
-import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { formatPersianNumber, getJalaliDateParts } from "@/lib/utils";
+import { StatsCards } from "./stats-cards";
+import { TrendChart } from "./trend-chart";
 import { v4 as uuidv4 } from "uuid";
 
-const StatsCards = React.memo(
-  ({
-    income,
-    expense,
-    balance,
-    mounted,
-  }: {
-    income: number;
-    expense: number;
-    balance: number;
-    mounted: boolean;
-  }) => {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 border border-border bg-background rounded-xl">
-          <span className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
-            کل درآمدها
-          </span>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-            {mounted ? formatPersianNumber(income) : income} تومان
-          </p>
-        </div>
-
-        <div className="p-5 border border-border bg-background rounded-xl">
-          <span className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
-            کل هزینه‌ها
-          </span>
-          <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
-            {mounted ? formatPersianNumber(expense) : expense} تومان
-          </p>
-        </div>
-
-        <div className="p-5 border border-border bg-background rounded-xl">
-          <span className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
-            تراز کل مالی
-          </span>
-          <p
-            className={`text-2xl font-bold mt-1 ${
-              balance >= 0 ? "text-primary" : "text-destructive"
-            }`}
-          >
-            {mounted ? formatPersianNumber(balance) : balance} تومان
-          </p>
-        </div>
-      </div>
-    );
-  },
-);
-
-StatsCards.displayName = "StatsCards";
-
-const TrendChart = React.memo(
-  ({
-    trends,
-    maxTrendVal,
-  }: {
-    trends: Array<{ income: number; expense: number; label: string }>;
-    maxTrendVal: number;
-  }) => {
-    return (
-      <div className="p-6 border border-border bg-background rounded-xl space-y-4">
-        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider font-vazir">
-          مقایسه روند درآمد و هزینه‌های اخیر
-        </h3>
-        <div className="relative h-48 w-full flex items-end justify-between pt-6 gap-2">
-          {trends.map((t, idx) => {
-            const incH = (t.income / maxTrendVal) * 100;
-            const expH = (t.expense / maxTrendVal) * 100;
-            return (
-              <div
-                key={idx}
-                className="flex-1 flex flex-col items-center h-full justify-end gap-2 group/trend"
-              >
-                <div className="w-full flex justify-center items-end gap-1.5 h-full">
-                  <div
-                    style={{ height: `${Math.max(incH, 4)}%` }}
-                    className="w-3 sm:w-5 bg-green-500 rounded-t-md transition-all duration-500 group-hover/trend:opacity-80"
-                  />
-                  <div
-                    style={{ height: `${Math.max(expH, 4)}%` }}
-                    className="w-3 sm:w-5 bg-red-500 rounded-t-md transition-all duration-500 group-hover/trend:opacity-80"
-                  />
-                </div>
-                <span className="text-[10px] font-bold text-muted-foreground font-vazir mt-1">
-                  {t.label}
-                </span>
-
-                <div className="absolute bottom-16 bg-card border border-border p-2 rounded-lg shadow-xl opacity-0 group-hover/trend:opacity-100 transition-opacity pointer-events-none text-[10px] z-10 flex flex-col gap-1 font-vazir">
-                  <span className="text-green-600 font-bold">
-                    درآمد: {formatPersianNumber(t.income)} تومان
-                  </span>
-                  <span className="text-red-600 font-bold">
-                    هزینه: {formatPersianNumber(t.expense)} تومان
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  },
-);
-
-TrendChart.displayName = "TrendChart";
+interface FinanceDashboardProps {
+  transactions: FinanceTransaction[];
+  budgets: FinanceBudget[];
+  userId: string;
+}
 
 export function FinanceDashboard({
   transactions,
   budgets,
-}: {
-  transactions: FinanceTransaction[];
-  budgets: FinanceBudget[];
-}) {
-  const { user } = useAuth();
+  userId,
+}: FinanceDashboardProps) {
   const { toast } = useToast();
   const [budgetCategory, setBudgetCategory] = useState("");
   const [budgetLimit, setBudgetLimit] = useState("");
@@ -228,17 +126,11 @@ export function FinanceDashboard({
     e.preventDefault();
     const limitNum = parseFloat(budgetLimit);
 
-    if (!budgetCategory.trim()) {
-      toast("لطفاً یک دسته‌بندی یا برچسب معتبر وارد کنید", "error");
+    if (!budgetCategory.trim() || isNaN(limitNum) || limitNum <= 0) {
+      toast("اطلاعات بودجه نامعتبر است", "error");
       return;
     }
 
-    if (isNaN(limitNum) || limitNum <= 0) {
-      toast("مبلغ سقف بودجه باید عددی معتبر و بزرگتر از صفر باشد", "error");
-      return;
-    }
-
-    const userId = user?.id || "guest";
     const existing = await localDb.financeBudgets
       .where("userId")
       .equals(userId)

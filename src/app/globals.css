@@ -153,3 +153,13 @@
     @apply font-sans;
   }
 }
+
+.ltr {
+  direction: ltr !important;
+  text-align: left !important;
+}
+
+.rtl {
+  direction: rtl !important;
+  text-align: right !important;
+}

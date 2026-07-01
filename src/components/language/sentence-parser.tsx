@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { localDb } from "@/lib/db/client";
-import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
@@ -17,12 +16,12 @@ const cardFormSchema = z.object({
     .min(1, "تعیین یک کلمه به عنوان کلمه اصلی اجباری است"),
 });
 
-export function SentenceParser({
-  onSaveSuccess,
-}: {
+interface SentenceParserProps {
+  userId: string;
   onSaveSuccess: () => void;
-}) {
-  const { user } = useAuth();
+}
+
+export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
   const { toast } = useToast();
   const [text, setText] = useState("");
   const [translation, setTranslation] = useState("");
@@ -67,7 +66,6 @@ export function SentenceParser({
       return;
     }
 
-    const userId = user?.id || "guest";
     await localDb.languageCards.put({
       id: uuidv4(),
       userId,

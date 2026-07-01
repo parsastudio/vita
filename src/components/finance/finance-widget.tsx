@@ -19,15 +19,15 @@ export function FinanceWidget() {
     setMounted(true);
   }, []);
 
+  const userId = user?.id || "guest";
+
   const transactions = useLiveQuery(() => {
-    const userId = user?.id || "guest";
     return localDb.financeTransactions.where("userId").equals(userId).toArray();
-  }, [user]);
+  }, [userId]);
 
   const budgets = useLiveQuery(() => {
-    const userId = user?.id || "guest";
     return localDb.financeBudgets.where("userId").equals(userId).toArray();
-  }, [user]);
+  }, [userId]);
 
   const txCount = transactions?.length || 0;
 
@@ -88,6 +88,7 @@ export function FinanceWidget() {
           <FinanceDashboard
             transactions={transactions || []}
             budgets={budgets || []}
+            userId={userId}
           />
         )}
 

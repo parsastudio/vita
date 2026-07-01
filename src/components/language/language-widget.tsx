@@ -19,10 +19,11 @@ export function LanguageWidget() {
     setMounted(true);
   }, []);
 
+  const userId = user?.id || "guest";
+
   const cards = useLiveQuery(() => {
-    const userId = user?.id || "guest";
     return localDb.languageCards.where("userId").equals(userId).toArray();
-  }, [user]);
+  }, [userId]);
 
   const reviewCards = useMemo<LanguageCard[]>(() => {
     if (!cards) return [];
@@ -89,7 +90,10 @@ export function LanguageWidget() {
 
       <div className="flex-1">
         {activeTab === "add" && (
-          <SentenceParser onSaveSuccess={() => setActiveTab("list")} />
+          <SentenceParser
+            userId={userId}
+            onSaveSuccess={() => setActiveTab("list")}
+          />
         )}
 
         {activeTab === "review" && (

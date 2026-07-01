@@ -20,7 +20,9 @@ interface AuthContextType {
   isGuest: boolean;
   isLoading: boolean;
   showAuthModal: boolean;
+  showLogoutModal: boolean;
   setShowAuthModal: (show: boolean) => void;
+  setShowLogoutModal: (show: boolean) => void;
   enableGuestMode: () => void;
   disableGuestMode: () => void;
   signUp: (
@@ -32,6 +34,7 @@ interface AuthContextType {
     password: string,
   ) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  confirmLogout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -71,95 +74,91 @@ async function getUnsyncedCount(userId: string): Promise<number> {
   );
 }
 
-async function migrateGuestData(newUserId: string) {
-  try {
-    await localDb.transaction(
-      "rw",
-      [
-        localDb.languageCards,
-        localDb.financeTransactions,
-        localDb.financeBudgets,
-        localDb.userSettings,
-      ],
-      async () => {
-        await localDb.languageCards
-          .where("userId")
-          .equals("guest")
-          .modify({ userId: newUserId, synced: false, updatedAt: new Date() });
+async function migrateGuestData(newUserId: string): Promise<void> {
+  await localDb.transaction(
+    "rw",
+    [
+      localDb.languageCards,
+      localDb.financeTransactions,
+      localDb.financeBudgets,
+      localDb.userSettings,
+    ],
+    async () => {
+      await localDb.languageCards
+        .where("userId")
+        .equals("guest")
+        .modify({ userId: newUserId, synced: false, updatedAt: new Date() });
 
-        await localDb.financeTransactions
-          .where("userId")
-          .equals("guest")
-          .modify({ userId: newUserId, synced: false, updatedAt: new Date() });
+      await localDb.financeTransactions
+        .where("userId")
+        .equals("guest")
+        .modify({ userId: newUserId, synced: false, updatedAt: new Date() });
 
-        const existingBudgets = await localDb.financeBudgets
-          .where("userId")
-          .equals(newUserId)
-          .toArray();
+      const existingBudgets = await localDb.financeBudgets
+        .where("userId")
+        .equals(newUserId)
+        .toArray();
 
-        const guestBudgets = await localDb.financeBudgets
-          .where("userId")
-          .equals("guest")
-          .toArray();
+      const guestBudgets = await localDb.financeBudgets
+        .where("userId")
+        .equals("guest")
+        .toArray();
 
-        for (const gb of guestBudgets) {
-          const matching = existingBudgets.find(
-            (eb) =>
-              eb.categoryOrTag.toLowerCase() === gb.categoryOrTag.toLowerCase(),
+      for (const gb of guestBudgets) {
+        const matching = existingBudgets.find(
+          (eb) =>
+            eb.categoryOrTag.toLowerCase() === gb.categoryOrTag.toLowerCase(),
+        );
+        if (matching) {
+          await localDb.financeBudgets.update(matching.id, {
+            limitAmount: gb.limitAmount,
+            updatedAt: new Date(),
+            synced: false,
+          });
+          await localDb.financeBudgets.delete(gb.id);
+        } else {
+          await localDb.financeBudgets.update(gb.id, {
+            userId: newUserId,
+            synced: false,
+            updatedAt: new Date(),
+          });
+        }
+      }
+
+      const existingSettings = await localDb.userSettings
+        .where("userId")
+        .equals(newUserId)
+        .first();
+
+      const guestSettings = await localDb.userSettings
+        .where("userId")
+        .equals("guest")
+        .first();
+
+      if (guestSettings) {
+        if (existingSettings) {
+          const mergedModules = Array.from(
+            new Set([
+              ...existingSettings.enabledModules,
+              ...guestSettings.enabledModules,
+            ]),
           );
-          if (matching) {
-            await localDb.financeBudgets.update(matching.id, {
-              limitAmount: gb.limitAmount,
-              updatedAt: new Date(),
-              synced: false,
-            });
-            await localDb.financeBudgets.delete(gb.id);
-          } else {
-            await localDb.financeBudgets.update(gb.id, {
-              userId: newUserId,
-              synced: false,
-              updatedAt: new Date(),
-            });
-          }
+          await localDb.userSettings.update(existingSettings.id, {
+            enabledModules: mergedModules,
+            updatedAt: new Date(),
+            synced: false,
+          });
+          await localDb.userSettings.delete(guestSettings.id);
+        } else {
+          await localDb.userSettings.update(guestSettings.id, {
+            userId: newUserId,
+            synced: false,
+            updatedAt: new Date(),
+          });
         }
-
-        const existingSettings = await localDb.userSettings
-          .where("userId")
-          .equals(newUserId)
-          .first();
-
-        const guestSettings = await localDb.userSettings
-          .where("userId")
-          .equals("guest")
-          .first();
-
-        if (guestSettings) {
-          if (existingSettings) {
-            const mergedModules = Array.from(
-              new Set([
-                ...existingSettings.enabledModules,
-                ...guestSettings.enabledModules,
-              ]),
-            );
-            await localDb.userSettings.update(existingSettings.id, {
-              enabledModules: mergedModules,
-              updatedAt: new Date(),
-              synced: false,
-            });
-            await localDb.userSettings.delete(guestSettings.id);
-          } else {
-            await localDb.userSettings.update(guestSettings.id, {
-              userId: newUserId,
-              synced: false,
-              updatedAt: new Date(),
-            });
-          }
-        }
-      },
-    );
-  } catch (error) {
-    console.error(error);
-  }
+      }
+    },
+  );
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -167,6 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isGuest, setIsGuest] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
 
   useEffect(() => {
     async function initSession() {
@@ -231,39 +231,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       const unsyncedCount = await getUnsyncedCount(user.id);
       if (unsyncedCount > 0) {
-        const confirmLogout = window.confirm(
-          "هشدار: داده‌های همگام‌سازی نشده با ابر شناسایی شدند. در صورت خروج از حساب، این داده‌ها برای همیشه حذف خواهند شد. آیا مایل به خروج هستید؟",
-        );
-        if (!confirmLogout) return;
+        setShowLogoutModal(true);
+        return;
       }
     }
+    await confirmLogout();
+  };
 
+  const confirmLogout = async () => {
     await signOutAction();
-    try {
-      await localDb.transaction(
-        "rw",
-        [
-          localDb.languageCards,
-          localDb.financeTransactions,
-          localDb.financeBudgets,
-          localDb.userSettings,
-          localDb.deletedRecords,
-        ],
-        async () => {
-          await Promise.all([
-            localDb.languageCards.clear(),
-            localDb.financeTransactions.clear(),
-            localDb.financeBudgets.clear(),
-            localDb.userSettings.clear(),
-            localDb.deletedRecords.clear(),
-          ]);
-        },
-      );
-    } catch (error) {
-      console.error(error);
-    }
+    await localDb.transaction(
+      "rw",
+      [
+        localDb.languageCards,
+        localDb.financeTransactions,
+        localDb.financeBudgets,
+        localDb.userSettings,
+        localDb.deletedRecords,
+      ],
+      async () => {
+        await Promise.all([
+          localDb.languageCards.clear(),
+          localDb.financeTransactions.clear(),
+          localDb.financeBudgets.clear(),
+          localDb.userSettings.clear(),
+          localDb.deletedRecords.clear(),
+        ]);
+      },
+    );
     setUser(null);
     setIsGuest(false);
+    setShowLogoutModal(false);
     setShowAuthModal(true);
   };
 
@@ -274,12 +272,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isGuest,
         isLoading,
         showAuthModal,
+        showLogoutModal,
         setShowAuthModal,
+        setShowLogoutModal,
         enableGuestMode,
         disableGuestMode,
         signUp,
         signIn,
         logout,
+        confirmLogout,
       }}
     >
       {children}

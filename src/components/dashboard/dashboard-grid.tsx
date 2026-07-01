@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
-import { useModules } from "@/hooks/use-modules";
-import { useSync } from "@/hooks/use-sync";
-import { useAuth } from "@/lib/auth/auth-context";
+import { useDashboardState } from "./use-dashboard-state";
 import { Button } from "@/components/ui/button";
+import { ChevronUp, ChevronDown, Monitor, Moon, Sun } from "lucide-react";
 
 export function DashboardGrid({
   languageWidget,
@@ -15,52 +14,29 @@ export function DashboardGrid({
   languageWidget: React.ReactNode;
   financeWidget: React.ReactNode;
 }) {
-  const { user, isGuest, logout, disableGuestMode, isLoading } = useAuth();
   const { theme, setTheme } = useTheme();
-  const { enabledModules, toggleModule } = useModules();
-  const { isSyncing, performSync } = useSync();
-  const [showSettings, setShowSettings] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
-  const [mounted, setMounted] = useState(false);
-  const [widgetOrder, setWidgetOrder] = useState<string[]>([]);
-
-  useEffect(() => {
-    setMounted(true);
-    if (typeof window === "undefined") return;
-    setIsOnline(navigator.onLine);
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    const savedOrder = localStorage.getItem("vita_widget_order");
-    if (savedOrder) {
-      setWidgetOrder(JSON.parse(savedOrder));
-    } else {
-      setWidgetOrder(["language", "finance"]);
-    }
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
+  const {
+    user,
+    isGuest,
+    logout,
+    disableGuestMode,
+    isLoading,
+    enabledModules,
+    toggleModule,
+    isSyncing,
+    performSync,
+    showSettings,
+    setShowSettings,
+    showUserMenu,
+    setShowUserMenu,
+    isOnline,
+    mounted,
+    widgetOrder,
+    moveWidget,
+  } = useDashboardState();
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
-  };
-
-  const moveWidget = (index: number, direction: "up" | "down") => {
-    const nextIndex = direction === "up" ? index - 1 : index + 1;
-    if (nextIndex < 0 || nextIndex >= widgetOrder.length) return;
-    const updated = [...widgetOrder];
-    const temp = updated[index];
-    updated[index] = updated[nextIndex];
-    updated[nextIndex] = temp;
-    setWidgetOrder(updated);
-    localStorage.setItem("vita_widget_order", JSON.stringify(updated));
   };
 
   if (isLoading) {
@@ -132,36 +108,12 @@ export function DashboardGrid({
             <span className="sr-only">تغییر تم</span>
             {mounted ? (
               theme === "dark" ? (
-                <svg
-                  className="size-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14.828 14.828a4 4 0 11-5.656-5.656 4 4 0 015.656 5.656z"
-                  />
-                </svg>
+                <Sun className="size-4" />
               ) : (
-                <svg
-                  className="size-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                  />
-                </svg>
+                <Moon className="size-4" />
               )
             ) : (
-              <div className="size-4 rounded-full bg-muted animate-pulse" />
+              <Monitor className="size-4 text-muted animate-pulse" />
             )}
           </Button>
 
@@ -327,7 +279,7 @@ export function DashboardGrid({
                       disabled={idx === 0}
                       className="rounded-full bg-background/80 backdrop-blur-xs"
                     >
-                      ▲
+                      <ChevronUp className="size-3" />
                     </Button>
                     <Button
                       variant="outline"
@@ -336,7 +288,7 @@ export function DashboardGrid({
                       disabled={idx === widgetOrder.length - 1}
                       className="rounded-full bg-background/80 backdrop-blur-xs"
                     >
-                      ▼
+                      <ChevronDown className="size-3" />
                     </Button>
                   </div>
                   {languageWidget}
@@ -364,7 +316,7 @@ export function DashboardGrid({
                       disabled={idx === 0}
                       className="rounded-full bg-background/80 backdrop-blur-xs"
                     >
-                      ▲
+                      <ChevronUp className="size-3" />
                     </Button>
                     <Button
                       variant="outline"
@@ -373,7 +325,7 @@ export function DashboardGrid({
                       disabled={idx === widgetOrder.length - 1}
                       className="rounded-full bg-background/80 backdrop-blur-xs"
                     >
-                      ▼
+                      <ChevronDown className="size-3" />
                     </Button>
                   </div>
                   {financeWidget}

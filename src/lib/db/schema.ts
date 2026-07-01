@@ -43,7 +43,10 @@ export const languageCards = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (table) => [index("language_cards_user_id_idx").on(table.userId)],
+  (table) => [
+    index("language_cards_user_id_idx").on(table.userId),
+    index("language_cards_updated_at_idx").on(table.updatedAt),
+  ],
 );
 
 export const financeTransactions = pgTable(
@@ -59,7 +62,10 @@ export const financeTransactions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
-  (table) => [index("finance_transactions_user_id_idx").on(table.userId)],
+  (table) => [
+    index("finance_transactions_user_id_idx").on(table.userId),
+    index("finance_transactions_updated_at_idx").on(table.updatedAt),
+  ],
 );
 
 export const financeBudgets = pgTable(
@@ -77,7 +83,10 @@ export const financeBudgets = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (table) => [index("finance_budgets_user_id_idx").on(table.userId)],
+  (table) => [
+    index("finance_budgets_user_id_idx").on(table.userId),
+    index("finance_budgets_updated_at_idx").on(table.updatedAt),
+  ],
 );
 
 export const userSettings = pgTable(
@@ -90,7 +99,10 @@ export const userSettings = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (table) => [index("user_settings_user_id_idx").on(table.userId)],
+  (table) => [
+    index("user_settings_user_id_idx").on(table.userId),
+    index("user_settings_updated_at_idx").on(table.updatedAt),
+  ],
 );
 
 export const deletedRecords = pgTable(
@@ -103,5 +115,8 @@ export const deletedRecords = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (table) => [index("deleted_records_user_id_idx").on(table.userId)],
+  (table) => [
+    index("deleted_records_user_id_idx").on(table.userId),
+    index("deleted_records_deleted_at_idx").on(table.deletedAt),
+  ],
 );

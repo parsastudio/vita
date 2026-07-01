@@ -4,15 +4,16 @@ import * as schema from "./schema";
 
 const dbUrl = process.env.DATABASE_URL;
 
-if (!dbUrl) {
-  throw new Error("DATABASE_URL must be specified in env variables!");
-}
-
 const globalForDb = globalThis as unknown as {
   conn: Pool | undefined;
 };
 
-const pool = globalForDb.conn ?? new Pool({ connectionString: dbUrl });
+const pool =
+  globalForDb.conn ??
+  new Pool({
+    connectionString:
+      dbUrl || "postgres://postgres:postgres@localhost:5432/vita_dummy",
+  });
 
 if (process.env.NODE_ENV !== "production") {
   globalForDb.conn = pool;
