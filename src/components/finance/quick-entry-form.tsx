@@ -184,7 +184,7 @@ export function QuickEntryForm({
       description,
     });
     if (!validation.success) {
-      setValidationError(validation.error.errors[0].message);
+      setValidationError(validation.error.issues[0].message);
       return;
     }
     const numAmt = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));

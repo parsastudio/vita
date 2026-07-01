@@ -61,7 +61,7 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
     });
 
     if (!validation.success) {
-      setValidationError(validation.error.errors[0].message);
+      setValidationError(validation.error.issues[0].message);
       return;
     }
 

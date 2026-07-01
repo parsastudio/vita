@@ -45,23 +45,7 @@ self.addEventListener("fetch", (e) => {
     url.searchParams.has("_rsc") ||
     (acceptHeader && acceptHeader.includes("text/html"))
   ) {
-    e.respondWith(
-      fetch(e.request)
-        .then((response) => {
-          if (response.status === 200) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(e.request, copy);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          return caches.match("/").then((response) => {
-            return response || caches.match(e.request);
-          });
-        }),
-    );
+    e.respondWith(fetch(e.request));
     return;
   }
 

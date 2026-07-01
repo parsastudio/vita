@@ -43,8 +43,7 @@ export function useSync() {
         .filter((s) => !s.synced)
         .toArray();
       const unsyncedDeletes = await localDb.deletedRecords
-        .where("synced")
-        .equals(false)
+        .filter((d) => !d.synced)
         .toArray();
 
       const response = await syncData({

@@ -61,8 +61,7 @@ async function getUnsyncedCount(userId: string): Promise<number> {
     .filter((s) => !s.synced)
     .count();
   const unsyncedDeletes = await localDb.deletedRecords
-    .where("synced")
-    .equals(false)
+    .filter((d) => !d.synced)
     .count();
 
   return (

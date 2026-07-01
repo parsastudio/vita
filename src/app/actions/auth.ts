@@ -13,13 +13,6 @@ const pbkdf2Async = promisify(crypto.pbkdf2);
 const SESSION_SECRET =
   process.env.SESSION_SECRET || "vita-space-default-secret-key-2026";
 
-if (
-  process.env.NODE_ENV === "production" &&
-  SESSION_SECRET === "vita-space-default-secret-key-2026"
-) {
-  throw new Error("SESSION_SECRET must be configured in production!");
-}
-
 const ENCRYPTION_KEY = crypto.scryptSync(SESSION_SECRET, "salt", 32);
 const IV_LENGTH = 12;
 
@@ -68,7 +61,7 @@ function decryptSession(sessionText: string): string | null {
     const encryptedText = Buffer.from(parts[2], "hex");
     const decipher = crypto.createDecipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
     decipher.setAuthTag(authTag);
-    let decrypted = decipher.update(encryptedText, "hex", "utf8");
+    let decrypted = decipher.update(encryptedText).toString("utf8");
     decrypted += decipher.final("utf8");
     return decrypted;
   } catch {
@@ -76,12 +69,22 @@ function decryptSession(sessionText: string): string | null {
   }
 }
 
+function checkRuntimeSecret() {
+  if (
+    process.env.NODE_ENV === "production" &&
+    SESSION_SECRET === "vita-space-default-secret-key-2026"
+  ) {
+    throw new Error("SESSION_SECRET must be configured in production!");
+  }
+}
+
 export async function signUpAction(email: string, password: string) {
   try {
+    checkRuntimeSecret();
     const lowerEmail = email.toLowerCase();
     const validation = authSchema.safeParse({ email: lowerEmail, password });
     if (!validation.success) {
-      return { success: false, error: validation.error.errors[0].message };
+      return { success: false, error: validation.error.issues[0].message };
     }
 
     const existingUser = await db.query.users.findFirst({
@@ -129,10 +132,11 @@ export async function signUpAction(email: string, password: string) {
 
 export async function signInAction(email: string, password: string) {
   try {
+    checkRuntimeSecret();
     const lowerEmail = email.toLowerCase();
     const validation = authSchema.safeParse({ email: lowerEmail, password });
     if (!validation.success) {
-      return { success: false, error: validation.error.errors[0].message };
+      return { success: false, error: validation.error.issues[0].message };
     }
 
     const userRecord = await db.query.users.findFirst({
