@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { localDb } from "@/lib/db/client";
+import { localDb, subscribeToDbChanges } from "@/lib/db/client";
 import { syncData } from "@/app/actions/sync";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useToast } from "@/hooks/use-toast";
@@ -11,10 +11,13 @@ export function useSync() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const isSyncingRef = useRef(false);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const performSync = useCallback(async () => {
-    if (!user || isGuest || isSyncing) return;
+    if (!user || isGuest || isSyncingRef.current) return;
 
+    isSyncingRef.current = true;
     setIsSyncing(true);
     setError(null);
 
@@ -221,8 +224,9 @@ export function useSync() {
       );
     } finally {
       setIsSyncing(false);
+      isSyncingRef.current = false;
     }
-  }, [user, isGuest, isSyncing, toast]);
+  }, [user, isGuest, toast]);
 
   const syncRef = useRef(performSync);
   useEffect(() => {
@@ -237,6 +241,30 @@ export function useSync() {
     } else if (!user) {
       prevUserRef.current = null;
     }
+  }, [user, isGuest, performSync]);
+
+  useEffect(() => {
+    if (isGuest || !user) return;
+
+    const unsubscribe = subscribeToDbChanges(() => {
+      if (isSyncingRef.current) return;
+
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+
+      debounceTimeoutRef.current = setTimeout(() => {
+        if (isSyncingRef.current || isGuest || !user) return;
+        performSync();
+      }, 1000);
+    });
+
+    return () => {
+      unsubscribe();
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
   }, [user, isGuest, performSync]);
 
   useEffect(() => {

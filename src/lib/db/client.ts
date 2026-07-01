@@ -74,6 +74,42 @@ class VitaLocalDatabase extends Dexie {
 
 export const localDb = new VitaLocalDatabase();
 
+export const dbChangeListeners = new Set<() => void>();
+
+export function subscribeToDbChanges(listener: () => void) {
+  dbChangeListeners.add(listener);
+  return () => {
+    dbChangeListeners.delete(listener);
+  };
+}
+
+export function notifyDbChange() {
+  dbChangeListeners.forEach((l) => l());
+}
+
+const tables = [
+  "languageCards",
+  "financeTransactions",
+  "financeBudgets",
+  "userSettings",
+  "deletedRecords",
+] as const;
+
+tables.forEach((tableName) => {
+  localDb[tableName].hook("creating", function (primKey, obj, transaction) {
+    transaction.on("complete", () => notifyDbChange());
+  });
+  localDb[tableName].hook(
+    "updating",
+    function (mods, primKey, obj, transaction) {
+      transaction.on("complete", () => notifyDbChange());
+    },
+  );
+  localDb[tableName].hook("deleting", function (primKey, obj, transaction) {
+    transaction.on("complete", () => notifyDbChange());
+  });
+});
+
 if (typeof window !== "undefined") {
   localDb.open().catch((err) => {
     console.error(err);

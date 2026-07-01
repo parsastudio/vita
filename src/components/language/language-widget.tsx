@@ -110,10 +110,7 @@ export function LanguageWidget() {
 
       <div className="flex-1">
         {activeTab === "add" && (
-          <SentenceParser
-            userId={userId}
-            onSaveSuccess={() => setActiveTab("list")}
-          />
+          <SentenceParser userId={userId} onSaveSuccess={() => {}} />
         )}
 
         {activeTab === "review" && (

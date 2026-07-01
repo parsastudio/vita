@@ -133,8 +133,12 @@ export function AuthModal() {
           )}
 
           <div className="flex flex-col items-center text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <span className="text-xl font-bold">و</span>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full overflow-hidden border border-border">
+              <img
+                src="/vita-logo.webp"
+                alt="ویتا"
+                className="size-full object-cover"
+              />
             </div>
             <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
               خوش آمدید به ویتا
