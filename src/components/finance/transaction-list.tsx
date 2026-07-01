@@ -21,7 +21,11 @@ export function TransactionList({
     setMounted(true);
   }, []);
 
-  const filtered = transactions.filter((tx) => {
+  const sortedTransactions = [...transactions].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
+  const filtered = sortedTransactions.filter((tx) => {
     const matchesSearch =
       tx.category.toLowerCase().includes(search.toLowerCase()) ||
       tx.description.toLowerCase().includes(search.toLowerCase()) ||

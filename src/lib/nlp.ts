@@ -8,6 +8,7 @@ export interface ParsedNlp {
 
 const PERSIAN_STOP_WORDS = new Set([
   "تومان",
+  "تومن",
   "ریال",
   "بابت",
   "برای",
@@ -18,11 +19,61 @@ const PERSIAN_STOP_WORDS = new Set([
   "رو",
   "در",
   "پرداخت",
-  "خرید",
+  "خریدم",
   "هزینه",
   "کردم",
   "شد",
+  "جهت",
+  "به خاطر",
+  "واسه ی",
+  "واسه",
+  "برا",
+  "ی",
+  "یک",
+  "عدد",
+  "تا",
+  "من",
+  "بابتِ",
+  "برایِ",
+  "واسهٔ",
+  "خرید",
+  "فروش",
 ]);
+
+const INCOME_TRIGGERS = [
+  "فروش",
+  "فروختم",
+  "درآمد",
+  "حقوق",
+  "واریز",
+  "طلب",
+  "هدیه",
+  "جایزه",
+  "گرفتم",
+  "سود",
+  "فروختن",
+  "طلبم",
+  "گرفتن",
+  "فروخته",
+  "دستمزد",
+  "کارکرد",
+];
+
+const EXPENSE_TRIGGERS = [
+  "خرید",
+  "خریدن",
+  "خریدم",
+  "پرداخت",
+  "پرداختم",
+  "پرداختی",
+  "هزینه",
+  "خرج",
+  "کاهش",
+  "دادم",
+  "دادن",
+  "خریداری",
+  "پرداخت شد",
+];
 
 export function toEnglishDigits(str: string): string {
   const persianDigits = [
@@ -62,7 +113,33 @@ export function parseNaturalLanguageTransaction(
   nlpText: string,
 ): ParsedNlp | null {
   if (!nlpText.trim()) return null;
-  const normalizedText = toEnglishDigits(nlpText);
+
+  let cleanedText = nlpText.trim();
+  const splitKeywords = [
+    "واسه ی",
+    "واسه",
+    "بابت",
+    "برای",
+    "جهت",
+    "به خاطر",
+    "برا",
+  ];
+  let titlePart = cleanedText;
+  let tagPart = "";
+
+  for (const kw of splitKeywords) {
+    const kwRegex = new RegExp(`\\b${kw}\\b|${kw}`, "i");
+    if (kwRegex.test(cleanedText)) {
+      const parts = cleanedText.split(kwRegex);
+      if (parts.length >= 2) {
+        titlePart = parts[0].trim();
+        tagPart = parts.slice(1).join(" ").trim();
+        break;
+      }
+    }
+  }
+
+  const normalizedText = toEnglishDigits(titlePart);
   const rawWords = normalizedText.split(/\s+/).filter(Boolean);
   const words = rawWords
     .map((w) => w.replace(/[.,،\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim())
@@ -90,44 +167,77 @@ export function parseNaturalLanguageTransaction(
     }
   }
 
+  if (parsedAmount > 0 && parsedAmount < 1000) {
+    parsedAmount = parsedAmount * 1000;
+  }
+
   if (parsedAmount <= 0) return null;
 
-  for (const word of words) {
-    const isTrigger = [
-      "income",
-      "salary",
-      "earn",
-      "deposit",
-      "gift",
-      "حقوق",
-      "درآمد",
-      "واریز",
-    ].includes(word.toLowerCase());
+  const normalizedFullText = toEnglishDigits(cleanedText);
 
-    if (isTrigger) {
-      parsedType = "income";
-      triggeredWord = word;
-    } else if (
-      !PERSIAN_STOP_WORDS.has(word) &&
-      isNaN(parseFloat(word.replace(/,/g, ""))) &&
-      !word.includes("هزار") &&
-      !word.includes("میلیون") &&
-      !word.includes("ملیون")
-    ) {
+  const hasIncomeTrigger = INCOME_TRIGGERS.some((trigger) =>
+    normalizedFullText.includes(trigger),
+  );
+  const hasExpenseTrigger = EXPENSE_TRIGGERS.some((trigger) =>
+    normalizedFullText.includes(trigger),
+  );
+
+  if (hasIncomeTrigger && !hasExpenseTrigger) {
+    parsedType = "income";
+  } else if (hasExpenseTrigger && !hasIncomeTrigger) {
+    parsedType = "expense";
+  } else if (hasIncomeTrigger && hasExpenseTrigger) {
+    const firstIncomeIdx = INCOME_TRIGGERS.reduce((min, trigger) => {
+      const idx = normalizedFullText.indexOf(trigger);
+      return idx !== -1 && idx < min ? idx : min;
+    }, Infinity);
+    const firstExpenseIdx = EXPENSE_TRIGGERS.reduce((min, trigger) => {
+      const idx = normalizedFullText.indexOf(trigger);
+      return idx !== -1 && idx < min ? idx : min;
+    }, Infinity);
+    parsedType = firstIncomeIdx < firstExpenseIdx ? "income" : "expense";
+  }
+
+  for (const word of words) {
+    const cleanWord = word.toLowerCase();
+    const isStopWord = PERSIAN_STOP_WORDS.has(cleanWord);
+    const isNumeric = !isNaN(parseFloat(cleanWord.replace(/,/g, "")));
+    const isUnit =
+      cleanWord.includes("هزار") ||
+      cleanWord.includes("میلیون") ||
+      cleanWord.includes("ملیون");
+    const isTrigger =
+      INCOME_TRIGGERS.includes(cleanWord) ||
+      EXPENSE_TRIGGERS.includes(cleanWord);
+
+    if (!isStopWord && !isNumeric && !isUnit && !isTrigger) {
       detectedTags.push(word);
+    } else if (isTrigger && !triggeredWord) {
+      triggeredWord = word;
     }
   }
 
-  if (detectedTags.length === 0 && triggeredWord) {
-    detectedTags.push(triggeredWord);
+  if (tagPart) {
+    const cleanTags = tagPart
+      .split(/[\s,،]+/)
+      .map((t) => t.trim())
+      .filter((t) => t && !PERSIAN_STOP_WORDS.has(t));
+    detectedTags.push(...cleanTags);
   }
 
-  const parsedCategory = detectedTags[0] || "عمومی";
+  let parsedCategory = detectedTags[0];
+  if (!parsedCategory) {
+    parsedCategory = triggeredWord || "عمومی";
+  }
+
   return {
     amount: parsedAmount,
     type: parsedType,
     category: parsedCategory,
-    tags: detectedTags,
-    description: nlpText,
+    tags:
+      detectedTags.length > 0
+        ? Array.from(new Set(detectedTags))
+        : [parsedCategory],
+    description: cleanedText,
   };
 }

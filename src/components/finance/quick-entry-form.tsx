@@ -59,8 +59,12 @@ export function QuickEntryForm({
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const amountSuggestions = useMemo(() => {
-    const amtVal = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
+    let amtVal = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
     if (isNaN(amtVal) || amtVal <= 0 || !transactions.length) return [];
+
+    if (amtVal < 1000) {
+      amtVal = amtVal * 1000;
+    }
 
     const similar = transactions.filter((tx) => {
       const diff = Math.abs(Number(tx.amount) - amtVal);
@@ -90,7 +94,7 @@ export function QuickEntryForm({
   }, [amount, transactions]);
 
   useEffect(() => {
-    const amtVal = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
+    let amtVal = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
     if (isNaN(amtVal) || amtVal <= 0 || !category.trim()) {
       setBudgetWarning(null);
       return;
@@ -105,6 +109,10 @@ export function QuickEntryForm({
         .split(",")
         .map((t) => t.trim().toLowerCase())
         .filter(Boolean);
+
+      if (amtVal < 1000) {
+        amtVal = amtVal * 1000;
+      }
 
       const budget = await localDb.financeBudgets
         .where("userId")
@@ -173,12 +181,14 @@ export function QuickEntryForm({
     }
 
     const numAmt = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
+    const finalAmt = numAmt < 1000 ? numAmt * 1000 : numAmt;
+
     const tags = (tagsInput || "")
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
 
-    onSave(numAmt, tags);
+    onSave(finalAmt, tags);
   };
 
   const applySuggestion = (sug: {
