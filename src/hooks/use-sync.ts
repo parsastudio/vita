@@ -18,221 +18,270 @@ export function useSync() {
   const isSyncingRef = useRef(false);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const performSync = useCallback(async () => {
-    if (!user || isGuest || isSyncingRef.current) return;
+  const performSync = useCallback(
+    async (options?: { pushOnly?: boolean }) => {
+      const pushOnly = options?.pushOnly ?? false;
+      if (!user || isGuest || isSyncingRef.current) return;
 
-    isSyncingRef.current = true;
-    setIsSyncing(true);
-    setError(null);
-    setDatabaseSyncingActive(true);
+      isSyncingRef.current = true;
+      setIsSyncing(true);
+      setError(null);
+      setDatabaseSyncingActive(true);
 
-    try {
-      const lastSyncedKey = `last_synced_at_${user.id}`;
-      const lastSyncedAt = localStorage.getItem(lastSyncedKey);
+      try {
+        const lastSyncedKey = `last_synced_at_${user.id}`;
 
-      const unsyncedCards = await localDb.languageCards
-        .where("userId")
-        .equals(user.id)
-        .filter((c) => !c.synced)
-        .toArray();
-      const unsyncedTransactions = await localDb.financeTransactions
-        .where("userId")
-        .equals(user.id)
-        .filter((t) => !t.synced)
-        .toArray();
-      const unsyncedBudgets = await localDb.financeBudgets
-        .where("userId")
-        .equals(user.id)
-        .filter((b) => !b.synced)
-        .toArray();
-      const unsyncedSettings = await localDb.userSettings
-        .where("userId")
-        .equals(user.id)
-        .filter((s) => !s.synced)
-        .toArray();
-      const unsyncedDeletes = await localDb.deletedRecords
-        .filter((d) => !d.synced)
-        .toArray();
+        const cardCount = await localDb.languageCards
+          .where("userId")
+          .equals(user.id)
+          .count();
+        const txCount = await localDb.financeTransactions
+          .where("userId")
+          .equals(user.id)
+          .count();
+        const budgetCount = await localDb.financeBudgets
+          .where("userId")
+          .equals(user.id)
+          .count();
 
-      const response = await syncData({
-        userId: user.id,
-        lastSyncedAt,
-        languageCards: unsyncedCards,
-        financeTransactions: unsyncedTransactions,
-        financeBudgets: unsyncedBudgets,
-        userSettings: unsyncedSettings,
-        deletedRecords: unsyncedDeletes.map((d) => ({
-          id: d.id,
-          tableName: d.tableName,
-          deletedAt: d.deletedAt,
-        })),
-      });
+        let lastSyncedAt = localStorage.getItem(lastSyncedKey);
+        if (cardCount === 0 && txCount === 0 && budgetCount === 0) {
+          lastSyncedAt = null;
+        }
 
-      if (response && response.success) {
-        await localDb.transaction(
-          "rw",
-          [
-            localDb.languageCards,
-            localDb.financeTransactions,
-            localDb.financeBudgets,
-            localDb.userSettings,
-            localDb.deletedRecords,
-          ],
-          async () => {
-            for (const card of unsyncedCards) {
-              const current = await localDb.languageCards.get(card.id);
-              if (
-                current &&
-                current.updatedAt.getTime() === card.updatedAt.getTime()
-              ) {
-                await localDb.languageCards.update(card.id, { synced: true });
-              }
-            }
+        const unsyncedCards = await localDb.languageCards
+          .where("userId")
+          .equals(user.id)
+          .filter((c) => !c.synced)
+          .toArray();
+        const unsyncedTransactions = await localDb.financeTransactions
+          .where("userId")
+          .equals(user.id)
+          .filter((t) => !t.synced)
+          .toArray();
+        const unsyncedBudgets = await localDb.financeBudgets
+          .where("userId")
+          .equals(user.id)
+          .filter((b) => !b.synced)
+          .toArray();
+        const unsyncedSettings = await localDb.userSettings
+          .where("userId")
+          .equals(user.id)
+          .filter((s) => !s.synced)
+          .toArray();
+        const unsyncedDeletes = await localDb.deletedRecords
+          .filter((d) => !d.synced)
+          .toArray();
 
-            for (const tx of unsyncedTransactions) {
-              const current = await localDb.financeTransactions.get(tx.id);
-              if (
-                current &&
-                current.updatedAt.getTime() === tx.updatedAt.getTime()
-              ) {
-                await localDb.financeTransactions.update(tx.id, {
-                  synced: true,
-                });
-              }
-            }
+        if (
+          pushOnly &&
+          unsyncedCards.length === 0 &&
+          unsyncedTransactions.length === 0 &&
+          unsyncedBudgets.length === 0 &&
+          unsyncedSettings.length === 0 &&
+          unsyncedDeletes.length === 0
+        ) {
+          setIsSyncing(false);
+          isSyncingRef.current = false;
+          setDatabaseSyncingActive(false);
+          return;
+        }
 
-            for (const b of unsyncedBudgets) {
-              const current = await localDb.financeBudgets.get(b.id);
-              if (
-                current &&
-                current.updatedAt.getTime() === b.updatedAt.getTime()
-              ) {
-                await localDb.financeBudgets.update(b.id, { synced: true });
-              }
-            }
+        const response = await syncData({
+          userId: user.id,
+          lastSyncedAt,
+          pushOnly,
+          languageCards: unsyncedCards,
+          financeTransactions: unsyncedTransactions,
+          financeBudgets: unsyncedBudgets,
+          userSettings: unsyncedSettings,
+          deletedRecords: unsyncedDeletes.map((d) => ({
+            id: d.id,
+            tableName: d.tableName,
+            deletedAt: d.deletedAt,
+          })),
+        });
 
-            for (const s of unsyncedSettings) {
-              const current = await localDb.userSettings.get(s.id);
-              if (
-                current &&
-                current.updatedAt.getTime() === s.updatedAt.getTime()
-              ) {
-                await localDb.userSettings.update(s.id, { synced: true });
-              }
-            }
-
-            const deleteIds = unsyncedDeletes.map((d) => d.id);
-            if (deleteIds.length > 0) {
-              await localDb.deletedRecords
-                .where("id")
-                .anyOf(deleteIds)
-                .delete();
-            }
-
-            if (
-              response.pulled.deletedRecords &&
-              response.pulled.deletedRecords.length > 0
-            ) {
-              for (const r of response.pulled.deletedRecords) {
-                if (r.tableName === "languageCards") {
-                  await localDb.languageCards.delete(r.id);
-                } else if (r.tableName === "financeTransactions") {
-                  await localDb.financeTransactions.delete(r.id);
-                } else if (r.tableName === "financeBudgets") {
-                  await localDb.financeBudgets.delete(r.id);
+        if (response && response.success) {
+          await localDb.transaction(
+            "rw",
+            [
+              localDb.languageCards,
+              localDb.financeTransactions,
+              localDb.financeBudgets,
+              localDb.userSettings,
+              localDb.deletedRecords,
+            ],
+            async () => {
+              for (const card of unsyncedCards) {
+                const current = await localDb.languageCards.get(card.id);
+                if (
+                  current &&
+                  current.updatedAt.getTime() === card.updatedAt.getTime()
+                ) {
+                  await localDb.languageCards.update(card.id, { synced: true });
                 }
               }
-            }
 
-            for (const card of response.pulled.languageCards) {
-              const local = await localDb.languageCards.get(card.id);
-              if (
-                !local ||
-                new Date(card.updatedAt) > new Date(local.updatedAt)
-              ) {
-                await localDb.languageCards.put({
-                  id: card.id,
-                  userId: user.id,
-                  originalText: card.originalText,
-                  translation: card.translation,
-                  focusWord: card.focusWord,
-                  srsStatus: card.srsStatus as "active" | "archived",
-                  difficulty: Number(card.difficulty),
-                  createdAt: new Date(card.createdAt),
-                  updatedAt: new Date(card.updatedAt),
-                  synced: true,
-                });
+              for (const tx of unsyncedTransactions) {
+                const current = await localDb.financeTransactions.get(tx.id);
+                if (
+                  current &&
+                  current.updatedAt.getTime() === tx.updatedAt.getTime()
+                ) {
+                  await localDb.financeTransactions.update(tx.id, {
+                    synced: true,
+                  });
+                }
               }
-            }
 
-            for (const tx of response.pulled.financeTransactions) {
-              const local = await localDb.financeTransactions.get(tx.id);
-              if (
-                !local ||
-                new Date(tx.updatedAt) > new Date(local.updatedAt)
-              ) {
-                await localDb.financeTransactions.put({
-                  id: tx.id,
-                  userId: user.id,
-                  amount: Number(tx.amount),
-                  type: tx.type as "income" | "expense",
-                  category: tx.category,
-                  tags: tx.tags,
-                  description: tx.description,
-                  createdAt: new Date(tx.createdAt),
-                  updatedAt: new Date(tx.updatedAt),
-                  synced: true,
-                });
+              for (const b of unsyncedBudgets) {
+                const current = await localDb.financeBudgets.get(b.id);
+                if (
+                  current &&
+                  current.updatedAt.getTime() === b.updatedAt.getTime()
+                ) {
+                  await localDb.financeBudgets.update(b.id, { synced: true });
+                }
               }
-            }
 
-            for (const b of response.pulled.financeBudgets) {
-              const local = await localDb.financeBudgets.get(b.id);
-              if (!local || new Date(b.updatedAt) > new Date(local.updatedAt)) {
-                await localDb.financeBudgets.put({
-                  id: b.id,
-                  userId: user.id,
-                  categoryOrTag: b.categoryOrTag,
-                  limitAmount: Number(b.limitAmount),
-                  period: b.period as "monthly",
-                  createdAt: new Date(b.createdAt),
-                  updatedAt: new Date(b.updatedAt),
-                  synced: true,
-                });
+              for (const s of unsyncedSettings) {
+                const current = await localDb.userSettings.get(s.id);
+                if (
+                  current &&
+                  current.updatedAt.getTime() === s.updatedAt.getTime()
+                ) {
+                  await localDb.userSettings.update(s.id, { synced: true });
+                }
               }
-            }
 
-            for (const s of response.pulled.userSettings) {
-              const local = await localDb.userSettings.get(s.id);
-              if (!local || new Date(s.updatedAt) > new Date(local.updatedAt)) {
-                await localDb.userSettings.put({
-                  id: s.id,
-                  userId: user.id,
-                  enabledModules: s.enabledModules,
-                  updatedAt: new Date(s.updatedAt),
-                  synced: true,
-                });
+              const deleteIds = unsyncedDeletes.map((d) => d.id);
+              if (deleteIds.length > 0) {
+                await localDb.deletedRecords
+                  .where("id")
+                  .anyOf(deleteIds)
+                  .delete();
               }
-            }
-          },
-        );
 
-        localStorage.setItem(lastSyncedKey, response.serverTimestamp);
-        toast("همگام‌سازی با سرور ابری با موفقیت انجام شد", "success");
+              if (!pushOnly) {
+                if (
+                  response.pulled.deletedRecords &&
+                  response.pulled.deletedRecords.length > 0
+                ) {
+                  for (const r of response.pulled.deletedRecords) {
+                    if (r.tableName === "languageCards") {
+                      await localDb.languageCards.delete(r.id);
+                    } else if (r.tableName === "financeTransactions") {
+                      await localDb.financeTransactions.delete(r.id);
+                    } else if (r.tableName === "financeBudgets") {
+                      await localDb.financeBudgets.delete(r.id);
+                    }
+                  }
+                }
+
+                for (const card of response.pulled.languageCards) {
+                  const local = await localDb.languageCards.get(card.id);
+                  if (
+                    !local ||
+                    new Date(card.updatedAt) > new Date(local.updatedAt)
+                  ) {
+                    await localDb.languageCards.put({
+                      id: card.id,
+                      userId: user.id,
+                      originalText: card.originalText,
+                      translation: card.translation,
+                      focusWord: card.focusWord,
+                      srsStatus: card.srsStatus as "active" | "archived",
+                      difficulty: Number(card.difficulty),
+                      createdAt: new Date(card.createdAt),
+                      updatedAt: new Date(card.updatedAt),
+                      synced: true,
+                    });
+                  }
+                }
+
+                for (const tx of response.pulled.financeTransactions) {
+                  const local = await localDb.financeTransactions.get(tx.id);
+                  if (
+                    !local ||
+                    new Date(tx.updatedAt) > new Date(local.updatedAt)
+                  ) {
+                    await localDb.financeTransactions.put({
+                      id: tx.id,
+                      userId: user.id,
+                      amount: Number(tx.amount),
+                      type: tx.type as "income" | "expense",
+                      category: tx.category,
+                      tags: tx.tags,
+                      description: tx.description,
+                      createdAt: new Date(tx.createdAt),
+                      updatedAt: new Date(tx.updatedAt),
+                      synced: true,
+                    });
+                  }
+                }
+
+                for (const b of response.pulled.financeBudgets) {
+                  const local = await localDb.financeBudgets.get(b.id);
+                  if (
+                    !local ||
+                    new Date(b.updatedAt) > new Date(local.updatedAt)
+                  ) {
+                    await localDb.financeBudgets.put({
+                      id: b.id,
+                      userId: user.id,
+                      categoryOrTag: b.categoryOrTag,
+                      limitAmount: Number(b.limitAmount),
+                      period: b.period as "monthly",
+                      createdAt: new Date(b.createdAt),
+                      updatedAt: new Date(b.updatedAt),
+                      synced: true,
+                    });
+                  }
+                }
+
+                for (const s of response.pulled.userSettings) {
+                  const local = await localDb.userSettings.get(s.id);
+                  if (
+                    !local ||
+                    new Date(s.updatedAt) > new Date(local.updatedAt)
+                  ) {
+                    await localDb.userSettings.put({
+                      id: s.id,
+                      userId: user.id,
+                      enabledModules: s.enabledModules,
+                      updatedAt: new Date(s.updatedAt),
+                      synced: true,
+                    });
+                  }
+                }
+
+                localStorage.setItem(lastSyncedKey, response.serverTimestamp);
+              }
+            },
+          );
+
+          if (!pushOnly) {
+            toast("همگام‌سازی با سرور ابری با موفقیت انجام شد", "success");
+          }
+        }
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : "Sync failed";
+        setError(errMsg);
+        if (!pushOnly) {
+          toast(
+            "خطا در همگام‌سازی ابری. برنامه در حالت آفلاین کار می‌کند.",
+            "error",
+          );
+        }
+      } finally {
+        setIsSyncing(false);
+        isSyncingRef.current = false;
+        setDatabaseSyncingActive(false);
       }
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : "Sync failed";
-      setError(errMsg);
-      toast(
-        "خطا در همگام‌سازی ابری. برنامه در حالت آفلاین کار می‌کند.",
-        "error",
-      );
-    } finally {
-      setIsSyncing(false);
-      isSyncingRef.current = false;
-      setDatabaseSyncingActive(false);
-    }
-  }, [user, isGuest, toast]);
+    },
+    [user, isGuest, toast],
+  );
 
   const syncRef = useRef(performSync);
   useEffect(() => {
@@ -243,7 +292,7 @@ export function useSync() {
   useEffect(() => {
     if (user && !isGuest && prevUserRef.current !== user.id) {
       prevUserRef.current = user.id;
-      performSync();
+      performSync({ pushOnly: false });
     } else if (!user) {
       prevUserRef.current = null;
     }
@@ -261,7 +310,7 @@ export function useSync() {
 
       debounceTimeoutRef.current = setTimeout(() => {
         if (isSyncingRef.current || isGuest || !user) return;
-        performSync();
+        performSync({ pushOnly: true });
       }, 1000);
     });
 
@@ -277,7 +326,7 @@ export function useSync() {
     if (typeof window === "undefined") return;
 
     const handleOnline = () => {
-      syncRef.current();
+      syncRef.current({ pushOnly: false });
     };
 
     window.addEventListener("online", handleOnline);

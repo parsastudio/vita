@@ -238,6 +238,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const confirmLogout = async () => {
+    if (user) {
+      localStorage.removeItem(`last_synced_at_${user.id}`);
+    }
     await signOutAction();
     await localDb.transaction(
       "rw",

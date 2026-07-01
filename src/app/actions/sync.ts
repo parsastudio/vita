@@ -72,20 +72,17 @@ const syncPayloadSchema = z.object({
   financeBudgets: z.array(syncFinanceBudgetSchema),
   userSettings: z.array(syncUserSettingsSchema),
   deletedRecords: z.array(syncDeletedRecordSchema),
+  pushOnly: z.boolean().optional(),
 });
 
 export async function syncData(rawPayload: unknown) {
   const parsed = syncPayloadSchema.safeParse(rawPayload);
   if (!parsed.success) {
-    console.error(
-      "Sync payload validation failed:",
-      JSON.stringify(parsed.error.format(), null, 2),
-    );
     throw new Error("Invalid sync payload structure");
   }
 
   const payload = parsed.data;
-  const { userId, lastSyncedAt, ...changes } = payload;
+  const { userId, lastSyncedAt, pushOnly, ...changes } = payload;
 
   const sessionUser = await getCurrentUserAction();
   if (!sessionUser || sessionUser.id !== userId) {
@@ -255,6 +252,20 @@ export async function syncData(rawPayload: unknown) {
         });
     }
   });
+
+  if (pushOnly) {
+    return {
+      success: true,
+      serverTimestamp: serverTimestamp.toISOString(),
+      pulled: {
+        languageCards: [],
+        financeTransactions: [],
+        financeBudgets: [],
+        userSettings: [],
+        deletedRecords: [],
+      },
+    };
+  }
 
   const newCards = await db.query.languageCards.findMany({
     where: and(
