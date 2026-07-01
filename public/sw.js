@@ -1,4 +1,4 @@
-const CACHE_NAME = "vita-cache-v2";
+const CACHE_NAME = "vita-cache-v3";
 const ASSETS = ["/", "/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
@@ -57,22 +57,23 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(e.request).then((response) => {
-        if (
-          response.status === 200 &&
-          (url.origin === self.location.origin ||
-            url.pathname.startsWith("/_next/static"))
-        ) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(e.request, copy);
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.match(e.request).then((cachedResponse) => {
+        const fetchPromise = fetch(e.request)
+          .then((networkResponse) => {
+            if (
+              networkResponse.status === 200 &&
+              (url.origin === self.location.origin ||
+                url.pathname.startsWith("/_next/static"))
+            ) {
+              cache.put(e.request, networkResponse.clone());
+            }
+            return networkResponse;
+          })
+          .catch(() => {
+            return cachedResponse;
           });
-        }
-        return response;
+        return cachedResponse || fetchPromise;
       });
     }),
   );

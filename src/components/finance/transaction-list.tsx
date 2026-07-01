@@ -111,7 +111,7 @@ export function TransactionList({
                   {tx.tags.map((tag: string, idx: number) => (
                     <span
                       key={idx}
-                      className="text-[9px] bg-muted px-1.5 py-0.5 rounded-sm text-muted-foreground font-vazir"
+                      className="text-[9px] bg-primary/5 dark:bg-primary/10 text-primary dark:text-primary/90 border border-primary/10 dark:border-primary/20 px-1.5 py-0.5 rounded-sm font-vazir font-medium"
                     >
                       #{tag}
                     </span>

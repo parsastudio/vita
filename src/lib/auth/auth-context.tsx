@@ -92,10 +92,36 @@ async function migrateGuestData(newUserId: string) {
           .equals("guest")
           .modify({ userId: newUserId, synced: false, updatedAt: new Date() });
 
-        await localDb.financeBudgets
+        const existingBudgets = await localDb.financeBudgets
+          .where("userId")
+          .equals(newUserId)
+          .toArray();
+
+        const guestBudgets = await localDb.financeBudgets
           .where("userId")
           .equals("guest")
-          .modify({ userId: newUserId, synced: false, updatedAt: new Date() });
+          .toArray();
+
+        for (const gb of guestBudgets) {
+          const matching = existingBudgets.find(
+            (eb) =>
+              eb.categoryOrTag.toLowerCase() === gb.categoryOrTag.toLowerCase(),
+          );
+          if (matching) {
+            await localDb.financeBudgets.update(matching.id, {
+              limitAmount: gb.limitAmount,
+              updatedAt: new Date(),
+              synced: false,
+            });
+            await localDb.financeBudgets.delete(gb.id);
+          } else {
+            await localDb.financeBudgets.update(gb.id, {
+              userId: newUserId,
+              synced: false,
+              updatedAt: new Date(),
+            });
+          }
+        }
 
         const existingSettings = await localDb.userSettings
           .where("userId")

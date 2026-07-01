@@ -28,11 +28,22 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
   });
 
   const handleSpeak = (text: string) => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "en-US";
-      window.speechSynthesis.speak(utterance);
+    try {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-US";
+        const voices = window.speechSynthesis.getVoices();
+        const enVoice = voices.find((v) => v.lang.startsWith("en"));
+        if (enVoice) {
+          utterance.voice = enVoice;
+        }
+        window.speechSynthesis.speak(utterance);
+      } else {
+        toast("مرورگر شما از قابلیت تلفظ صوتی پشتیبانی نمی‌کند", "error");
+      }
+    } catch {
+      toast("خطایی در تلفظ صوتی رخ داده است", "error");
     }
   };
 

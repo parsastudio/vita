@@ -227,6 +227,10 @@ export function QuickEntry({
     });
 
     setNlpText("");
+    setAmount("");
+    setCategory("");
+    setTagsInput("");
+    setDescription("");
     toast("تراکنش به کمک دستیار هوشمند با موفقیت ثبت شد", "success");
     onSaveSuccess();
   };

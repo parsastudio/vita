@@ -41,11 +41,24 @@ export function SrsReviewer({
   }
 
   const handleSpeak = () => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(currentCard.originalText);
-      utterance.lang = "en-US";
-      window.speechSynthesis.speak(utterance);
+    try {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(
+          currentCard.originalText,
+        );
+        utterance.lang = "en-US";
+        const voices = window.speechSynthesis.getVoices();
+        const enVoice = voices.find((v) => v.lang.startsWith("en"));
+        if (enVoice) {
+          utterance.voice = enVoice;
+        }
+        window.speechSynthesis.speak(utterance);
+      } else {
+        toast("مرورگر شما از قابلیت تلفظ صوتی پشتیبانی نمی‌کند", "error");
+      }
+    } catch {
+      toast("خطایی در اجرای قابلیت تلفظ صوتی رخ داد", "error");
     }
   };
 

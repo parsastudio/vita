@@ -519,11 +519,15 @@ export function FinanceDashboard({
                     <span className="font-bold text-foreground font-vazir">
                       {b.category}
                     </span>
-                    {b.ratio >= 0.8 && (
-                      <span className="text-[9px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse font-vazir">
-                        هشدار مصرف
+                    {b.ratio >= 1.0 ? (
+                      <span className="text-[9px] bg-red-500/10 text-red-500 px-2 py-0.5 rounded-full font-bold animate-pulse font-vazir">
+                        تجاوز از سقف بودجه
                       </span>
-                    )}
+                    ) : b.ratio >= 0.8 ? (
+                      <span className="text-[9px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full font-bold animate-pulse font-vazir">
+                        نزدیک به سقف (۸۰٪+)
+                      </span>
+                    ) : null}
                   </div>
                   <button
                     onClick={() => handleDeleteBudget(b.id)}

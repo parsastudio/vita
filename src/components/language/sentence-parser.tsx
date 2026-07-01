@@ -32,17 +32,21 @@ export function SentenceParser({
 
   const words = useMemo(() => {
     if (!text.trim()) return [];
-    return text.split(/[\s,./#!$%\^&*;:{}=\-_`~()?]+/).filter(Boolean);
+    const normalized = text.replace(/[\u2018\u2019]/g, "'");
+    return normalized.split(/[\s,./#!$%\^&*;:{}=\-_`~()?"]+/).filter(Boolean);
   }, [text]);
 
-  const wordsSerialized = words.join(" ");
+  const wordsSerialized = useMemo(() => words.join(" "), [words]);
 
   useEffect(() => {
     const wordsArray = wordsSerialized.split(" ").filter(Boolean);
     if (wordsArray.length > 0) {
-      if (!selectedWord || !wordsArray.includes(selectedWord)) {
-        setSelectedWord(wordsArray[0]);
-      }
+      setSelectedWord((prev) => {
+        if (!prev || !wordsArray.includes(prev)) {
+          return wordsArray[0];
+        }
+        return prev;
+      });
     } else {
       setSelectedWord("");
     }
