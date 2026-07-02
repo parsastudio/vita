@@ -49,7 +49,7 @@ export function DashboardHeader({
       <div>
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold tracking-tight text-foreground font-vazir">
-            ویتا کیت
+            ویتا
           </h1>
 
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/60 border border-border text-[10px] font-semibold">

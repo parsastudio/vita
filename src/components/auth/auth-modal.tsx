@@ -217,7 +217,7 @@ export function AuthModal() {
               خوش آمدید به ویتا
             </h2>
             <p className="mt-2 text-sm text-muted-foreground font-vazir">
-              فضای شخصی هوشمند، غیرمتمرکز و اول‌-آفلاین شما
+              فضای شخصی هوشمند، غیرمتمرکز و آفلاین شما
             </p>
           </div>
 

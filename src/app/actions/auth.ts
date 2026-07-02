@@ -248,11 +248,11 @@ export async function requestPasswordResetAction(email: string) {
       body: JSON.stringify({
         from: "Vita Kit <onboarding@resend.dev>",
         to: lowerEmail,
-        subject: "بازیابی رمز عبور - ویتا کیت",
+        subject: "بازیابی رمز عبور - ویتا ",
         html: `
           <div dir="rtl" style="font-family: Tahoma, Geneva, sans-serif; text-align: right; padding: 24px; background-color: #f8fafc; border-radius: 12px; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0;">
             <h2 style="color: #8B5CF6; font-size: 20px; margin-bottom: 16px;">بازیابی رمز عبور ویتا</h2>
-            <p style="font-size: 14px; color: #334155; line-height: 1.6;">کد یکبار مصرف بازیابی رمز عبور شما در ویتا کیت برابر است با:</p>
+            <p style="font-size: 14px; color: #334155; line-height: 1.6;">کد یکبار مصرف بازیابی رمز عبور شما در ویتابرابر است با:</p>
             <div style="background-color: #ffffff; padding: 16px; border-radius: 8px; border: 1px solid #cbd5e1; text-align: center; font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #8B5CF6; margin: 24px 0;">
               ${code}
             </div>

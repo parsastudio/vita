@@ -1,21 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Vazirmatn } from "next/font/google";
+import { Vazirmatn } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { GuestBanner } from "@/components/auth/guest-banner";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { PwaBanner } from "@/components/pwa/pwa-banner";
 import { ErrorBoundary } from "@/components/error-boundary";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const vazirmatn = Vazirmatn({
   subsets: ["arabic", "latin"],
@@ -49,7 +39,7 @@ export default function RootLayout({
       lang="fa"
       dir="rtl"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${vazirmatn.variable} h-full antialiased`}
+      className={`${vazirmatn.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-primary/10 overflow-x-hidden">
         <ErrorBoundary>
