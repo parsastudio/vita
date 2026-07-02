@@ -147,7 +147,8 @@ export function parseNaturalLanguageTransaction(
 
   let parsedAmount = 0;
   let parsedType: "income" | "expense" = "expense";
-  const detectedTags: string[] = [];
+  const titleTags: string[] = [];
+  const extraTags: string[] = [];
   let triggeredWord = "";
 
   const millionMatch = normalizedText.match(/(\d+(?:\.\d+)?)\s*(میلیون|ملیون)/);
@@ -211,7 +212,7 @@ export function parseNaturalLanguageTransaction(
       EXPENSE_TRIGGERS.includes(cleanWord);
 
     if (!isStopWord && !isNumeric && !isUnit && !isTrigger) {
-      detectedTags.push(word);
+      titleTags.push(word);
     } else if (isTrigger && !triggeredWord) {
       triggeredWord = word;
     }
@@ -222,22 +223,21 @@ export function parseNaturalLanguageTransaction(
       .split(/[\s,،]+/)
       .map((t) => t.trim())
       .filter((t) => t && !PERSIAN_STOP_WORDS.has(t));
-    detectedTags.push(...cleanTags);
+    extraTags.push(...cleanTags);
   }
 
-  let parsedCategory = detectedTags[0];
+  let parsedCategory = titleTags.join(" ");
   if (!parsedCategory) {
     parsedCategory = triggeredWord || "عمومی";
   }
+
+  const allTags = Array.from(new Set([...titleTags, ...extraTags]));
 
   return {
     amount: parsedAmount,
     type: parsedType,
     category: parsedCategory,
-    tags:
-      detectedTags.length > 0
-        ? Array.from(new Set(detectedTags))
-        : [parsedCategory],
+    tags: allTags.length > 0 ? allTags : [parsedCategory],
     description: cleanedText,
   };
 }

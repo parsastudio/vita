@@ -102,7 +102,7 @@ export function NlpAssistant({
                 {parsedNlp.type === "income" ? "+" : "-"}
                 {formatPersianNumber(parsedNlp.amount)} تومان
               </span>{" "}
-              در دسته‌بندی{" "}
+              ، عنوان:{" "}
               <span className="font-semibold text-foreground">
                 {parsedNlp.category}
               </span>

@@ -5,7 +5,7 @@ import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { Volume2 } from "lucide-react";
+import { Volume2, CheckCircle2, AlertCircle } from "lucide-react";
 import { fsrs, Rating, type Grade } from "ts-fsrs";
 import { mapToFSRSCard, mapFromFSRSCard } from "@/lib/fsrs";
 
@@ -55,9 +55,7 @@ export function SrsReviewer({
     const outcomes = scheduler.repeat(cardRepresentation, now);
     return {
       again: getFriendlyInterval(outcomes[Rating.Again].card.due, now),
-      hard: getFriendlyInterval(outcomes[Rating.Hard].card.due, now),
       good: getFriendlyInterval(outcomes[Rating.Good].card.due, now),
-      easy: getFriendlyInterval(outcomes[Rating.Easy].card.due, now),
     };
   }, [currentCard, scheduler]);
 
@@ -124,7 +122,10 @@ export function SrsReviewer({
         synced: false,
       });
 
-      toast("کارت با موفقیت به بخش آرشیو منتقل شد", "success");
+      toast(
+        "کارت با موفقیت به بایگانی دائمی منتقل شد و دیگر در چرخه مرور ظاهر نخواهد شد",
+        "success",
+      );
       const nextQueue = queue.slice(1);
       setQueue(nextQueue);
       setShowAnswer(false);
@@ -173,7 +174,7 @@ export function SrsReviewer({
     <div className="space-y-8">
       <div className="flex items-center justify-between border-b border-border pb-4">
         <span className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
-          جلسه مرور تطبیقی FSRS
+          جلسه مرور تطبیقی کلمات
         </span>
         <span className="text-xs font-medium text-muted-foreground font-vazir">
           در انتظار مرور: {queue.length} کلمه
@@ -209,86 +210,60 @@ export function SrsReviewer({
           {!showAnswer ? (
             <Button
               size="lg"
-              className="w-full mt-8 font-vazir"
+              className="w-full mt-8 font-vazir text-sm py-5 shadow-md bg-primary text-primary-foreground hover:bg-primary/95 transition-all"
               onClick={() => setShowAnswer(true)}
             >
               نمایش ترجمه فارسی
             </Button>
           ) : (
-            <div className="space-y-8 pt-4 border-t border-border animate-in fade-in duration-300">
-              <div className="space-y-2">
+            <div className="space-y-8 pt-6 border-t border-border animate-in fade-in duration-300">
+              <div className="space-y-3">
                 <p className="text-xl font-bold text-primary font-vazir">
                   {currentCard.translation}
                 </p>
-                <div className="flex flex-col items-center gap-1.5">
-                  <p className="text-xs text-muted-foreground font-medium font-vazir">
-                    کلمه تمرکزی اصلی:{" "}
-                    <span className="text-destructive font-semibold">
-                      {currentCard.focusWord}
+                <p className="text-xs text-muted-foreground font-vazir">
+                  کلمه کلیدی هدف:{" "}
+                  <span className="text-destructive font-semibold">
+                    {currentCard.focusWord}
+                  </span>
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => handleSrsAction(Rating.Again)}
+                    className="flex flex-col items-center justify-center p-4 rounded-xl border border-red-500/10 bg-red-500/5 hover:bg-red-500/10 hover:border-red-500/30 text-foreground transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
+                      <AlertCircle className="size-4" />
+                      <span className="text-sm font-bold">یادم نبود</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
+                      مرور بعدی: {ratingPreviews?.again}
                     </span>
-                  </p>
+                  </button>
+
+                  <button
+                    onClick={() => handleSrsAction(Rating.Good)}
+                    className="flex flex-col items-center justify-center p-4 rounded-xl border border-emerald-500/10 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 text-foreground transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="size-4" />
+                      <span className="text-sm font-bold">بلد بودم</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
+                      مرور بعدی: {ratingPreviews?.good}
+                    </span>
+                  </button>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <button
-                  onClick={() => handleSrsAction(Rating.Again)}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:bg-red-500/5 hover:border-red-500/20 text-foreground transition-all cursor-pointer group"
-                >
-                  <span className="text-sm font-bold text-red-600 dark:text-red-400">
-                    یادم نبود
-                  </span>
-                  <span className="text-[9px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
-                    {ratingPreviews?.again}
-                  </span>
-                </button>
 
                 <button
-                  onClick={() => handleSrsAction(Rating.Hard)}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:bg-amber-500/5 hover:border-amber-500/20 text-foreground transition-all cursor-pointer group"
-                >
-                  <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
-                    سخت بود
-                  </span>
-                  <span className="text-[9px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
-                    {ratingPreviews?.hard}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => handleSrsAction(Rating.Good)}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:bg-green-500/5 hover:border-green-500/20 text-foreground transition-all cursor-pointer group"
-                >
-                  <span className="text-sm font-bold text-green-600 dark:text-green-400">
-                    بلد بودم
-                  </span>
-                  <span className="text-[9px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
-                    {ratingPreviews?.good}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => handleSrsAction(Rating.Easy)}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:bg-blue-500/5 hover:border-blue-500/20 text-foreground transition-all cursor-pointer group"
-                >
-                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                    خیلی آسان
-                  </span>
-                  <span className="text-[9px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
-                    {ratingPreviews?.easy}
-                  </span>
-                </button>
-              </div>
-
-              <div className="flex justify-center pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
                   onClick={() => handleSrsAction("archived")}
-                  className="font-vazir text-xs"
+                  className="w-full py-3.5 px-4 rounded-xl border border-amber-500/10 bg-amber-500/5 hover:bg-amber-500/10 hover:border-amber-500/30 text-amber-700 dark:text-amber-400 transition-all cursor-pointer font-vazir text-xs font-semibold flex items-center justify-center gap-2 shadow-xs"
                 >
-                  انتقال کارت به بایگانی فعال (آرشیو کلمه)
-                </Button>
+                  🏆 تسلط کامل دارم (بایگانی دائمی کلمه)
+                </button>
               </div>
             </div>
           )}
