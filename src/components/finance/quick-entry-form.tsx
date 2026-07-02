@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { localDb, type FinanceTransaction } from "@/lib/db/client";
+import { type FinanceTransaction } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
-import { formatPersianNumber, getJalaliDateParts } from "@/lib/utils";
+import { useFinanceActions } from "@/hooks/use-finance-actions";
+import { formatPersianNumber } from "@/lib/utils";
 import { toEnglishDigits } from "@/lib/nlp";
 import { AlertTriangle } from "lucide-react";
 import { z } from "zod";
@@ -58,6 +59,8 @@ export function QuickEntryForm({
   const [budgetWarning, setBudgetWarning] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showTagsDropdown, setShowTagsDropdown] = useState(false);
+
+  const { getBudgetWarning } = useFinanceActions(userId);
 
   const amountSuggestions = useMemo(() => {
     let amtVal = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
@@ -116,62 +119,19 @@ export function QuickEntryForm({
   }, [sortedFrequentTags, currentTagQuery]);
 
   useEffect(() => {
-    let amtVal = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
-    if (isNaN(amtVal) || amtVal <= 0 || !category.trim()) {
-      setBudgetWarning(null);
-      return;
-    }
     const delayDebounce = setTimeout(async () => {
-      if (type !== "expense") {
-        setBudgetWarning(null);
-        return;
-      }
-      const tags = (tagsInput || "")
-        .split(",")
-        .map((t) => t.trim().toLowerCase())
-        .filter(Boolean);
-      if (amtVal < 1000) amtVal = amtVal * 1000;
-      const budget = await localDb.financeBudgets
-        .where("userId")
-        .equals(userId)
-        .filter(
-          (b) =>
-            b.categoryOrTag.toLowerCase() === category.trim().toLowerCase() ||
-            tags.includes(b.categoryOrTag.toLowerCase()),
-        )
-        .first();
-      if (budget) {
-        const limit = Number(budget.limitAmount);
-        const currentMonthExpenses = transactions
-          .filter((tx) => {
-            if (tx.type !== "expense") return false;
-            const matchCategory =
-              tx.category.toLowerCase() === budget.categoryOrTag.toLowerCase();
-            const matchTag = tx.tags.some(
-              (t) => t.toLowerCase() === budget.categoryOrTag.toLowerCase(),
-            );
-            if (!matchCategory && !matchTag) return false;
-            const txParts = getJalaliDateParts(new Date(tx.createdAt));
-            const nowParts = getJalaliDateParts(new Date());
-            return (
-              txParts.month === nowParts.month && txParts.year === nowParts.year
-            );
-          })
-          .reduce((sum, tx) => sum + Number(tx.amount), 0);
-        const nextTotal = currentMonthExpenses + amtVal;
-        if (nextTotal >= limit * 0.8) {
-          setBudgetWarning(
-            `هشدار: با ثبت این تراکنش، مخارج شما به ${((nextTotal / limit) * 100).toFixed(0)}٪ از سقف بودجه تعیین شده (${formatPersianNumber(limit)} تومان) برای عنوان یا تگ "${budget.categoryOrTag}" خواهد رسید.`,
-          );
-        } else {
-          setBudgetWarning(null);
-        }
-      } else {
-        setBudgetWarning(null);
-      }
+      const warning = await getBudgetWarning(
+        amount,
+        category,
+        tagsInput,
+        type,
+        transactions,
+      );
+      setBudgetWarning(warning);
     }, 300);
+
     return () => clearTimeout(delayDebounce);
-  }, [amount, category, tagsInput, type, transactions, userId]);
+  }, [amount, category, tagsInput, type, transactions, getBudgetWarning]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

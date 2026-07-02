@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { localDb, type LanguageCard } from "@/lib/db/client";
+import { type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useSpeech } from "@/hooks/use-speech";
+import { useLanguageActions } from "@/hooks/use-language-actions";
 import { Volume2, Trash2, Archive, ArchiveRestore } from "lucide-react";
 import { formatPersianNumber } from "@/lib/utils";
 
@@ -15,6 +17,9 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
   );
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
+
+  const { speak } = useSpeech();
+  const { toggleArchiveCard, deleteCard } = useLanguageActions();
 
   useEffect(() => {
     setMounted(true);
@@ -53,51 +58,11 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
   }, [cards, search, filterStatus, sortBy]);
 
   const handleSpeak = (text: string) => {
-    try {
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "en-US";
-        let voices = window.speechSynthesis.getVoices();
-
-        const triggerSpeech = () => {
-          const enVoice = voices.find((v) => v.lang.startsWith("en"));
-          if (enVoice) {
-            utterance.voice = enVoice;
-          }
-          window.speechSynthesis.speak(utterance);
-        };
-
-        if (voices.length === 0) {
-          window.speechSynthesis.onvoiceschanged = () => {
-            voices = window.speechSynthesis.getVoices();
-            triggerSpeech();
-          };
-        } else {
-          triggerSpeech();
-        }
-      } else {
-        toast("مرورگر شما از قابلیت تلفظ صوتی پشتیبانی نمی‌کند", "error");
-      }
-    } catch {
-      toast("خطایی در تلفظ صوتی رخ داده است", "error");
-    }
+    speak(text);
   };
 
   const handleToggleArchive = async (card: LanguageCard) => {
-    const isArchiving = card.srsStatus === "active";
-    const nextStatus = isArchiving ? "archived" : "active";
-    const nextDifficulty = isArchiving ? 1.0 : card.difficulty;
-
-    await localDb.transaction("rw", [localDb.languageCards], async () => {
-      await localDb.languageCards.update(card.id, {
-        srsStatus: nextStatus,
-        difficulty: nextDifficulty,
-        updatedAt: new Date(),
-        synced: false,
-      });
-    });
-
+    const isArchiving = await toggleArchiveCard(card);
     toast(
       isArchiving
         ? "کارت با موفقیت آرشیو شد"
@@ -107,19 +72,7 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
   };
 
   const handleDelete = async (id: string) => {
-    await localDb.transaction(
-      "rw",
-      [localDb.languageCards, localDb.deletedRecords],
-      async () => {
-        await localDb.languageCards.delete(id);
-        await localDb.deletedRecords.put({
-          id,
-          tableName: "languageCards",
-          deletedAt: new Date(),
-          synced: false,
-        });
-      },
-    );
+    await deleteCard(id);
     toast("کارت لایتنر با موفقیت حذف شد", "info");
   };
 

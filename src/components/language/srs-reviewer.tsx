@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { localDb, type LanguageCard } from "@/lib/db/client";
+import { type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useSpeech } from "@/hooks/use-speech";
+import { useLanguageActions } from "@/hooks/use-language-actions";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Volume2,
@@ -11,8 +13,8 @@ import {
   AlertCircle,
   CalendarCheck,
 } from "lucide-react";
-import { fsrs, Rating, type Grade } from "ts-fsrs";
-import { mapToFSRSCard, mapFromFSRSCard } from "@/lib/fsrs";
+import { fsrs, Rating } from "ts-fsrs";
+import { mapToFSRSCard } from "@/lib/fsrs";
 
 function getFriendlyInterval(dueDate: Date, now: Date = new Date()): string {
   const diffMs = dueDate.getTime() - now.getTime();
@@ -40,6 +42,8 @@ export function SrsReviewer({
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
 
+  const { speak } = useSpeech();
+  const { handleSrsAction } = useLanguageActions();
   const scheduler = useMemo(() => fsrs(), []);
 
   useEffect(() => {
@@ -99,46 +103,13 @@ export function SrsReviewer({
   }
 
   const handleSpeak = () => {
-    try {
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(currentCard.focusWord);
-        utterance.lang = "en-US";
-        let voices = window.speechSynthesis.getVoices();
-
-        const triggerSpeech = () => {
-          const enVoice = voices.find((v) => v.lang.startsWith("en"));
-          if (enVoice) {
-            utterance.voice = enVoice;
-          }
-          window.speechSynthesis.speak(utterance);
-        };
-
-        if (voices.length === 0) {
-          window.speechSynthesis.onvoiceschanged = () => {
-            voices = window.speechSynthesis.getVoices();
-            triggerSpeech();
-          };
-        } else {
-          triggerSpeech();
-        }
-      } else {
-        toast("مرورگر شما از قابلیت تلفظ صوتی پشتیبانی نمی‌کند", "error");
-      }
-    } catch {
-      toast("خطایی در اجرای قابلیت تلفظ صوتی رخ داد", "error");
-    }
+    speak(currentCard.focusWord);
   };
 
-  const handleSrsAction = async (ratingVal: Rating | "archived") => {
-    if (ratingVal === "archived") {
-      await localDb.languageCards.update(currentCard.id, {
-        srsStatus: "archived",
-        difficulty: 1.0,
-        updatedAt: new Date(),
-        synced: false,
-      });
+  const handleSrsActionWrapper = async (ratingVal: Rating | "archived") => {
+    const result = await handleSrsAction(currentCard, ratingVal);
 
+    if (ratingVal === "archived") {
       toast(
         "کارت با موفقیت به بایگانی دائمی منتقل شد و دیگر در چرخه مرور ظاهر نخواهد شد",
         "success",
@@ -152,29 +123,19 @@ export function SrsReviewer({
       return;
     }
 
-    const now = new Date();
-    const cardRepresentation = mapToFSRSCard(currentCard);
-    const result = scheduler.next(cardRepresentation, now, ratingVal as Grade);
-    const updatedFields = mapFromFSRSCard(result.card);
-
-    await localDb.languageCards.update(currentCard.id, {
-      ...updatedFields,
-      updatedAt: new Date(),
-      synced: false,
-    });
-
     const remaining = queue.slice(1);
     let nextQueue: LanguageCard[];
 
-    if (ratingVal === Rating.Again) {
+    if (ratingVal === Rating.Again && result.updatedFields) {
+      const updatedCard = { ...currentCard, ...result.updatedFields };
       if (remaining.length >= 3) {
         nextQueue = [
           ...remaining.slice(0, 3),
-          { ...currentCard, ...updatedFields },
+          updatedCard,
           ...remaining.slice(3),
         ];
       } else {
-        nextQueue = [...remaining, { ...currentCard, ...updatedFields }];
+        nextQueue = [...remaining, updatedCard];
       }
     } else {
       nextQueue = remaining;
@@ -249,7 +210,7 @@ export function SrsReviewer({
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <button
-                    onClick={() => handleSrsAction(Rating.Again)}
+                    onClick={() => handleSrsActionWrapper(Rating.Again)}
                     className="flex flex-col items-center justify-center p-4 rounded-xl border border-red-500/10 bg-red-500/5 hover:bg-red-500/10 hover:border-red-500/30 text-foreground transition-all cursor-pointer group"
                   >
                     <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
@@ -262,7 +223,7 @@ export function SrsReviewer({
                   </button>
 
                   <button
-                    onClick={() => handleSrsAction(Rating.Good)}
+                    onClick={() => handleSrsActionWrapper(Rating.Good)}
                     className="flex flex-col items-center justify-center p-4 rounded-xl border border-emerald-500/10 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 text-foreground transition-all cursor-pointer group"
                   >
                     <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
@@ -276,7 +237,7 @@ export function SrsReviewer({
                 </div>
 
                 <button
-                  onClick={() => handleSrsAction("archived")}
+                  onClick={() => handleSrsActionWrapper("archived")}
                   className="w-full py-3.5 px-4 rounded-xl border border-amber-500/10 bg-amber-500/5 hover:bg-amber-500/10 hover:border-amber-500/30 text-amber-700 dark:text-amber-400 transition-all cursor-pointer font-vazir text-xs font-semibold flex items-center justify-center gap-2 shadow-xs"
                 >
                   🏆 تسلط کامل دارم (بایگانی دائمی کلمه)

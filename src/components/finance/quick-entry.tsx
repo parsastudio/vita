@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { localDb, type FinanceTransaction } from "@/lib/db/client";
+import { type FinanceTransaction } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { useFinanceActions } from "@/hooks/use-finance-actions";
 import { NlpAssistant } from "./nlp-assistant";
 import { QuickEntryForm } from "./quick-entry-form";
 import { formatPersianNumber } from "@/lib/utils";
-import { v4 as uuidv4 } from "uuid";
 
 interface ParsedNlp {
   amount: number;
@@ -48,6 +48,11 @@ export function QuickEntry({
   const [description, setDescription] = useState("");
 
   const userId = user?.id || "guest";
+  const {
+    saveManualTransaction,
+    saveDirectTransaction,
+    savePresetTransaction,
+  } = useFinanceActions(userId);
 
   const dynamicQuickActions = useMemo<PresetQuick[]>(() => {
     if (!transactions || transactions.length === 0) {
@@ -99,39 +104,13 @@ export function QuickEntry({
   };
 
   const handleDirectSave = async (parsed: ParsedNlp) => {
-    await localDb.transaction("rw", [localDb.financeTransactions], async () => {
-      await localDb.financeTransactions.put({
-        id: uuidv4(),
-        userId,
-        amount: parsed.amount,
-        type: parsed.type,
-        category: parsed.category,
-        tags: parsed.tags,
-        description: parsed.description,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        synced: false,
-      });
-    });
+    await saveDirectTransaction(parsed);
     toast("تراکنش به کمک دستیار هوشمند با موفقیت ثبت شد", "success");
     onSaveSuccess();
   };
 
   const handlePresetSelect = async (preset: PresetQuick) => {
-    await localDb.transaction("rw", [localDb.financeTransactions], async () => {
-      await localDb.financeTransactions.put({
-        id: uuidv4(),
-        userId,
-        amount: preset.amount,
-        type: preset.type,
-        category: preset.category,
-        tags: [preset.category],
-        description: `ثبت سریع برای ${preset.label.split(" - ")[0]}`,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        synced: false,
-      });
-    });
+    await savePresetTransaction(preset);
     toast(
       `تراکنش ثبت سریع "${preset.label.split(" - ")[0]}" انجام شد`,
       "success",
@@ -140,20 +119,7 @@ export function QuickEntry({
   };
 
   const handleManualSave = async (amountNum: number, tags: string[]) => {
-    await localDb.transaction("rw", [localDb.financeTransactions], async () => {
-      await localDb.financeTransactions.put({
-        id: uuidv4(),
-        userId,
-        amount: amountNum,
-        type,
-        category: category.trim(),
-        tags: tags.length > 0 ? tags : [category.trim()],
-        description: description.trim(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        synced: false,
-      });
-    });
+    await saveManualTransaction(amountNum, type, category, tags, description);
 
     setAmount("");
     setCategory("");

@@ -1,19 +1,15 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import {
-  localDb,
-  type FinanceTransaction,
-  type FinanceBudget,
-} from "@/lib/db/client";
+import { type FinanceTransaction, type FinanceBudget } from "@/lib/db/client";
 import { useToast } from "@/hooks/use-toast";
 import { getJalaliDateParts } from "@/lib/utils";
+import { useFinanceActions } from "@/hooks/use-finance-actions";
 import { StatsCards } from "./stats-cards";
 import { TrendChart } from "./trend-chart";
 import { BudgetManager } from "./budget-manager";
 import { FinanceInsights } from "./finance-insights";
 import { CategoryDistribution } from "./category-distribution";
-import { v4 as uuidv4 } from "uuid";
 
 interface FinanceDashboardProps {
   transactions: FinanceTransaction[];
@@ -33,6 +29,8 @@ export function FinanceDashboard({
   const [budgetCategory, setBudgetCategory] = useState("");
   const [budgetLimit, setBudgetLimit] = useState("");
   const [mounted, setMounted] = useState(false);
+
+  const { setBudget, deleteBudget } = useFinanceActions(userId);
 
   useEffect(() => {
     setMounted(true);
@@ -120,6 +118,8 @@ export function FinanceDashboard({
   }, [transactions]);
 
   const budgetStatuses = useMemo(() => {
+    const nowLocalParts = getJalaliDateParts(new Date());
+
     return budgets.map((b) => {
       const limit = Number(b.limitAmount);
       const target = b.categoryOrTag.toLowerCase();
@@ -129,7 +129,13 @@ export function FinanceDashboard({
           if (tx.type !== "expense") return false;
           const matchCategory = tx.category.toLowerCase() === target;
           const matchTag = tx.tags.some((t) => t.toLowerCase() === target);
-          return matchCategory || matchTag;
+          if (!matchCategory && !matchTag) return false;
+
+          const txParts = getJalaliDateParts(new Date(tx.createdAt));
+          return (
+            txParts.month === nowLocalParts.month &&
+            txParts.year === nowLocalParts.year
+          );
         })
         .reduce((sum, tx) => sum + Number(tx.amount), 0);
 
@@ -154,25 +160,7 @@ export function FinanceDashboard({
       return;
     }
 
-    const existing = await localDb.financeBudgets
-      .where("userId")
-      .equals(userId)
-      .filter(
-        (b) =>
-          b.categoryOrTag.toLowerCase() === budgetCategory.trim().toLowerCase(),
-      )
-      .first();
-
-    await localDb.financeBudgets.put({
-      id: existing?.id || uuidv4(),
-      userId,
-      categoryOrTag: budgetCategory.trim(),
-      limitAmount: limitNum,
-      period: "monthly",
-      createdAt: existing?.createdAt || new Date(),
-      updatedAt: new Date(),
-      synced: false,
-    });
+    await setBudget(budgetCategory, limitNum);
 
     setBudgetCategory("");
     setBudgetLimit("");
@@ -180,19 +168,7 @@ export function FinanceDashboard({
   };
 
   const handleDeleteBudget = async (id: string) => {
-    await localDb.transaction(
-      "rw",
-      [localDb.financeBudgets, localDb.deletedRecords],
-      async () => {
-        await localDb.financeBudgets.delete(id);
-        await localDb.deletedRecords.put({
-          id,
-          tableName: "financeBudgets",
-          deletedAt: new Date(),
-          synced: false,
-        });
-      },
-    );
+    await deleteBudget(id);
     toast("بودجه حذف شد", "info");
   };
 
