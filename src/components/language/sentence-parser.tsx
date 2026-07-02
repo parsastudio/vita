@@ -84,16 +84,9 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
       )}
 
       <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider font-vazir">
-            کلمه یا جمله انگلیسی
-          </label>
-          {selectedWord && (
-            <span className="text-[10px] text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full font-bold font-vazir">
-              کلمه اصلی: {selectedWord}
-            </span>
-          )}
-        </div>
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider font-vazir block">
+          کلمه یا جمله انگلیسی
+        </label>
         <textarea
           required
           rows={3}
@@ -112,7 +105,7 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
               انتخاب کلمه کلیدی اصلی
             </span>
             {selectedWord && (
-              <span className="text-xs text-destructive bg-destructive/10 px-2.5 py-0.5 rounded-full font-medium">
+              <span className="text-[10px] text-destructive bg-destructive/10 px-2 py-0.5 rounded-full font-bold font-vazir">
                 کلمه اصلی: {selectedWord}
               </span>
             )}
