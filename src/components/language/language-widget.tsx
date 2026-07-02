@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useEffect } from "react";
+import React, { useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { localDb, type LanguageCard } from "@/lib/db/client";
@@ -38,19 +38,19 @@ export function LanguageWidget() {
     if (activeCards.length === 0) return [];
 
     const now = new Date();
-    const priorityCards = activeCards.map((card) => {
-      const lastReviewed = new Date(card.updatedAt);
-      const hoursSince = Math.max(
-        0,
-        (now.getTime() - lastReviewed.getTime()) / (1000 * 60 * 60),
-      );
-      const priority = card.difficulty * Math.log(2 + hoursSince);
-      return { card, priority };
-    });
-
-    return priorityCards
-      .sort((a, b) => b.priority - a.priority)
-      .map((item) => item.card);
+    return activeCards
+      .filter(
+        (card) => !card.nextReviewDate || new Date(card.nextReviewDate) <= now,
+      )
+      .sort((a, b) => {
+        const dateA = a.nextReviewDate
+          ? new Date(a.nextReviewDate).getTime()
+          : 0;
+        const dateB = b.nextReviewDate
+          ? new Date(b.nextReviewDate).getTime()
+          : 0;
+        return dateA - dateB;
+      });
   }, [cards]);
 
   const cardCount = cards?.length || 0;

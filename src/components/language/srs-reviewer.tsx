@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { formatPersianNumber } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Volume2 } from "lucide-react";
 
@@ -15,8 +14,9 @@ export function SrsReviewer({
   cards: LanguageCard[];
   onReviewComplete: () => void;
 }) {
-  const [index, setIndex] = useState(0);
+  const [queue, setQueue] = useState<LanguageCard[]>([]);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [sessionInitialized, setSessionInitialized] = useState(false);
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
 
@@ -24,9 +24,16 @@ export function SrsReviewer({
     setMounted(true);
   }, []);
 
-  const currentCard = cards[index];
+  useEffect(() => {
+    if (cards && cards.length > 0 && !sessionInitialized) {
+      setQueue([...cards]);
+      setSessionInitialized(true);
+    }
+  }, [cards, sessionInitialized]);
 
-  if (!currentCard) {
+  const currentCard = queue[0];
+
+  if (mounted && sessionInitialized && queue.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in duration-300">
         <span className="text-4xl">🎉</span>
@@ -36,6 +43,14 @@ export function SrsReviewer({
         <p className="text-sm text-muted-foreground mt-1 font-vazir">
           در حال حاضر هیچ کارتی در جعبه لایتنر شما نیاز به مرور ندارد.
         </p>
+      </div>
+    );
+  }
+
+  if (queue.length === 0) {
+    return (
+      <div className="h-48 bg-muted/20 rounded-2xl animate-pulse flex items-center justify-center text-xs text-muted-foreground font-vazir">
+        در حال بارگذاری جلسه مرور...
       </div>
     );
   }
@@ -72,50 +87,98 @@ export function SrsReviewer({
     }
   };
 
-  const handleSrsAction = async (
-    rating: "forgot" | "hard" | "medium" | "easy" | "archived",
-  ) => {
-    let nextDifficulty = currentCard.difficulty;
-    let nextStatus = currentCard.srsStatus;
-
+  const handleSrsAction = async (rating: "learned" | "forgot" | "archived") => {
     if (rating === "archived") {
-      nextStatus = "archived";
-      nextDifficulty = 0.05;
+      await localDb.languageCards.update(currentCard.id, {
+        srsStatus: "archived",
+        difficulty: 0.05,
+        updatedAt: new Date(),
+        synced: false,
+      });
+
       toast(
         "کارت با موفقیت آرشیو شد و سطح سختی آن به حداقل نزول یافت",
         "success",
       );
-    } else {
-      if (rating === "forgot") {
-        nextDifficulty = Math.min(1.0, nextDifficulty + 0.4);
-        toast(
-          "کارت به عنوان فراموش‌شده علامت خورد؛ تکرار شدید اعمال خواهد شد",
-          "error",
-        );
-      } else if (rating === "hard") {
-        nextDifficulty = Math.min(1.0, nextDifficulty + 0.1);
-        toast("کارت با موفقیت ثبت شد", "info");
-      } else if (rating === "medium") {
-        nextDifficulty = Math.max(0.05, nextDifficulty - 0.15);
-        toast("کارت با موفقیت ثبت شد", "success");
-      } else if (rating === "easy") {
-        nextDifficulty = Math.max(0.05, nextDifficulty - 0.4);
-        toast("کارت با موفقیت ثبت شد و اولویت نمایش کاهش یافت", "success");
+      const nextQueue = queue.slice(1);
+      setQueue(nextQueue);
+      setShowAnswer(false);
+      if (nextQueue.length === 0) {
+        onReviewComplete();
       }
+      return;
     }
 
-    await localDb.languageCards.update(currentCard.id, {
-      srsStatus: nextStatus,
-      difficulty: Number(nextDifficulty.toFixed(4)),
-      updatedAt: new Date(),
-      synced: false,
-    });
+    if (rating === "learned") {
+      const nextStreak = (currentCard.streak ?? 0) + 1;
+      const nextDifficulty = Math.max(
+        0.05,
+        (currentCard.difficulty ?? 0.5) - 0.1,
+      );
+      let nextStability = currentCard.stability ?? 1;
 
-    setShowAnswer(false);
-    if (index + 1 >= cards.length) {
-      onReviewComplete();
-    } else {
-      setIndex(index + 1);
+      if (nextStreak === 1) {
+        nextStability = 1;
+      } else if (nextStreak === 2) {
+        nextStability = 3;
+      } else if (nextStreak >= 3) {
+        nextStability = nextStability * ((3.5 - nextDifficulty) * 1.2);
+      }
+
+      const nextReviewDate = new Date();
+      nextReviewDate.setDate(
+        nextReviewDate.getDate() + Math.round(nextStability),
+      );
+
+      await localDb.languageCards.update(currentCard.id, {
+        streak: nextStreak,
+        difficulty: Number(nextDifficulty.toFixed(4)),
+        stability: Number(nextStability.toFixed(4)),
+        nextReviewDate,
+        updatedAt: new Date(),
+        synced: false,
+      });
+
+      const nextQueue = queue.slice(1);
+      setQueue(nextQueue);
+      setShowAnswer(false);
+      if (nextQueue.length === 0) {
+        onReviewComplete();
+      }
+    } else if (rating === "forgot") {
+      const nextStreak = 0;
+      const nextDifficulty = Math.min(
+        1.0,
+        (currentCard.difficulty ?? 0.5) + 0.2,
+      );
+      const nextStability = 1;
+
+      const nextReviewDate = new Date();
+      nextReviewDate.setDate(nextReviewDate.getDate() + 1);
+
+      await localDb.languageCards.update(currentCard.id, {
+        streak: nextStreak,
+        difficulty: Number(nextDifficulty.toFixed(4)),
+        stability: nextStability,
+        nextReviewDate,
+        updatedAt: new Date(),
+        synced: false,
+      });
+
+      const remaining = queue.slice(1);
+      let nextQueue: LanguageCard[];
+      if (remaining.length >= 4) {
+        nextQueue = [
+          ...remaining.slice(0, 4),
+          currentCard,
+          ...remaining.slice(4),
+        ];
+      } else {
+        nextQueue = [...remaining, currentCard];
+      }
+
+      setQueue(nextQueue);
+      setShowAnswer(false);
     }
   };
 
@@ -126,14 +189,13 @@ export function SrsReviewer({
           جلسه مرور لایتنر تطبیقی
         </span>
         <span className="text-xs font-medium text-muted-foreground font-vazir">
-          کارت {mounted ? formatPersianNumber(index + 1) : index + 1} از{" "}
-          {mounted ? formatPersianNumber(cards.length) : cards.length}
+          کارت فعال نوبت فعلی
         </span>
       </div>
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={index + (showAnswer ? "-ans" : "-ques")}
+          key={currentCard.id + (showAnswer ? "-ans" : "-ques")}
           initial={{ opacity: 0, y: 15, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -15, scale: 0.98 }}
@@ -181,64 +243,40 @@ export function SrsReviewer({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <button
                   onClick={() => handleSrsAction("forgot")}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:bg-red-500/5 hover:border-red-500/20 text-foreground transition-all cursor-pointer group"
+                  className="flex flex-col items-center justify-center p-4 rounded-xl border border-border bg-card hover:bg-red-500/5 hover:border-red-500/20 text-foreground transition-all cursor-pointer group"
                 >
-                  <span className="text-xs font-bold text-red-600 dark:text-red-400">
-                    بلد نبودم
+                  <span className="text-sm font-bold text-red-600 dark:text-red-400">
+                    فراموش کردم
                   </span>
-                  <span className="text-[9px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
-                    فراموشی / پاسخ اشتباه
+                  <span className="text-[10px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
+                    تنظیم مجدد توالی و تکرار کلمه در همین جلسه
                   </span>
                 </button>
 
                 <button
-                  onClick={() => handleSrsAction("hard")}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:bg-amber-500/5 hover:border-amber-500/20 text-foreground transition-all cursor-pointer group"
+                  onClick={() => handleSrsAction("learned")}
+                  className="flex flex-col items-center justify-center p-4 rounded-xl border border-border bg-card hover:bg-green-500/5 hover:border-green-500/20 text-foreground transition-all cursor-pointer group"
                 >
-                  <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
-                    سخت
+                  <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                    بلد بودم
                   </span>
-                  <span className="text-[9px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
-                    پاسخ طولانی (تا ۲۰ ثانیه)
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => handleSrsAction("medium")}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:bg-blue-500/5 hover:border-blue-500/20 text-foreground transition-all cursor-pointer group"
-                >
-                  <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                    متوسط
-                  </span>
-                  <span className="text-[9px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
-                    پاسخ متوسط (بین ۵ تا ۱۰ ثانیه)
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => handleSrsAction("easy")}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:bg-green-500/5 hover:border-green-500/20 text-foreground transition-all cursor-pointer group"
-                >
-                  <span className="text-xs font-bold text-green-600 dark:text-green-400">
-                    آسان
-                  </span>
-                  <span className="text-[9px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
-                    پاسخ فوری (کمتر از ۵ ثانیه)
+                  <span className="text-[10px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
+                    افزایش توالی پاسخ‌های صحیح و فاصله مرور بعدی
                   </span>
                 </button>
 
                 <button
                   onClick={() => handleSrsAction("archived")}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:bg-primary/5 hover:border-primary/20 text-foreground transition-all cursor-pointer group col-span-1 sm:col-span-2 md:col-span-1"
+                  className="flex flex-col items-center justify-center p-4 rounded-xl border border-border bg-card hover:bg-primary/5 hover:border-primary/20 text-foreground transition-all cursor-pointer group"
                 >
-                  <span className="text-xs font-bold text-primary">
+                  <span className="text-sm font-bold text-primary">
                     آرشیو کلمه
                   </span>
-                  <span className="text-[9px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
-                    بایگانی و خروج از چرخه مرور
+                  <span className="text-[10px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
+                    بایگانی و خروج دائمی کلمه از چرخه فعال لایتنر
                   </span>
                 </button>
               </div>

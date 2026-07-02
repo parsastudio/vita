@@ -8,6 +8,9 @@ export interface LanguageCard {
   focusWord: string;
   srsStatus: "active" | "archived";
   difficulty: number;
+  stability: number;
+  streak: number;
+  nextReviewDate: Date;
   createdAt: Date;
   updatedAt: Date;
   synced: boolean;
@@ -61,14 +64,27 @@ class VitaLocalDatabase extends Dexie {
 
   constructor() {
     super("VitaLocalDatabase");
-    this.version(1).stores({
-      languageCards: "id, userId, srsStatus, updatedAt, synced",
-      financeTransactions:
-        "id, userId, type, category, createdAt, updatedAt, synced",
-      financeBudgets: "id, userId, categoryOrTag, updatedAt, synced",
-      userSettings: "id, userId, updatedAt, synced",
-      deletedRecords: "id, tableName, synced",
-    });
+    this.version(2)
+      .stores({
+        languageCards:
+          "id, userId, srsStatus, nextReviewDate, updatedAt, synced",
+        financeTransactions:
+          "id, userId, type, category, createdAt, updatedAt, synced",
+        financeBudgets: "id, userId, categoryOrTag, updatedAt, synced",
+        userSettings: "id, userId, updatedAt, synced",
+        deletedRecords: "id, tableName, synced",
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table("languageCards")
+          .toCollection()
+          .modify((card) => {
+            if (card.stability === undefined) card.stability = 1;
+            if (card.streak === undefined) card.streak = 0;
+            if (card.nextReviewDate === undefined)
+              card.nextReviewDate = card.updatedAt || new Date();
+          });
+      });
   }
 }
 

@@ -3,6 +3,7 @@ import {
   uuid,
   text,
   numeric,
+  integer,
   boolean,
   timestamp,
   varchar,
@@ -33,6 +34,11 @@ export const languageCards = pgTable(
       .default("active")
       .notNull(),
     difficulty: numeric("difficulty").default("0.5").notNull(),
+    stability: numeric("stability").default("1.0").notNull(),
+    streak: integer("streak").default(0).notNull(),
+    nextReviewDate: timestamp("next_review_date", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -43,6 +49,7 @@ export const languageCards = pgTable(
   (table) => [
     index("language_cards_user_id_idx").on(table.userId),
     index("language_cards_updated_at_idx").on(table.updatedAt),
+    index("language_cards_next_review_date_idx").on(table.nextReviewDate),
   ],
 );
 
