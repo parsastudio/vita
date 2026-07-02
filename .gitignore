@@ -42,3 +42,4 @@ next-env.d.ts
 req.md
 combined_files.txt
 extract.py
+deploy-local.sh
