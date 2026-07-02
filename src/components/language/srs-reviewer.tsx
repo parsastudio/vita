@@ -5,7 +5,12 @@ import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { Volume2, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Volume2,
+  CheckCircle2,
+  AlertCircle,
+  CalendarCheck,
+} from "lucide-react";
 import { fsrs, Rating, type Grade } from "ts-fsrs";
 import { mapToFSRSCard, mapFromFSRSCard } from "@/lib/fsrs";
 
@@ -22,9 +27,11 @@ function getFriendlyInterval(dueDate: Date, now: Date = new Date()): string {
 
 export function SrsReviewer({
   cards,
+  nextReviewDate,
   onReviewComplete,
 }: {
   cards: LanguageCard[];
+  nextReviewDate?: Date | null;
   onReviewComplete: () => void;
 }) {
   const [queue, setQueue] = useState<LanguageCard[]>([]);
@@ -40,7 +47,7 @@ export function SrsReviewer({
   }, []);
 
   useEffect(() => {
-    if (cards && cards.length > 0 && !sessionInitialized) {
+    if (cards && !sessionInitialized) {
       setQueue([...cards]);
       setSessionInitialized(true);
     }
@@ -60,15 +67,25 @@ export function SrsReviewer({
   }, [currentCard, scheduler]);
 
   if (mounted && sessionInitialized && queue.length === 0) {
+    const nextDueFriendly = nextReviewDate
+      ? getFriendlyInterval(nextReviewDate)
+      : null;
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in duration-300">
-        <span className="text-4xl">🎉</span>
-        <h3 className="mt-4 text-lg font-bold text-foreground font-vazir">
-          تمامی کارت‌ها مرور شدند!
+      <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in duration-500">
+        <span className="text-5xl">🎉</span>
+        <h3 className="mt-4 text-xl font-bold text-foreground font-vazir">
+          همه کلمات هدف با موفقیت مرور شدند!
         </h3>
-        <p className="text-sm text-muted-foreground mt-1 font-vazir">
-          در حال حاضر هیچ کارتی در جعبه لایتنر شما نیاز به مرور ندارد.
+        <p className="text-sm text-muted-foreground mt-2 font-vazir max-w-md leading-relaxed">
+          شما تمامی کلماتی که برای این بازه زمانی برنامه‌ریزی شده بودند را با
+          موفقیت مرور کردید. تمرین مستمر کلید اصلی تسلط است.
         </p>
+        {nextDueFriendly && (
+          <div className="mt-6 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-primary/5 border border-primary/10 text-primary text-xs font-bold font-vazir animate-pulse">
+            <CalendarCheck className="size-4" />
+            <span>موعد مرور بعدی شما: {nextDueFriendly}</span>
+          </div>
+        )}
       </div>
     );
   }

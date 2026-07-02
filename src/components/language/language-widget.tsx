@@ -47,6 +47,20 @@ export function LanguageWidget() {
       });
   }, [cards]);
 
+  const nextReviewDate = useMemo(() => {
+    if (!cards || cards.length === 0) return null;
+    const activeCards = cards.filter((card) => card.srsStatus === "active");
+    const now = new Date();
+    const futureCards = activeCards.filter(
+      (card) => card.due && new Date(card.due) > now,
+    );
+    if (futureCards.length === 0) return null;
+    const closest = futureCards.reduce((closest, card) => {
+      return new Date(card.due) < new Date(closest.due) ? card : closest;
+    });
+    return new Date(closest.due);
+  }, [cards]);
+
   const cardCount = cards?.length || 0;
   const reviewCount = reviewCards.length;
 
@@ -109,6 +123,7 @@ export function LanguageWidget() {
         {activeTab === "review" && (
           <SrsReviewer
             cards={reviewCards}
+            nextReviewDate={nextReviewDate}
             onReviewComplete={() => setActiveTab("list")}
           />
         )}
