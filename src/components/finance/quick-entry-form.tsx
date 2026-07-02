@@ -95,7 +95,7 @@ export function QuickEntryForm({
     const freq: Record<string, number> = {};
     transactions.forEach((tx) => {
       if (tx.tags && Array.isArray(tx.tags)) {
-        tx.tags.forEach((tag) => {
+        tx.tags.forEach((tag: string) => {
           const t = tag.trim();
           if (t) freq[t] = (freq[t] || 0) + 1;
         });

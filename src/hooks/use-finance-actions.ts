@@ -183,7 +183,7 @@ export function useFinanceActions(userId: string) {
         const matchCategory =
           tx.category.toLowerCase() === budget.categoryOrTag.toLowerCase();
         const matchTag = tx.tags.some(
-          (t) => t.toLowerCase() === budget.categoryOrTag.toLowerCase(),
+          (t: string) => t.toLowerCase() === budget.categoryOrTag.toLowerCase(),
         );
         if (!matchCategory && !matchTag) {
           return false;

@@ -1,5 +1,5 @@
 import Dexie, { type Table } from "dexie";
-import {
+export {
   type LanguageCard,
   type FinanceTransaction,
   type FinanceBudget,

@@ -80,18 +80,28 @@ export function useLanguageActions() {
     const fsrsDefaults = createNewFSRSCard();
 
     await localDb.transaction("rw", [localDb.languageCards], async () => {
-      await localDb.languageCards.put({
+      const newCard: LanguageCard = {
         id: uuidv4(),
         userId,
         originalText: text.trim(),
         translation: translation.trim(),
         focusWord: selectedWord,
         srsStatus: "active",
-        ...fsrsDefaults,
+        due: fsrsDefaults.due,
+        stability: fsrsDefaults.stability,
+        difficulty: fsrsDefaults.difficulty,
+        elapsedDays: fsrsDefaults.elapsedDays,
+        scheduledDays: fsrsDefaults.scheduledDays,
+        reps: fsrsDefaults.reps,
+        lapses: fsrsDefaults.lapses,
+        state: fsrsDefaults.state,
+        lastReview: fsrsDefaults.lastReview,
+        learningSteps: fsrsDefaults.learningSteps,
         createdAt: new Date(),
         updatedAt: new Date(),
         synced: false,
-      });
+      };
+      await localDb.languageCards.put(newCard);
     });
   };
 
