@@ -1,65 +1,13 @@
 import Dexie, { type Table } from "dexie";
+import {
+  type LanguageCard,
+  type FinanceTransaction,
+  type FinanceBudget,
+  type UserSettings,
+  type DeletedRecord,
+} from "./schemas";
 
-export interface LanguageCard {
-  id: string;
-  userId: string | null;
-  originalText: string;
-  translation: string;
-  focusWord: string;
-  srsStatus: "active" | "archived";
-  difficulty: number;
-  stability: number;
-  elapsedDays: number;
-  scheduledDays: number;
-  reps: number;
-  lapses: number;
-  state: number;
-  due: Date;
-  lastReview: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-  synced: boolean;
-  learningSteps: number;
-}
-
-export interface FinanceTransaction {
-  id: string;
-  userId: string | null;
-  amount: number;
-  type: "income" | "expense";
-  category: string;
-  tags: string[];
-  description: string;
-  createdAt: Date;
-  updatedAt: Date;
-  synced: boolean;
-}
-
-export interface FinanceBudget {
-  id: string;
-  userId: string | null;
-  categoryOrTag: string;
-  limitAmount: number;
-  period: "monthly";
-  createdAt: Date;
-  updatedAt: Date;
-  synced: boolean;
-}
-
-export interface UserSettings {
-  id: string;
-  userId: string | null;
-  enabledModules: string[];
-  updatedAt: Date;
-  synced: boolean;
-}
-
-export interface DeletedRecord {
-  id: string;
-  tableName: string;
-  deletedAt: Date;
-  synced: boolean;
-}
+export { updateLocalDbAfterSync } from "./sync-db-updater";
 
 class VitaLocalDatabase extends Dexie {
   languageCards!: Table<LanguageCard, string>;

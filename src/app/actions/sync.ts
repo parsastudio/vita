@@ -1,5 +1,6 @@
 "use server";
 
+import "server-only";
 import { db } from "@/lib/db/server";
 import {
   languageCards,

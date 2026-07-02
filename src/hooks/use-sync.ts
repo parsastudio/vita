@@ -9,7 +9,10 @@ import {
 import { syncData } from "@/app/actions/sync";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { updateLocalDbAfterSync, PulledData } from "@/lib/db/sync-db-updater";
+import {
+  updateLocalDbAfterSync,
+  type PulledData,
+} from "@/lib/db/sync-db-updater";
 
 export function useSync() {
   const { user, isGuest } = useAuth();
@@ -17,12 +20,23 @@ export function useSync() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const isSyncingRef = useRef(false);
+  const pendingSyncRef = useRef(false);
+  const syncOptionsRef = useRef<{ pushOnly?: boolean } | null>(null);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const performSync = useCallback(
     async (options?: { pushOnly?: boolean }) => {
       const pushOnly = options?.pushOnly ?? false;
-      if (!user || isGuest || isSyncingRef.current) return;
+      if (!user || isGuest) return;
+
+      if (isSyncingRef.current) {
+        pendingSyncRef.current = true;
+        syncOptionsRef.current = {
+          pushOnly:
+            syncOptionsRef.current?.pushOnly === false ? false : pushOnly,
+        };
+        return;
+      }
 
       isSyncingRef.current = true;
       setIsSyncing(true);
@@ -133,6 +147,13 @@ export function useSync() {
         setIsSyncing(false);
         isSyncingRef.current = false;
         setDatabaseSyncingActive(false);
+
+        if (pendingSyncRef.current) {
+          pendingSyncRef.current = false;
+          const nextOptions = syncOptionsRef.current || undefined;
+          syncOptionsRef.current = null;
+          performSync(nextOptions);
+        }
       }
     },
     [user, isGuest, toast],
@@ -157,7 +178,11 @@ export function useSync() {
     if (isGuest || !user) return;
 
     const unsubscribe = subscribeToDbChanges(() => {
-      if (isSyncingRef.current) return;
+      if (isSyncingRef.current) {
+        pendingSyncRef.current = true;
+        syncOptionsRef.current = { pushOnly: true };
+        return;
+      }
 
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
