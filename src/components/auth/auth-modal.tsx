@@ -6,10 +6,11 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { X } from "lucide-react";
+import { signUp, signIn } from "@/app/actions/auth";
 import {
   requestPasswordResetAction,
   resetPasswordWithCodeAction,
-} from "@/app/actions/auth";
+} from "@/app/actions/auth-reset";
 
 export function AuthModal() {
   const {
@@ -17,8 +18,8 @@ export function AuthModal() {
     setShowAuthModal,
     isGuest,
     enableGuestMode,
-    signIn,
-    signUp,
+    signIn: contextSignIn,
+    signUp: contextSignUp,
     isLoading,
   } = useAuth();
   const { toast } = useToast();
@@ -90,8 +91,8 @@ export function AuthModal() {
     try {
       const response =
         authMode === "signup"
-          ? await signUp(email, password)
-          : await signIn(email, password);
+          ? await contextSignUp(email, password)
+          : await contextSignIn(email, password);
 
       if (response.success) {
         toast(

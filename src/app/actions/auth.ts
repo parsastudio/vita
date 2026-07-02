@@ -15,11 +15,6 @@ import {
   checkRuntimeSecret,
 } from "@/lib/auth/crypto";
 
-export {
-  requestPasswordResetAction,
-  resetPasswordWithCodeAction,
-} from "./auth-reset";
-
 const authSchema = z.object({
   email: z.string().email("فرمت آدرس ایمیل وارد شده معتبر نیست").max(255),
   password: z
