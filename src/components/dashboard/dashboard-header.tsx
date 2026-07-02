@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
-import { Monitor, Moon, Sun } from "lucide-react";
-import { AccountSettingsModal } from "@/components/auth/account-settings-modal";
+import { Moon, Sun, Monitor } from "lucide-react";
 
 interface DashboardHeaderProps {
   isOnline: boolean;
@@ -17,6 +15,9 @@ interface DashboardHeaderProps {
   disableGuestMode: () => void;
   enabledModules: string[];
   toggleModule: (id: string) => void;
+  theme: string;
+  onToggleTheme: () => void;
+  onOpenAccountSettings: () => void;
 }
 
 export function DashboardHeader({
@@ -26,23 +27,14 @@ export function DashboardHeader({
   performSync,
   user,
   logout,
-  disableGuestMode,
   enabledModules,
   toggleModule,
+  theme,
+  onToggleTheme,
+  onOpenAccountSettings,
 }: DashboardHeaderProps) {
-  const { theme, setTheme } = useTheme();
   const [showSettings, setShowSettings] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showAccountSettings, setShowAccountSettings] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
 
   return (
     <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-border pb-6 gap-4">
@@ -85,11 +77,11 @@ export function DashboardHeader({
         <Button
           variant="outline"
           size="icon"
-          onClick={toggleTheme}
+          onClick={onToggleTheme}
           className="rounded-full border-border bg-background text-foreground"
         >
           <span className="sr-only">تغییر تم</span>
-          {mounted ? (
+          {theme ? (
             theme === "dark" ? (
               <Sun className="size-4" />
             ) : (
@@ -135,7 +127,7 @@ export function DashboardHeader({
                     <button
                       onClick={() => {
                         setShowUserMenu(false);
-                        setShowAccountSettings(true);
+                        onOpenAccountSettings();
                       }}
                       className="w-full text-start text-xs text-foreground hover:text-primary transition-colors py-1 block font-medium font-vazir"
                     >
@@ -232,12 +224,6 @@ export function DashboardHeader({
           )}
         </AnimatePresence>
       </div>
-
-      <AccountSettingsModal
-        isOpen={showAccountSettings}
-        onClose={() => setShowAccountSettings(false)}
-        userEmail={user?.email || ""}
-      />
     </header>
   );
 }

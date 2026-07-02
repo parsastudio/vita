@@ -7,6 +7,7 @@ import { DashboardHeader } from "./dashboard-header";
 import { BookOpen, Wallet } from "lucide-react";
 import { LogoutModal } from "@/components/auth/logout-modal";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { AccountSettingsModal } from "@/components/auth/account-settings-modal";
 
 export function DashboardGrid({
   languageWidget,
@@ -28,6 +29,10 @@ export function DashboardGrid({
     setActiveWidget,
     logout,
     disableGuestMode,
+    theme,
+    handleToggleTheme,
+    showAccountSettings,
+    setShowAccountSettings,
   } = useDashboardState();
 
   const isLanguageEnabled = enabledModules.includes("language");
@@ -56,17 +61,28 @@ export function DashboardGrid({
 
   return (
     <div className="flex-1 w-full max-w-3xl mx-auto px-4 py-8 md:py-12 flex flex-col gap-8">
-      <DashboardHeader
-        isOnline={isOnline}
-        isGuest={isGuest}
-        isSyncing={isSyncing}
-        performSync={performSync}
-        user={user}
-        logout={logout}
-        disableGuestMode={disableGuestMode}
-        enabledModules={enabledModules}
-        toggleModule={toggleModule}
-      />
+      <ErrorBoundary
+        fallback={
+          <div className="p-4 border border-destructive/20 bg-destructive/5 text-destructive rounded-xl text-center font-vazir text-xs">
+            خطایی در لود بخش بالای داشبورد رخ داد.
+          </div>
+        }
+      >
+        <DashboardHeader
+          isOnline={isOnline}
+          isGuest={isGuest}
+          isSyncing={isSyncing}
+          performSync={performSync}
+          user={user}
+          logout={logout}
+          disableGuestMode={disableGuestMode}
+          enabledModules={enabledModules}
+          toggleModule={toggleModule}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          onOpenAccountSettings={() => setShowAccountSettings(true)}
+        />
+      </ErrorBoundary>
 
       {enabledModules.length > 0 && (
         <div className="w-full flex justify-center border-b border-border pb-1">
@@ -175,7 +191,30 @@ export function DashboardGrid({
           )}
         </AnimatePresence>
       </main>
-      <LogoutModal />
+
+      <ErrorBoundary
+        fallback={
+          <div className="p-4 border border-destructive/20 bg-destructive/5 text-destructive rounded-xl text-center font-vazir text-xs">
+            خطایی در اجرای بخش خروج رخ داد.
+          </div>
+        }
+      >
+        <LogoutModal />
+      </ErrorBoundary>
+
+      <ErrorBoundary
+        fallback={
+          <div className="p-4 border border-destructive/20 bg-destructive/5 text-destructive rounded-xl text-center font-vazir text-xs">
+            خطایی در اجرای بخش تنظیمات حساب کاربری رخ داد.
+          </div>
+        }
+      >
+        <AccountSettingsModal
+          isOpen={showAccountSettings}
+          onClose={() => setShowAccountSettings(false)}
+          userEmail={user?.email || ""}
+        />
+      </ErrorBoundary>
     </div>
   );
 }

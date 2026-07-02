@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { localDb, type FinanceTransaction } from "@/lib/db/client";
+import { type FinanceTransaction } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { formatPersianNumber, formatPersianDate } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
+import { useAuth } from "@/lib/auth/auth-context";
+import { useFinanceActions } from "@/hooks/use-finance-actions";
 
 export function TransactionList({
   transactions,
@@ -17,6 +19,10 @@ export function TransactionList({
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const { user } = useAuth();
+  const userId = user?.id || "guest";
+  const { deleteTransaction } = useFinanceActions(userId);
 
   useEffect(() => {
     setMounted(true);
@@ -39,19 +45,7 @@ export function TransactionList({
   });
 
   const handleDelete = async (id: string) => {
-    await localDb.transaction(
-      "rw",
-      [localDb.financeTransactions, localDb.deletedRecords],
-      async () => {
-        await localDb.financeTransactions.delete(id);
-        await localDb.deletedRecords.put({
-          id,
-          tableName: "financeTransactions",
-          deletedAt: new Date(),
-          synced: false,
-        });
-      },
-    );
+    await deleteTransaction(id);
     toast("تراکنش با موفقیت حذف شد", "info");
   };
 

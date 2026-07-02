@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useMemo, useEffect } from "react";
+import React from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { useLiveQuery } from "dexie-react-hooks";
-import { localDb } from "@/lib/db/client";
-import { useAuth } from "@/lib/auth/auth-context";
 import { QuickEntry } from "./quick-entry";
 import { TransactionList } from "./transaction-list";
 import { Button } from "@/components/ui/button";
 import { formatPersianNumber } from "@/lib/utils";
+import { useFinanceData } from "@/hooks/use-finance-data";
+import { ErrorBoundary } from "@/components/error-boundary";
 import dynamic from "next/dynamic";
 
 const FinanceDashboard = dynamic(
@@ -24,7 +23,6 @@ const FinanceDashboard = dynamic(
 );
 
 export function FinanceWidget() {
-  const { user } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -38,17 +36,7 @@ export function FinanceWidget() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const userId = user?.id || "guest";
-
-  const transactions = useLiveQuery(() => {
-    return localDb.financeTransactions.where("userId").equals(userId).toArray();
-  }, [userId]);
-
-  const budgets = useLiveQuery(() => {
-    return localDb.financeBudgets.where("userId").equals(userId).toArray();
-  }, [userId]);
-
-  const txCount = transactions?.length || 0;
+  const { transactions, budgets, txCount, userId } = useFinanceData();
 
   return (
     <div className="border border-border bg-card rounded-2xl shadow-sm p-6 sm:p-8 flex flex-col gap-6">
@@ -97,22 +85,46 @@ export function FinanceWidget() {
 
       <div className="flex-1">
         {activeTab === "add" && (
-          <QuickEntry
-            transactions={transactions || []}
-            onSaveSuccess={() => setActiveTab("list")}
-          />
+          <ErrorBoundary
+            fallback={
+              <div className="p-4 border border-destructive/20 bg-destructive/5 text-destructive rounded-xl text-center font-vazir text-xs">
+                خطایی در اجرای بخش ثبت سریع تراکنش رخ داد.
+              </div>
+            }
+          >
+            <QuickEntry
+              transactions={transactions}
+              onSaveSuccess={() => setActiveTab("list")}
+            />
+          </ErrorBoundary>
         )}
 
         {activeTab === "stats" && (
-          <FinanceDashboard
-            transactions={transactions || []}
-            budgets={budgets || []}
-            userId={userId}
-          />
+          <ErrorBoundary
+            fallback={
+              <div className="p-4 border border-destructive/20 bg-destructive/5 text-destructive rounded-xl text-center font-vazir text-xs">
+                خطایی در اجرای داشبورد آماری و بودجه‌بندی رخ داد.
+              </div>
+            }
+          >
+            <FinanceDashboard
+              transactions={transactions}
+              budgets={budgets}
+              userId={userId}
+            />
+          </ErrorBoundary>
         )}
 
         {activeTab === "list" && (
-          <TransactionList transactions={transactions || []} />
+          <ErrorBoundary
+            fallback={
+              <div className="p-4 border border-destructive/20 bg-destructive/5 text-destructive rounded-xl text-center font-vazir text-xs">
+                خطایی در بارگذاری لیست دفتر کل معاملات رخ داد.
+              </div>
+            }
+          >
+            <TransactionList transactions={transactions} />
+          </ErrorBoundary>
         )}
       </div>
     </div>

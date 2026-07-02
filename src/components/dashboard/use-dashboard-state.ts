@@ -5,13 +5,16 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useModules } from "@/hooks/use-modules";
 import { useSync } from "@/hooks/use-sync";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useTheme } from "next-themes";
 
 export function useDashboardState() {
   const { user, isGuest, logout, disableGuestMode, isLoading } = useAuth();
   const { enabledModules, toggleModule } = useModules();
   const { isSyncing, performSync } = useSync();
+  const { theme, setTheme } = useTheme();
   const [showSettings, setShowSettings] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [widgetOrder, setWidgetOrder] = useState<string[]>([
@@ -65,6 +68,10 @@ export function useDashboardState() {
     localStorage.setItem("vita_widget_order", JSON.stringify(updated));
   };
 
+  const handleToggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
   return {
     user,
     isGuest,
@@ -79,11 +86,15 @@ export function useDashboardState() {
     setShowSettings,
     showUserMenu,
     setShowUserMenu,
+    showAccountSettings,
+    setShowAccountSettings,
     isOnline,
     mounted,
     widgetOrder,
     moveWidget,
     activeWidget,
     setActiveWidget: changeActiveWidget,
+    theme: theme || "light",
+    handleToggleTheme,
   };
 }

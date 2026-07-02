@@ -2,10 +2,14 @@
 
 import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Rating, fsrs, type Grade } from "ts-fsrs";
-import { mapToFSRSCard, mapFromFSRSCard } from "@/lib/fsrs";
+import { mapToFSRSCard, mapFromFSRSCard, createNewFSRSCard } from "@/lib/fsrs";
+import { useAuth } from "@/lib/auth/auth-context";
+import { v4 as uuidv4 } from "uuid";
 
 export function useLanguageActions() {
   const scheduler = fsrs();
+  const { user } = useAuth();
+  const userId = user?.id || "guest";
 
   const handleSrsAction = async (
     card: LanguageCard,
@@ -68,9 +72,33 @@ export function useLanguageActions() {
     );
   };
 
+  const addCard = async (
+    text: string,
+    translation: string,
+    selectedWord: string,
+  ) => {
+    const fsrsDefaults = createNewFSRSCard();
+
+    await localDb.transaction("rw", [localDb.languageCards], async () => {
+      await localDb.languageCards.put({
+        id: uuidv4(),
+        userId,
+        originalText: text.trim(),
+        translation: translation.trim(),
+        focusWord: selectedWord,
+        srsStatus: "active",
+        ...fsrsDefaults,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        synced: false,
+      });
+    });
+  };
+
   return {
     handleSrsAction,
     toggleArchiveCard,
     deleteCard,
+    addCard,
   };
 }

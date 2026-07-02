@@ -1,13 +1,11 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { localDb } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { AlertTriangle } from "lucide-react";
-import { createNewFSRSCard } from "@/lib/fsrs";
+import { useLanguageActions } from "@/hooks/use-language-actions";
 
 const cardFormSchema = z.object({
   text: z.string().min(1, "متن انگلیسی وارد شده خالی است"),
@@ -28,6 +26,8 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
   const [translation, setTranslation] = useState("");
   const [selectedWord, setSelectedWord] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  const { addCard } = useLanguageActions();
 
   const words = useMemo(() => {
     if (!text.trim()) return [];
@@ -66,22 +66,7 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
       return;
     }
 
-    const fsrsDefaults = createNewFSRSCard();
-
-    await localDb.transaction("rw", [localDb.languageCards], async () => {
-      await localDb.languageCards.put({
-        id: uuidv4(),
-        userId,
-        originalText: text.trim(),
-        translation: translation.trim(),
-        focusWord: selectedWord,
-        srsStatus: "active",
-        ...fsrsDefaults,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        synced: false,
-      });
-    });
+    await addCard(text, translation, selectedWord);
 
     setText("");
     setTranslation("");
