@@ -16,8 +16,13 @@ export interface PulledData {
     srsStatus: string;
     difficulty: string | number;
     stability: string | number;
-    streak: number;
-    nextReviewDate: string | Date;
+    elapsedDays: number;
+    scheduledDays: number;
+    reps: number;
+    lapses: number;
+    state: number;
+    due: string | Date;
+    lastReview: string | Date | null;
     createdAt: string | Date;
     updatedAt: string | Date;
   }[];
@@ -141,8 +146,13 @@ export async function updateLocalDbAfterSync(
               srsStatus: card.srsStatus as "active" | "archived",
               difficulty: Number(card.difficulty),
               stability: Number(card.stability),
-              streak: Number(card.streak),
-              nextReviewDate: new Date(card.nextReviewDate),
+              elapsedDays: Number(card.elapsedDays),
+              scheduledDays: Number(card.scheduledDays),
+              reps: Number(card.reps),
+              lapses: Number(card.lapses),
+              state: Number(card.state),
+              due: new Date(card.due),
+              lastReview: card.lastReview ? new Date(card.lastReview) : null,
               createdAt: new Date(card.createdAt),
               updatedAt: new Date(card.updatedAt),
               synced: true,

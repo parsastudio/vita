@@ -9,8 +9,13 @@ export interface LanguageCard {
   srsStatus: "active" | "archived";
   difficulty: number;
   stability: number;
-  streak: number;
-  nextReviewDate: Date;
+  elapsedDays: number;
+  scheduledDays: number;
+  reps: number;
+  lapses: number;
+  state: number;
+  due: Date;
+  lastReview: Date | null;
   createdAt: Date;
   updatedAt: Date;
   synced: boolean;
@@ -64,10 +69,9 @@ class VitaLocalDatabase extends Dexie {
 
   constructor() {
     super("VitaLocalDatabase");
-    this.version(2)
+    this.version(3)
       .stores({
-        languageCards:
-          "id, userId, srsStatus, nextReviewDate, updatedAt, synced",
+        languageCards: "id, userId, srsStatus, due, updatedAt, synced",
         financeTransactions:
           "id, userId, type, category, createdAt, updatedAt, synced",
         financeBudgets: "id, userId, categoryOrTag, updatedAt, synced",
@@ -79,10 +83,15 @@ class VitaLocalDatabase extends Dexie {
           .table("languageCards")
           .toCollection()
           .modify((card) => {
-            if (card.stability === undefined) card.stability = 1;
-            if (card.streak === undefined) card.streak = 0;
-            if (card.nextReviewDate === undefined)
-              card.nextReviewDate = card.updatedAt || new Date();
+            if (card.due === undefined) {
+              card.due = card.nextReviewDate || card.updatedAt || new Date();
+            }
+            if (card.elapsedDays === undefined) card.elapsedDays = 0;
+            if (card.scheduledDays === undefined) card.scheduledDays = 0;
+            if (card.reps === undefined) card.reps = 0;
+            if (card.lapses === undefined) card.lapses = 0;
+            if (card.state === undefined) card.state = 0;
+            if (card.lastReview === undefined) card.lastReview = null;
           });
       });
   }

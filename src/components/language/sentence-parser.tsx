@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { AlertTriangle } from "lucide-react";
+import { createNewFSRSCard } from "@/lib/fsrs";
 
 const cardFormSchema = z.object({
   text: z.string().min(1, "متن انگلیسی وارد شده خالی است"),
@@ -65,6 +66,8 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
       return;
     }
 
+    const fsrsDefaults = createNewFSRSCard();
+
     await localDb.transaction("rw", [localDb.languageCards], async () => {
       await localDb.languageCards.put({
         id: uuidv4(),
@@ -73,10 +76,7 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
         translation: translation.trim(),
         focusWord: selectedWord,
         srsStatus: "active",
-        difficulty: 0.5,
-        stability: 1,
-        streak: 0,
-        nextReviewDate: new Date(),
+        ...fsrsDefaults,
         createdAt: new Date(),
         updatedAt: new Date(),
         synced: false,

@@ -1,11 +1,24 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Volume2 } from "lucide-react";
+import { fsrs, Rating } from "ts-fsrs";
+import { mapToFSRSCard, mapFromFSRSCard } from "@/lib/fsrs";
+
+function getFriendlyInterval(dueDate: Date, now: Date = new Date()): string {
+  const diffMs = dueDate.getTime() - now.getTime();
+  const diffMin = Math.round(diffMs / 60000);
+  if (diffMin <= 0) return "اکنون";
+  if (diffMin < 60) return `${diffMin} دقیقه دیگر`;
+  const diffHr = Math.round(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} ساعت دیگر`;
+  const diffDays = Math.round(diffHr / 24);
+  return `${diffDays} روز دیگر`;
+}
 
 export function SrsReviewer({
   cards,
@@ -20,6 +33,8 @@ export function SrsReviewer({
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
 
+  const scheduler = useMemo(() => fsrs(), []);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -32,6 +47,19 @@ export function SrsReviewer({
   }, [cards, sessionInitialized]);
 
   const currentCard = queue[0];
+
+  const ratingPreviews = useMemo(() => {
+    if (!currentCard) return null;
+    const now = new Date();
+    const cardRepresentation = mapToFSRSCard(currentCard);
+    const outcomes = scheduler.repeat(cardRepresentation, now);
+    return {
+      again: getFriendlyInterval(outcomes[Rating.Again].card.due, now),
+      hard: getFriendlyInterval(outcomes[Rating.Hard].card.due, now),
+      good: getFriendlyInterval(outcomes[Rating.Good].card.due, now),
+      easy: getFriendlyInterval(outcomes[Rating.Easy].card.due, now),
+    };
+  }, [currentCard, scheduler]);
 
   if (mounted && sessionInitialized && queue.length === 0) {
     return (
@@ -87,19 +115,16 @@ export function SrsReviewer({
     }
   };
 
-  const handleSrsAction = async (rating: "learned" | "forgot" | "archived") => {
-    if (rating === "archived") {
+  const handleSrsAction = async (ratingVal: Rating | "archived") => {
+    if (ratingVal === "archived") {
       await localDb.languageCards.update(currentCard.id, {
         srsStatus: "archived",
-        difficulty: 0.05,
+        difficulty: 1.0,
         updatedAt: new Date(),
         synced: false,
       });
 
-      toast(
-        "کارت با موفقیت آرشیو شد و سطح سختی آن به حداقل نزول یافت",
-        "success",
-      );
+      toast("کارت با موفقیت به بخش آرشیو منتقل شد", "success");
       const nextQueue = queue.slice(1);
       setQueue(nextQueue);
       setShowAnswer(false);
@@ -109,76 +134,38 @@ export function SrsReviewer({
       return;
     }
 
-    if (rating === "learned") {
-      const nextStreak = (currentCard.streak ?? 0) + 1;
-      const nextDifficulty = Math.max(
-        0.05,
-        (currentCard.difficulty ?? 0.5) - 0.1,
-      );
-      let nextStability = currentCard.stability ?? 1;
+    const now = new Date();
+    const cardRepresentation = mapToFSRSCard(currentCard);
+    const result = scheduler.next(cardRepresentation, now, ratingVal);
+    const updatedFields = mapFromFSRSCard(result.card);
 
-      if (nextStreak === 1) {
-        nextStability = 1;
-      } else if (nextStreak === 2) {
-        nextStability = 3;
-      } else if (nextStreak >= 3) {
-        nextStability = nextStability * ((3.5 - nextDifficulty) * 1.2);
-      }
+    await localDb.languageCards.update(currentCard.id, {
+      ...updatedFields,
+      updatedAt: new Date(),
+      synced: false,
+    });
 
-      const nextReviewDate = new Date();
-      nextReviewDate.setDate(
-        nextReviewDate.getDate() + Math.round(nextStability),
-      );
+    const remaining = queue.slice(1);
+    let nextQueue: LanguageCard[];
 
-      await localDb.languageCards.update(currentCard.id, {
-        streak: nextStreak,
-        difficulty: Number(nextDifficulty.toFixed(4)),
-        stability: Number(nextStability.toFixed(4)),
-        nextReviewDate,
-        updatedAt: new Date(),
-        synced: false,
-      });
-
-      const nextQueue = queue.slice(1);
-      setQueue(nextQueue);
-      setShowAnswer(false);
-      if (nextQueue.length === 0) {
-        onReviewComplete();
-      }
-    } else if (rating === "forgot") {
-      const nextStreak = 0;
-      const nextDifficulty = Math.min(
-        1.0,
-        (currentCard.difficulty ?? 0.5) + 0.2,
-      );
-      const nextStability = 1;
-
-      const nextReviewDate = new Date();
-      nextReviewDate.setDate(nextReviewDate.getDate() + 1);
-
-      await localDb.languageCards.update(currentCard.id, {
-        streak: nextStreak,
-        difficulty: Number(nextDifficulty.toFixed(4)),
-        stability: nextStability,
-        nextReviewDate,
-        updatedAt: new Date(),
-        synced: false,
-      });
-
-      const remaining = queue.slice(1);
-      let nextQueue: LanguageCard[];
-      if (remaining.length >= 4) {
+    if (ratingVal === Rating.Again) {
+      if (remaining.length >= 3) {
         nextQueue = [
-          ...remaining.slice(0, 4),
-          currentCard,
-          ...remaining.slice(4),
+          ...remaining.slice(0, 3),
+          { ...currentCard, ...updatedFields },
+          ...remaining.slice(3),
         ];
       } else {
-        nextQueue = [...remaining, currentCard];
+        nextQueue = [...remaining, { ...currentCard, ...updatedFields }];
       }
+    } else {
+      nextQueue = remaining;
+    }
 
-      setQueue(nextQueue);
-      setShowAnswer(false);
+    setQueue(nextQueue);
+    setShowAnswer(false);
+    if (nextQueue.length === 0) {
+      onReviewComplete();
     }
   };
 
@@ -186,10 +173,10 @@ export function SrsReviewer({
     <div className="space-y-8">
       <div className="flex items-center justify-between border-b border-border pb-4">
         <span className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
-          جلسه مرور لایتنر تطبیقی
+          جلسه مرور تطبیقی FSRS
         </span>
         <span className="text-xs font-medium text-muted-foreground font-vazir">
-          کارت فعال نوبت فعلی
+          در انتظار مرور: {queue.length} کلمه
         </span>
       </div>
 
@@ -243,42 +230,65 @@ export function SrsReviewer({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <button
-                  onClick={() => handleSrsAction("forgot")}
-                  className="flex flex-col items-center justify-center p-4 rounded-xl border border-border bg-card hover:bg-red-500/5 hover:border-red-500/20 text-foreground transition-all cursor-pointer group"
+                  onClick={() => handleSrsAction(Rating.Again)}
+                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:bg-red-500/5 hover:border-red-500/20 text-foreground transition-all cursor-pointer group"
                 >
                   <span className="text-sm font-bold text-red-600 dark:text-red-400">
-                    فراموش کردم
+                    یادم نبود
                   </span>
-                  <span className="text-[10px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
-                    تنظیم مجدد توالی و تکرار کلمه در همین جلسه
+                  <span className="text-[9px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
+                    {ratingPreviews?.again}
                   </span>
                 </button>
 
                 <button
-                  onClick={() => handleSrsAction("learned")}
-                  className="flex flex-col items-center justify-center p-4 rounded-xl border border-border bg-card hover:bg-green-500/5 hover:border-green-500/20 text-foreground transition-all cursor-pointer group"
+                  onClick={() => handleSrsAction(Rating.Hard)}
+                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:bg-amber-500/5 hover:border-amber-500/20 text-foreground transition-all cursor-pointer group"
+                >
+                  <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                    سخت بود
+                  </span>
+                  <span className="text-[9px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
+                    {ratingPreviews?.hard}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleSrsAction(Rating.Good)}
+                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:bg-green-500/5 hover:border-green-500/20 text-foreground transition-all cursor-pointer group"
                 >
                   <span className="text-sm font-bold text-green-600 dark:text-green-400">
                     بلد بودم
                   </span>
-                  <span className="text-[10px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
-                    افزایش توالی پاسخ‌های صحیح و فاصله مرور بعدی
+                  <span className="text-[9px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
+                    {ratingPreviews?.good}
                   </span>
                 </button>
 
                 <button
-                  onClick={() => handleSrsAction("archived")}
-                  className="flex flex-col items-center justify-center p-4 rounded-xl border border-border bg-card hover:bg-primary/5 hover:border-primary/20 text-foreground transition-all cursor-pointer group"
+                  onClick={() => handleSrsAction(Rating.Easy)}
+                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:bg-blue-500/5 hover:border-blue-500/20 text-foreground transition-all cursor-pointer group"
                 >
-                  <span className="text-sm font-bold text-primary">
-                    آرشیو کلمه
+                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                    خیلی آسان
                   </span>
-                  <span className="text-[10px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
-                    بایگانی و خروج دائمی کلمه از چرخه فعال لایتنر
+                  <span className="text-[9px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
+                    {ratingPreviews?.easy}
                   </span>
                 </button>
+              </div>
+
+              <div className="flex justify-center pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSrsAction("archived")}
+                  className="font-vazir text-xs"
+                >
+                  انتقال کارت به بایگانی فعال (آرشیو کلمه)
+                </Button>
               </div>
             </div>
           )}

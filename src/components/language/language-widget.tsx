@@ -39,16 +39,10 @@ export function LanguageWidget() {
 
     const now = new Date();
     return activeCards
-      .filter(
-        (card) => !card.nextReviewDate || new Date(card.nextReviewDate) <= now,
-      )
+      .filter((card) => !card.due || new Date(card.due) <= now)
       .sort((a, b) => {
-        const dateA = a.nextReviewDate
-          ? new Date(a.nextReviewDate).getTime()
-          : 0;
-        const dateB = b.nextReviewDate
-          ? new Date(b.nextReviewDate).getTime()
-          : 0;
+        const dateA = a.due ? new Date(a.due).getTime() : 0;
+        const dateB = b.due ? new Date(b.due).getTime() : 0;
         return dateA - dateB;
       });
   }, [cards]);
@@ -64,8 +58,8 @@ export function LanguageWidget() {
             یادگیری هوشمند زبان
           </h2>
           <p className="text-[11px] sm:text-xs text-muted-foreground font-vazir leading-relaxed max-w-lg">
-            جعبه لایتنر هوشمند تطبیقی مبتنی بر اولویت‌بندی لگاریتمی و سختی متغیر
-            کلمات
+            جعبه لایتنر هوشمند تطبیقی مبتنی بر سیستم رتبه‌بندی FSRS6 و محاسبات
+            احتمال فراموشی ذهن
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 bg-primary/10 border border-primary/20 text-primary rounded-full px-3 py-1 text-xs font-bold font-vazir">

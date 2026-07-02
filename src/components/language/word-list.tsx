@@ -87,7 +87,7 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
   const handleToggleArchive = async (card: LanguageCard) => {
     const isArchiving = card.srsStatus === "active";
     const nextStatus = isArchiving ? "archived" : "active";
-    const nextDifficulty = isArchiving ? 0.05 : card.difficulty;
+    const nextDifficulty = isArchiving ? 1.0 : card.difficulty;
 
     await localDb.transaction("rw", [localDb.languageCards], async () => {
       await localDb.languageCards.update(card.id, {
@@ -100,7 +100,7 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
 
     toast(
       isArchiving
-        ? "کارت با موفقیت آرشیو شد و سختی آن به حداقل کاهش یافت"
+        ? "کارت با موفقیت آرشیو شد"
         : "کارت مجدداً به چرخه یادگیری فعال بازگشت",
       "success",
     );
@@ -204,9 +204,9 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 font-vazir">
                   سختی:{" "}
                   {mounted
-                    ? formatPersianNumber((card.difficulty * 100).toFixed(0))
-                    : (card.difficulty * 100).toFixed(0)}
-                  ٪
+                    ? formatPersianNumber(Number(card.difficulty).toFixed(1))
+                    : Number(card.difficulty).toFixed(1)}{" "}
+                  از ۱۰
                 </span>
               </div>
               <p className="text-xs text-primary font-vazir break-words">

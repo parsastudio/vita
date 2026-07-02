@@ -4,7 +4,6 @@ import {
   text,
   numeric,
   integer,
-  boolean,
   timestamp,
   varchar,
   index,
@@ -35,10 +34,13 @@ export const languageCards = pgTable(
       .notNull(),
     difficulty: numeric("difficulty").default("0.5").notNull(),
     stability: numeric("stability").default("1.0").notNull(),
-    streak: integer("streak").default(0).notNull(),
-    nextReviewDate: timestamp("next_review_date", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    elapsedDays: integer("elapsed_days").default(0).notNull(),
+    scheduledDays: integer("scheduled_days").default(0).notNull(),
+    reps: integer("reps").default(0).notNull(),
+    lapses: integer("lapses").default(0).notNull(),
+    state: integer("state").default(0).notNull(),
+    due: timestamp("due", { withTimezone: true }).defaultNow().notNull(),
+    lastReview: timestamp("last_review", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -49,7 +51,7 @@ export const languageCards = pgTable(
   (table) => [
     index("language_cards_user_id_idx").on(table.userId),
     index("language_cards_updated_at_idx").on(table.updatedAt),
-    index("language_cards_next_review_date_idx").on(table.nextReviewDate),
+    index("language_cards_due_idx").on(table.due),
   ],
 );
 
