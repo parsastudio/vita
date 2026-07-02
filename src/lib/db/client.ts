@@ -19,6 +19,7 @@ export interface LanguageCard {
   createdAt: Date;
   updatedAt: Date;
   synced: boolean;
+  learningSteps: number;
 }
 
 export interface FinanceTransaction {
@@ -69,7 +70,7 @@ class VitaLocalDatabase extends Dexie {
 
   constructor() {
     super("VitaLocalDatabase");
-    this.version(3)
+    this.version(4)
       .stores({
         languageCards: "id, userId, srsStatus, due, updatedAt, synced",
         financeTransactions:
@@ -92,6 +93,7 @@ class VitaLocalDatabase extends Dexie {
             if (card.lapses === undefined) card.lapses = 0;
             if (card.state === undefined) card.state = 0;
             if (card.lastReview === undefined) card.lastReview = null;
+            if (card.learningSteps === undefined) card.learningSteps = 0;
           });
       });
   }

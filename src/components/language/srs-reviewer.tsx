@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Volume2 } from "lucide-react";
-import { fsrs, Rating } from "ts-fsrs";
+import { fsrs, Rating, type Grade } from "ts-fsrs";
 import { mapToFSRSCard, mapFromFSRSCard } from "@/lib/fsrs";
 
 function getFriendlyInterval(dueDate: Date, now: Date = new Date()): string {
@@ -136,7 +136,7 @@ export function SrsReviewer({
 
     const now = new Date();
     const cardRepresentation = mapToFSRSCard(currentCard);
-    const result = scheduler.next(cardRepresentation, now, ratingVal);
+    const result = scheduler.next(cardRepresentation, now, ratingVal as Grade);
     const updatedFields = mapFromFSRSCard(result.card);
 
     await localDb.languageCards.update(currentCard.id, {

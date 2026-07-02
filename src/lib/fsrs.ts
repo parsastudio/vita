@@ -24,6 +24,7 @@ export function createNewFSRSCard(): Omit<
     lapses: empty.lapses,
     state: empty.state,
     lastReview: empty.last_review || null,
+    learningSteps: empty.learning_steps,
   };
 }
 
@@ -38,6 +39,7 @@ export function mapToFSRSCard(card: LanguageCard): FSRSCard {
     lapses: card.lapses,
     state: card.state as FSRSState,
     last_review: card.lastReview ? new Date(card.lastReview) : undefined,
+    learning_steps: card.learningSteps,
   };
 }
 
@@ -54,6 +56,7 @@ export function mapFromFSRSCard(
   | "lapses"
   | "state"
   | "lastReview"
+  | "learningSteps"
 > {
   return {
     due: fsrsCard.due,
@@ -65,5 +68,6 @@ export function mapFromFSRSCard(
     lapses: fsrsCard.lapses,
     state: fsrsCard.state,
     lastReview: fsrsCard.last_review || null,
+    learningSteps: fsrsCard.learning_steps,
   };
 }

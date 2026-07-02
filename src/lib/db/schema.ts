@@ -47,6 +47,7 @@ export const languageCards = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
+    learningSteps: integer("learning_steps").default(0).notNull(),
   },
   (table) => [
     index("language_cards_user_id_idx").on(table.userId),

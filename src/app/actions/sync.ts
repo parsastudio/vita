@@ -38,6 +38,7 @@ const syncLanguageCardSchema = z.object({
   lastReview: z.unknown().optional().nullable(),
   createdAt: z.unknown(),
   updatedAt: z.unknown(),
+  learningSteps: z.number().optional().nullable().default(0),
 });
 
 const syncFinanceTransactionSchema = z.object({
@@ -171,6 +172,7 @@ export async function syncData(rawPayload: unknown) {
       lastReview: card.lastReview ? parseDate(card.lastReview) : null,
       createdAt: parseDate(card.createdAt),
       updatedAt: parseDate(card.updatedAt),
+      learningSteps: card.learningSteps ?? 0,
     }));
 
     if (cardsToUpsert.length > 0) {
@@ -194,6 +196,7 @@ export async function syncData(rawPayload: unknown) {
             due: sql`EXCLUDED.due`,
             lastReview: sql`EXCLUDED.last_review`,
             updatedAt: sql`EXCLUDED.updated_at`,
+            learningSteps: sql`EXCLUDED.learning_steps`,
           },
           where: sql`EXCLUDED.updated_at > ${languageCards.updatedAt} AND ${languageCards.userId} = ${userId}`,
         });

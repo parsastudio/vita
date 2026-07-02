@@ -25,6 +25,7 @@ export interface PulledData {
     lastReview: string | Date | null;
     createdAt: string | Date;
     updatedAt: string | Date;
+    learningSteps: number;
   }[];
   financeTransactions: {
     id: string;
@@ -155,6 +156,7 @@ export async function updateLocalDbAfterSync(
               lastReview: card.lastReview ? new Date(card.lastReview) : null,
               createdAt: new Date(card.createdAt),
               updatedAt: new Date(card.updatedAt),
+              learningSteps: Number(card.learningSteps || 0),
               synced: true,
             });
           }
