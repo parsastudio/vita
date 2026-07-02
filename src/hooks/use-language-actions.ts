@@ -105,10 +105,61 @@ export function useLanguageActions() {
     });
   };
 
+  const importCards = async (
+    items: Array<{
+      originalText: string;
+      translation: string;
+      focusWord: string;
+    }>,
+  ) => {
+    const fsrsDefaults = createNewFSRSCard();
+
+    await localDb.transaction("rw", [localDb.languageCards], async () => {
+      for (const item of items) {
+        const normalizedText = item.originalText.trim();
+        const existing = await localDb.languageCards
+          .where("userId")
+          .equals(userId)
+          .filter(
+            (c) =>
+              c.originalText.trim().toLowerCase() ===
+              normalizedText.toLowerCase(),
+          )
+          .first();
+
+        if (existing) continue;
+
+        const newCard: LanguageCard = {
+          id: uuidv4(),
+          userId,
+          originalText: normalizedText,
+          translation: item.translation.trim(),
+          focusWord: item.focusWord.trim(),
+          srsStatus: "active",
+          due: fsrsDefaults.due,
+          stability: fsrsDefaults.stability,
+          difficulty: fsrsDefaults.difficulty,
+          elapsedDays: fsrsDefaults.elapsedDays,
+          scheduledDays: fsrsDefaults.scheduledDays,
+          reps: fsrsDefaults.reps,
+          lapses: fsrsDefaults.lapses,
+          state: fsrsDefaults.state,
+          lastReview: fsrsDefaults.lastReview,
+          learningSteps: fsrsDefaults.learningSteps,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          synced: false,
+        };
+        await localDb.languageCards.put(newCard);
+      }
+    });
+  };
+
   return {
     handleSrsAction,
     toggleArchiveCard,
     deleteCard,
     addCard,
+    importCards,
   };
 }

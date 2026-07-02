@@ -8,6 +8,7 @@ import { useSpeech } from "@/hooks/use-speech";
 import { useLanguageActions } from "@/hooks/use-language-actions";
 import { Volume2, Trash2, Archive, ArchiveRestore } from "lucide-react";
 import { formatPersianNumber } from "@/lib/utils";
+import { WordImportExport } from "./word-import-export";
 
 export function WordList({ cards }: { cards: LanguageCard[] }) {
   const [search, setSearch] = useState("");
@@ -79,13 +80,16 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="جستجو در متن انگلیسی یا ترجمه فارسی..."
-          className="w-full h-9 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
-        />
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="جستجو در متن انگلیسی یا ترجمه فارسی..."
+            className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
+          />
+          <WordImportExport cards={cards} />
+        </div>
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-1.5 bg-muted/40 rounded-xl border border-border">
           <div className="flex flex-wrap gap-1">
