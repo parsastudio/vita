@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Monitor, Moon, Sun } from "lucide-react";
+import { AccountSettingsModal } from "@/components/auth/account-settings-modal";
 
 interface DashboardHeaderProps {
   isOnline: boolean;
@@ -32,6 +33,7 @@ export function DashboardHeader({
   const { theme, setTheme } = useTheme();
   const [showSettings, setShowSettings] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export function DashboardHeader({
       <div>
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold tracking-tight text-foreground font-vazir">
-            ویتا اسپیس
+            ویتا کیت
           </h1>
 
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/60 border border-border text-[10px] font-semibold">
@@ -72,15 +74,10 @@ export function DashboardHeader({
               </span>
             </button>
           )}
-
-          {isGuest && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-              <span>ذخیره محلی (IndexedDB)</span>
-            </div>
-          )}
         </div>
         <p className="text-sm text-muted-foreground mt-1 font-vazir">
-          فضای شخصی و امن شما، فعال به صورت آفلاین به طور پیش‌فرض
+          فضای شخصی شما برای یادگیری و مدیریت هوشمند؛ متمرکز، امن و کاملاً
+          آفلاین
         </p>
       </div>
 
@@ -134,6 +131,16 @@ export function DashboardHeader({
                         {user?.email}
                       </span>
                     </div>
+
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        setShowAccountSettings(true);
+                      }}
+                      className="w-full text-start text-xs text-foreground hover:text-primary transition-colors py-1 block font-medium font-vazir"
+                    >
+                      تنظیمات حساب کاربری
+                    </button>
 
                     <button
                       onClick={() => {
@@ -225,6 +232,12 @@ export function DashboardHeader({
           )}
         </AnimatePresence>
       </div>
+
+      <AccountSettingsModal
+        isOpen={showAccountSettings}
+        onClose={() => setShowAccountSettings(false)}
+        userEmail={user?.email || ""}
+      />
     </header>
   );
 }

@@ -58,8 +58,7 @@ export function LanguageWidget() {
             یادگیری هوشمند زبان
           </h2>
           <p className="text-[11px] sm:text-xs text-muted-foreground font-vazir leading-relaxed max-w-lg">
-            جعبه لایتنر هوشمند تطبیقی مبتنی بر سیستم رتبه‌بندی FSRS6 و محاسبات
-            احتمال فراموشی ذهن
+            جعبه لایتنر هوشمند مبتنی بر سیستم رتبه‌بندی FSRS6
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 bg-primary/10 border border-primary/20 text-primary rounded-full px-3 py-1 text-xs font-bold font-vazir">
