@@ -1,3 +1,5 @@
+import { parseVerbalNumbers } from "./verbal-numeric-parser";
+
 export interface ParsedNlp {
   amount: number;
   type: "income" | "expense";
@@ -114,7 +116,7 @@ export function parseNaturalLanguageTransaction(
 ): ParsedNlp | null {
   if (!nlpText.trim()) return null;
 
-  let cleanedText = nlpText.trim();
+  let cleanedText = parseVerbalNumbers(toEnglishDigits(nlpText.trim()));
   const splitKeywords = [
     "واسه ی",
     "واسه",
