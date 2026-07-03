@@ -8,6 +8,7 @@ import { formatPersianNumber, formatPersianDate } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useFinanceActions } from "@/hooks/use-finance-actions";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function TransactionList({
   transactions,
@@ -80,102 +81,119 @@ export function TransactionList({
       </div>
 
       <div className="space-y-3 max-h-[400px] overflow-y-auto pe-1">
-        {filtered.map((tx) => (
-          <div
-            key={tx.id}
-            className="p-4 border border-border bg-background rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-muted-foreground/30 transition-all animate-in fade-in duration-300"
-          >
-            <div className="space-y-1.5 flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-sm text-foreground break-words font-vazir">
-                  {tx.category}
-                </span>
-                <span
-                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                    tx.type === "income"
-                      ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                      : "bg-red-500/10 text-red-600 dark:text-red-400"
-                  }`}
-                >
-                  {tx.type === "income" ? "درآمد" : "هزینه"}
+        <AnimatePresence mode="popLayout">
+          {filtered.map((tx) => (
+            <motion.div
+              layout
+              key={tx.id}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 100, damping: 15 }}
+              className="p-4 border border-border bg-background rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-muted-foreground/30 transition-all"
+            >
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-sm text-foreground break-words font-vazir">
+                    {tx.category}
+                  </span>
+                  <span
+                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                      tx.type === "income"
+                        ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                        : "bg-red-500/10 text-red-600 dark:text-red-400"
+                    }`}
+                  >
+                    {tx.type === "income" ? "درآمد" : "هزینه"}
+                  </span>
+                </div>
+                {tx.description && (
+                  <p className="text-xs text-muted-foreground break-words font-vazir">
+                    {tx.description}
+                  </p>
+                )}
+                {tx.tags && tx.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {tx.tags.map((tag: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="text-[9px] bg-primary/5 dark:bg-primary/10 text-primary dark:text-primary/90 border border-primary/10 dark:border-primary/20 px-1.5 py-0.5 rounded-sm font-vazir font-medium"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <span className="text-[9px] text-muted-foreground block font-mono">
+                  {mounted ? formatPersianDate(tx.createdAt) : "..."}
                 </span>
               </div>
-              {tx.description && (
-                <p className="text-xs text-muted-foreground break-words font-vazir">
-                  {tx.description}
-                </p>
-              )}
-              {tx.tags && tx.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {tx.tags.map((tag: string, idx: number) => (
-                    <span
-                      key={idx}
-                      className="text-[9px] bg-primary/5 dark:bg-primary/10 text-primary dark:text-primary/90 border border-primary/10 dark:border-primary/20 px-1.5 py-0.5 rounded-sm font-vazir font-medium"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <span className="text-[9px] text-muted-foreground block font-mono">
-                {mounted ? formatPersianDate(tx.createdAt) : "..."}
-              </span>
-            </div>
 
-            <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-border/40 sm:border-transparent">
-              <span
-                className={`font-bold text-sm ${
-                  tx.type === "income"
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-red-600 dark:text-red-400"
-                }`}
-              >
-                {tx.type === "income" ? "+" : "-"}
-                {mounted
-                  ? formatPersianNumber(Number(tx.amount))
-                  : tx.amount}{" "}
-                تومان
-              </span>
-
-              {confirmDeleteId === tx.id ? (
-                <div className="flex items-center gap-1.5 animate-in fade-in duration-200">
-                  <span className="text-[10px] font-bold text-destructive font-vazir">
-                    مطمئنید؟
-                  </span>
-                  <Button
-                    variant="destructive"
-                    size="xs"
-                    onClick={() => {
-                      handleDelete(tx.id);
-                      setConfirmDeleteId(null);
-                    }}
-                    className="h-6 px-2 text-[10px] font-bold font-vazir"
-                  >
-                    بله
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="xs"
-                    onClick={() => setConfirmDeleteId(null)}
-                    className="h-6 px-2 text-[10px] font-bold font-vazir"
-                  >
-                    خیر
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="destructive"
-                  size="icon-xs"
-                  onClick={() => setConfirmDeleteId(tx.id)}
-                  aria-label="حذف تراکنش"
-                  className="hover:scale-105 transition-transform"
+              <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-border/40 sm:border-transparent">
+                <span
+                  className={`font-bold text-sm ${
+                    tx.type === "income"
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-red-600 dark:text-red-400"
+                  }`}
                 >
-                  <Trash2 className="size-3.5 text-destructive" />
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
+                  {tx.type === "income" ? "+" : "-"}
+                  {mounted
+                    ? formatPersianNumber(Number(tx.amount))
+                    : tx.amount}{" "}
+                  تومان
+                </span>
+
+                <AnimatePresence mode="wait">
+                  {confirmDeleteId === tx.id ? (
+                    <motion.div
+                      key="confirm"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="flex items-center gap-1.5"
+                    >
+                      <span className="text-[10px] font-bold text-destructive font-vazir">
+                        مطمئنید؟
+                      </span>
+                      <Button
+                        variant="destructive"
+                        size="xs"
+                        onClick={() => {
+                          handleDelete(tx.id);
+                          setConfirmDeleteId(null);
+                        }}
+                        className="h-6 px-2 text-[10px] font-bold font-vazir"
+                      >
+                        بله
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="h-6 px-2 text-[10px] font-bold font-vazir"
+                      >
+                        خیر
+                      </Button>
+                    </motion.div>
+                  ) : (
+                    <motion.div key="action">
+                      <Button
+                        variant="destructive"
+                        size="icon-xs"
+                        onClick={() => setConfirmDeleteId(tx.id)}
+                        aria-label="حذف تراکنش"
+                        className="hover:scale-105 active:scale-95 transition-transform"
+                      >
+                        <Trash2 className="size-3.5 text-destructive" />
+                      </Button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
         {filtered.length === 0 && (
           <div className="text-center py-8 text-sm text-muted-foreground font-vazir">

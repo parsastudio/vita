@@ -162,10 +162,10 @@ export function SrsReviewer({
       <AnimatePresence mode="wait">
         <motion.div
           key={currentCard.id + (showAnswer ? "-ans" : "-ques")}
-          initial={{ opacity: 0, y: 15, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -15, scale: 0.98 }}
-          transition={{ duration: 0.25, ease: "easeInOut" }}
+          initial={{ opacity: 0, scale: 0.97, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.97, y: -10 }}
+          transition={{ type: "spring", stiffness: 120, damping: 18 }}
           className="space-y-6 text-center"
         >
           <div className="space-y-4">
@@ -178,7 +178,7 @@ export function SrsReviewer({
                 size="icon-sm"
                 onClick={handleSpeak}
                 aria-label="تلفظ صوتی کلمه"
-                className="rounded-full hover:scale-105 transition-transform"
+                className="rounded-full hover:scale-105 active:scale-95 transition-transform"
               >
                 <Volume2 className="size-4" />
               </Button>
@@ -194,7 +194,12 @@ export function SrsReviewer({
               نمایش ترجمه فارسی
             </Button>
           ) : (
-            <div className="space-y-8 pt-6 border-t border-border animate-in fade-in duration-300">
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 100, damping: 16 }}
+              className="space-y-8 pt-6 border-t border-border"
+            >
               <div className="space-y-3">
                 <p className="text-xl font-bold text-primary font-vazir">
                   {currentCard.translation}
@@ -209,9 +214,11 @@ export function SrsReviewer({
 
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => handleSrsActionWrapper(Rating.Again)}
-                    className="flex flex-col items-center justify-center p-4 rounded-xl border border-red-500/10 bg-red-500/5 hover:bg-red-500/10 hover:border-red-500/30 text-foreground transition-all cursor-pointer group"
+                    className="flex flex-col items-center justify-center p-4 rounded-xl border border-red-500/10 bg-red-500/5 hover:bg-red-500/10 hover:border-red-500/30 text-foreground transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
                       <AlertCircle className="size-4" />
@@ -220,11 +227,13 @@ export function SrsReviewer({
                     <span className="text-[10px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
                       مرور بعدی: {ratingPreviews?.again}
                     </span>
-                  </button>
+                  </motion.button>
 
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => handleSrsActionWrapper(Rating.Good)}
-                    className="flex flex-col items-center justify-center p-4 rounded-xl border border-emerald-500/10 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 text-foreground transition-all cursor-pointer group"
+                    className="flex flex-col items-center justify-center p-4 rounded-xl border border-emerald-500/10 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 text-foreground transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                       <CheckCircle2 className="size-4" />
@@ -233,17 +242,19 @@ export function SrsReviewer({
                     <span className="text-[10px] text-muted-foreground mt-1 text-center font-vazir leading-normal block">
                       مرور بعدی: {ratingPreviews?.good}
                     </span>
-                  </button>
+                  </motion.button>
                 </div>
 
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
                   onClick={() => handleSrsActionWrapper("archived")}
-                  className="w-full py-3.5 px-4 rounded-xl border border-amber-500/10 bg-amber-500/5 hover:bg-amber-500/10 hover:border-amber-500/30 text-amber-700 dark:text-amber-400 transition-all cursor-pointer font-vazir text-xs font-semibold flex items-center justify-center gap-2 shadow-xs"
+                  className="w-full py-3.5 px-4 rounded-xl border border-amber-500/10 bg-amber-500/5 hover:bg-amber-500/10 hover:border-amber-500/30 text-amber-700 dark:text-amber-400 transition-colors cursor-pointer font-vazir text-xs font-semibold flex items-center justify-center gap-2 shadow-xs"
                 >
                   🏆 تسلط کامل دارم (بایگانی دائمی کلمه)
-                </button>
+                </motion.button>
               </div>
-            </div>
+            </motion.div>
           )}
         </motion.div>
       </AnimatePresence>

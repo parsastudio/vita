@@ -9,6 +9,7 @@ import { useLanguageActions } from "@/hooks/use-language-actions";
 import { Volume2, Trash2, Archive, ArchiveRestore } from "lucide-react";
 import { formatPersianNumber } from "@/lib/utils";
 import { WordImportExport } from "./word-import-export";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function WordList({ cards }: { cards: LanguageCard[] }) {
   const [search, setSearch] = useState("");
@@ -138,88 +139,95 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
       </div>
 
       <div className="space-y-3 max-h-[400px] overflow-y-auto pe-1">
-        {sortedAndFiltered.map((card) => (
-          <div
-            key={card.id}
-            className="p-4 border border-border bg-background rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-muted-foreground/30 transition-all animate-in fade-in duration-300"
-          >
-            <div className="space-y-1.5 flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-sm text-foreground break-words ltr">
-                  {card.originalText}
-                </span>
-                <span
-                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full font-vazir ${
-                    card.srsStatus === "active"
-                      ? "bg-primary/10 text-primary"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {card.srsStatus === "active" ? "در جریان" : "آرشیو"}
-                </span>
-
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 font-vazir">
-                  سختی:{" "}
-                  {mounted
-                    ? formatPersianNumber(Number(card.difficulty).toFixed(1))
-                    : Number(card.difficulty).toFixed(1)}{" "}
-                  از ۱۰
-                </span>
-              </div>
-              <p className="text-xs text-primary font-vazir break-words">
-                {card.translation}
-              </p>
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-[10px] text-muted-foreground font-vazir">
-                  کلمه تمرکزی اصلی:{" "}
-                  <span className="text-destructive font-medium">
-                    {card.focusWord}
+        <AnimatePresence mode="popLayout">
+          {sortedAndFiltered.map((card) => (
+            <motion.div
+              layout
+              key={card.id}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 100, damping: 15 }}
+              className="p-4 border border-border bg-background rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-muted-foreground/30 transition-all"
+            >
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-sm text-foreground break-words ltr">
+                    {card.originalText}
                   </span>
+                  <span
+                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full font-vazir ${
+                      card.srsStatus === "active"
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {card.srsStatus === "active" ? "در جریان" : "آرشیو"}
+                  </span>
+
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 font-vazir">
+                    سختی:{" "}
+                    {mounted
+                      ? formatPersianNumber(Number(card.difficulty).toFixed(1))
+                      : Number(card.difficulty).toFixed(1)}{" "}
+                    از ۱۰
+                  </span>
+                </div>
+                <p className="text-xs text-primary font-vazir break-words">
+                  {card.translation}
                 </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-[10px] text-muted-foreground font-vazir">
+                    کلمه تمرکزی اصلی:{" "}
+                    <span className="text-destructive font-medium">
+                      {card.focusWord}
+                    </span>
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center justify-end gap-1.5 shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-border/40 sm:border-transparent">
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => handleSpeak(card.focusWord)}
-                aria-label="تلفظ انگلیسی"
-                className="rounded-full hover:scale-105 transition-transform"
-              >
-                <Volume2 className="size-3.5 text-foreground" />
-              </Button>
+              <div className="flex items-center justify-end gap-1.5 shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-border/40 sm:border-transparent">
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => handleSpeak(card.focusWord)}
+                  aria-label="تلفظ انگلیسی"
+                  className="rounded-full hover:scale-105 active:scale-95 transition-transform"
+                >
+                  <Volume2 className="size-3.5 text-foreground" />
+                </Button>
 
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => handleToggleArchive(card)}
-                aria-label={
-                  card.srsStatus === "active"
-                    ? "بایگانی کلمه"
-                    : "خروج از بایگانی"
-                }
-                className="rounded-full hover:scale-105 transition-transform text-muted-foreground hover:text-foreground"
-              >
-                {card.srsStatus === "active" ? (
-                  <Archive className="size-3.5" />
-                ) : (
-                  <ArchiveRestore className="size-3.5" />
-                )}
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => handleToggleArchive(card)}
+                  aria-label={
+                    card.srsStatus === "active"
+                      ? "بایگانی کلمه"
+                      : "خروج از بایگانی"
+                  }
+                  className="rounded-full hover:scale-105 active:scale-95 transition-transform text-muted-foreground hover:text-foreground"
+                >
+                  {card.srsStatus === "active" ? (
+                    <Archive className="size-3.5" />
+                  ) : (
+                    <ArchiveRestore className="size-3.5" />
+                  )}
+                </Button>
 
-              <Button
-                variant="destructive"
-                size="icon-xs"
-                onClick={() => handleDelete(card.id)}
-                aria-label="حذف کارت"
-                className="rounded-full hover:scale-105 transition-transform"
-              >
-                <Trash2 className="size-3.5 text-destructive" />
-              </Button>
-            </div>
-          </div>
-        ))}
+                <Button
+                  variant="destructive"
+                  size="icon-xs"
+                  onClick={() => handleDelete(card.id)}
+                  aria-label="حذف کارت"
+                  className="rounded-full hover:scale-105 active:scale-95 transition-transform"
+                >
+                  <Trash2 className="size-3.5 text-destructive" />
+                </Button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
         {sortedAndFiltered.length === 0 && (
           <div className="text-center py-8 text-sm text-muted-foreground font-vazir">

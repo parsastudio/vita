@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { formatPersianNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { PieChart, Download } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface CategorySegment {
   name: string;
@@ -75,7 +76,12 @@ export function CategoryDistribution({
 
       {categories.length > 0 ? (
         <div className="flex flex-col md:flex-row items-center gap-12 justify-center py-4">
-          <div className="relative w-44 h-44 shrink-0">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 80, damping: 15 }}
+            className="relative w-44 h-44 shrink-0"
+          >
             <svg
               viewBox="0 0 36 36"
               className="w-full h-full transform -rotate-90"
@@ -89,7 +95,7 @@ export function CategoryDistribution({
                 strokeWidth="3"
               />
               {segments.map((seg, idx) => (
-                <circle
+                <motion.circle
                   key={idx}
                   cx="18"
                   cy="18"
@@ -98,7 +104,14 @@ export function CategoryDistribution({
                   stroke={seg.color}
                   strokeWidth={hoveredIdx === idx ? "4.5" : "3.2"}
                   strokeDasharray={seg.strokeDasharray}
-                  strokeDashoffset={seg.strokeDashoffset}
+                  initial={{ strokeDashoffset: 100 }}
+                  animate={{ strokeDashoffset: seg.strokeDashoffset }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 60,
+                    damping: 14,
+                    delay: idx * 0.05,
+                  }}
                   onMouseEnter={() => setHoveredIdx(idx)}
                   onMouseLeave={() => setHoveredIdx(null)}
                   className="transition-all duration-200 ease-out cursor-pointer"
@@ -106,30 +119,46 @@ export function CategoryDistribution({
               ))}
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1 pointer-events-none">
-              {hoveredIdx !== null ? (
-                <>
-                  <span className="text-[10px] text-muted-foreground truncate max-w-[90px] font-bold font-vazir">
-                    {segments[hoveredIdx].name}
-                  </span>
-                  <span className="text-sm font-bold text-foreground">
-                    {formatPersianNumber(
-                      segments[hoveredIdx].percentage.toFixed(0),
-                    )}
-                    %
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold font-vazir">
-                    کل مخارج
-                  </span>
-                  <span className="text-sm font-bold text-foreground">
-                    {mounted ? formatPersianNumber(totalExpense) : totalExpense}
-                  </span>
-                </>
-              )}
+              <AnimatePresence mode="wait">
+                {hoveredIdx !== null ? (
+                  <motion.div
+                    key="hovered"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.15 }}
+                    className="flex flex-col items-center"
+                  >
+                    <span className="text-[10px] text-muted-foreground truncate max-w-[90px] font-bold font-vazir">
+                      {segments[hoveredIdx].name}
+                    </span>
+                    <span className="text-sm font-bold text-foreground">
+                      {formatPersianNumber(
+                        segments[hoveredIdx].percentage.toFixed(0),
+                      )}
+                      %
+                    </span>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="total"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center"
+                  >
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold font-vazir">
+                      کل مخارج
+                    </span>
+                    <span className="text-sm font-bold text-foreground">
+                      {mounted
+                        ? formatPersianNumber(totalExpense)
+                        : totalExpense}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          </div>
+          </motion.div>
 
           <div className="flex-1 w-full space-y-3">
             {segments.map((seg, idx) => (
@@ -137,7 +166,7 @@ export function CategoryDistribution({
                 key={idx}
                 onMouseEnter={() => setHoveredIdx(idx)}
                 onMouseLeave={() => setHoveredIdx(null)}
-                className={`flex flex-col gap-1.5 p-2 rounded-lg transition-colors ${
+                className={`flex flex-col gap-1.5 p-2 rounded-lg transition-colors duration-200 ${
                   hoveredIdx === idx ? "bg-muted/50" : ""
                 }`}
               >
@@ -159,11 +188,18 @@ export function CategoryDistribution({
                   </div>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1 overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-300"
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${seg.percentage}%` }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 50,
+                      damping: 15,
+                      delay: idx * 0.05,
+                    }}
+                    className="h-full rounded-full"
                     style={{
                       backgroundColor: seg.color,
-                      width: `${seg.percentage}%`,
                     }}
                   />
                 </div>

@@ -37,7 +37,7 @@ export function DashboardHeader({
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   return (
-    <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-border pb-6 gap-4">
+    <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-border pb-6 gap-4 px-4 sm:px-0">
       <div>
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-3xl font-bold tracking-tight text-foreground font-vazir">

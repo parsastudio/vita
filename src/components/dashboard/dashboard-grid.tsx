@@ -60,10 +60,10 @@ export function DashboardGrid({
   }
 
   return (
-    <div className="flex-1 w-full max-w-3xl mx-auto px-4 pt-8 pb-16 md:pt-12 md:pb-24 flex flex-col gap-8">
+    <div className="flex-1 w-full max-w-3xl mx-auto px-0 sm:px-4 pt-8 pb-16 md:pt-12 md:pb-24 flex flex-col gap-8">
       <ErrorBoundary
         fallback={
-          <div className="p-4 border border-destructive/20 bg-destructive/5 text-destructive rounded-xl text-center font-vazir text-xs">
+          <div className="px-4 sm:px-0 p-4 border border-destructive/20 bg-destructive/5 text-destructive rounded-xl text-center font-vazir text-xs">
             خطایی در لود بخش بالای داشبورد رخ داد.
           </div>
         }
@@ -85,7 +85,7 @@ export function DashboardGrid({
       </ErrorBoundary>
 
       {enabledModules.length > 0 && (
-        <div className="w-full flex justify-center border-b border-border pb-1">
+        <div className="w-full flex justify-center border-b border-border pb-1 px-4 sm:px-0">
           <div className="relative flex p-1 bg-muted rounded-xl w-full max-w-md">
             {isLanguageEnabled && (
               <button
@@ -182,17 +182,19 @@ export function DashboardGrid({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="w-full flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-2xl"
+              className="px-4 w-full"
             >
-              <p className="text-muted-foreground font-vazir">
-                تمامی فضاهای کاربری غیرفعال هستند.
-              </p>
+              <div className="w-full flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-2xl">
+                <p className="text-muted-foreground font-vazir">
+                  تمامی فضاهای کاربری غیرفعال هستند.
+                </p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
 
-      <footer className="w-full mt-8 pt-8 border-t border-border/40 text-center space-y-3">
+      <footer className="w-full mt-8 pt-8 border-t border-border/40 text-center space-y-3 px-4 sm:px-0">
         <p className="text-xs text-muted-foreground/80 font-vazir leading-relaxed">
           تمامی حقوق مادی و معنوی این پلتفرم محفوظ و داده‌ها به‌طور امن بر روی
           دستگاه شما کپسوله شده‌اند.

@@ -8,6 +8,7 @@ import { formatPersianNumber } from "@/lib/utils";
 import { toEnglishDigits } from "@/lib/nlp";
 import { AlertTriangle } from "lucide-react";
 import { z } from "zod";
+import { motion, AnimatePresence } from "framer-motion";
 
 const formSchema = z.object({
   amount: z.string().refine(
@@ -200,18 +201,32 @@ export function QuickEntryForm({
       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block font-vazir">
         فرم ثبت تراکنش تفصیلی
       </span>
-      {validationError && (
-        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-medium leading-relaxed font-vazir flex items-start gap-1.5 animate-shake">
-          <AlertTriangle className="size-4 shrink-0 text-red-500 mt-0.5" />
-          <span>{validationError}</span>
-        </div>
-      )}
-      {budgetWarning && (
-        <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-medium leading-relaxed font-vazir flex items-start gap-1.5">
-          <AlertTriangle className="size-4 shrink-0 text-amber-500 mt-0.5" />
-          <span>{budgetWarning}</span>
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {validationError && (
+          <motion.div
+            initial={{ height: 0, opacity: 0, scale: 0.95 }}
+            animate={{ height: "auto", opacity: 1, scale: 1 }}
+            exit={{ height: 0, opacity: 0, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 100, damping: 15 }}
+            className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-medium leading-relaxed font-vazir flex items-start gap-1.5 overflow-hidden animate-shake"
+          >
+            <AlertTriangle className="size-4 shrink-0 text-red-500 mt-0.5" />
+            <span>{validationError}</span>
+          </motion.div>
+        )}
+        {budgetWarning && (
+          <motion.div
+            initial={{ height: 0, opacity: 0, scale: 0.95 }}
+            animate={{ height: "auto", opacity: 1, scale: 1 }}
+            exit={{ height: 0, opacity: 0, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 100, damping: 15 }}
+            className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-medium leading-relaxed font-vazir flex items-start gap-1.5 overflow-hidden"
+          >
+            <AlertTriangle className="size-4 shrink-0 text-amber-500 mt-0.5" />
+            <span>{budgetWarning}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5 min-w-0">
           <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
@@ -226,25 +241,32 @@ export function QuickEntryForm({
             dir="ltr"
             className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir min-w-0"
           />
-          {amountSuggestions.length > 0 && (
-            <div className="pt-2 animate-in fade-in duration-200">
-              <span className="text-[10px] font-semibold text-muted-foreground block mb-1 font-vazir">
-                حدس عنوان بر اساس مبلغ وارد شده:
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {amountSuggestions.map((sug, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => applySuggestion(sug)}
-                    className="px-2.5 py-1 text-[10px] font-bold rounded-md bg-primary/10 hover:bg-primary/20 text-primary border border-primary/15 transition-all cursor-pointer font-vazir"
-                  >
-                    {sug.category}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          <AnimatePresence>
+            {amountSuggestions.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className="pt-2"
+              >
+                <span className="text-[10px] font-semibold text-muted-foreground block mb-1 font-vazir">
+                  حدس عنوان بر اساس مبلغ وارد شده:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {amountSuggestions.map((sug, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => applySuggestion(sug)}
+                      className="px-2.5 py-1 text-[10px] font-bold rounded-md bg-primary/10 hover:bg-primary/20 text-primary border border-primary/15 transition-all cursor-pointer font-vazir"
+                    >
+                      {sug.category}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
         <div className="space-y-1.5 min-w-0">
           <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
@@ -254,14 +276,14 @@ export function QuickEntryForm({
             <button
               type="button"
               onClick={() => setType("expense")}
-              className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${type === "expense" ? "border-red-500/30 bg-red-500/5 text-red-600" : "border-border bg-background text-muted-foreground hover:bg-muted"}`}
+              className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${type === "expense" ? "border-red-500/30 bg-red-500/5 text-red-600 font-bold" : "border-border bg-background text-muted-foreground hover:bg-muted"}`}
             >
               هزینه
             </button>
             <button
               type="button"
               onClick={() => setType("income")}
-              className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${type === "income" ? "border-green-500/30 bg-green-500/5 text-green-600" : "border-border bg-background text-muted-foreground hover:bg-muted"}`}
+              className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${type === "income" ? "border-green-500/30 bg-green-500/5 text-green-600 font-bold" : "border-border bg-background text-muted-foreground hover:bg-muted"}`}
             >
               درآمد
             </button>
@@ -295,20 +317,27 @@ export function QuickEntryForm({
             placeholder="مثال: خونه، غذا، رفت و آمد"
             className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir min-w-0"
           />
-          {showTagsDropdown && filteredTags.length > 0 && (
-            <div className="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-card border border-border rounded-lg shadow-lg">
-              {filteredTags.map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onMouseDown={() => handleSelectTag(tag)}
-                  className="w-full text-right px-3 py-2.5 text-xs hover:bg-muted text-foreground transition-colors cursor-pointer font-vazir"
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          )}
+          <AnimatePresence>
+            {showTagsDropdown && filteredTags.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 5 }}
+                className="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-card border border-border rounded-lg shadow-lg"
+              >
+                {filteredTags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onMouseDown={() => handleSelectTag(tag)}
+                    className="w-full text-right px-3 py-2.5 text-xs hover:bg-muted text-foreground transition-colors cursor-pointer font-vazir"
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
       <div className="space-y-1.5 min-w-0">
