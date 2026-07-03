@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+برای جلب نظر کارفرمایان سطح بالا و تیم‌های فنی پیشرو در سال ۲۰۲۶، یک فایل `README.md` باید فراتر از لیست ساده‌ای از ویژگی‌ها برود. این فایل باید به عنوان سند معماری (Architecture Document) پروژه عمل کرده و نشان‌دهنده تسلط عمیق شما بر مفاهیمی چون **Local-First Agnosticism**، **Resilient Sync Engines**، **Cognitive Engineering** و **Lighthouse Optimization** باشد.
 
-## Getting Started
+# ویتا (Vita) — پلتفرم شخصی ماژولار و غیرمتمرکز ابری-محلی
 
-First, run the development server:
+> یک هاب شخصی لوکس، مدرن و اول-آفلاین (Offline-First) مهندسی‌شده با Next.js 16، مجهز به دستیار پردازش زبان طبیعی فارسی و سیستم یادگیری تطبیقی بر پایه الگوریتم شناخت حافظه FSRS.
 
+[![Live Demo](https://img.shields.io/badge/دمو_زنده-vitakit.ir-8B5CF6?style=for-the-badge)](https://vitakit.ir)
+[![Stack](https://img.shields.io/badge/Next.js_16_|_Tailwind_v4_|_Dexie_|_Drizzle-black?style=for-the-badge)](#)
+
+---
+
+### 🔑 اطلاعات دسترسی سریع جهت تست و ارزیابی فنی
+برای بررسی همگام‌سازی ناهمگام ابری، رفتار آفلاین و پنل‌های تعاملی پلتفرم، می‌توانید از اطلاعات حساب کاربری نمونه زیر استفاده کنید:
+
+* **آدرس سامانه:** [vitakit.ir](https://vitakit.ir)
+* **ایمیل تست:** `vitakittest@gmail.com`
+* **رمز عبور:** `admin1234`
+
+---
+
+## 🏗️ معماری سیستم و جریان داده‌های آفلاین (System Architecture & Local-First Agnosticism)
+
+ویتا با تفکر **Offline-First** و بر پایه اصول **Clean Architecture** توسعه یافته است. در این سیستم، کلاینت هیچ وابستگی مستقیمی به در دسترس بودن شبکه یا سرور ندارد. 
+
+### ۱. معماری جریان داده آبشاری یک‌طرفه (One-Way Dependency Flow)
+لایه‌های برنامه به صورت کاملاً ایزوله تفکیک شده‌اند:
+* **Domain / Business Logic:** کاملاً مستقل از کتابخانه‌های کلاینت یا سرور. تمامی اسکیماهای داده توسط **Zod** تعریف شده و منبع واحد حقیقت (Single Source of Truth) برای دیتابیس کلاینت، سرور و فرم‌های ولیدیشن هستند.
+* **Infrastructure Layer:** شامل موتور همگام‌سازی (Sync Engine) و اتصالات دیتابیس لوکال (Dexie / IndexedDB) و دیتابیس ابری (Drizzle ORM / PostgreSQL).
+* **UI Presenter Layer:** کامپوننت‌های تعاملی خالص ساخته‌شده با Tailwind v4 و shadcn/ui که داده‌های خود را منحصراً از دیتابیس محلی فراخوانی کرده و فاقد ساید‌افکت مستقیم شبکه‌ای هستند.
+
+### ۲. موتور همگام‌سازی ناهمگام دوطرفه (Optimistic Sync Engine)
+موتور همگام‌سازی ویتا فرآیند همگام‌سازی داده‌ها را در پشت صحنه مدیریت می‌کند:
+```
+[UI Layer] ──(نوشتن اتمیک)──> [IndexedDB / Dexie] ──(ثبت در Deleted Records در صورت حذف)
+                                      │
+                         (تحریک هوک ثبت تغییرات محلی)
+                                      │
+                                      ▼
+[Sync Engine] <──(ارسال ناهمگام تکه‌های انباشته تراکنش)──> [Server Actions / PostgreSQL]
+```
+* **تراکنش‌های خوش‌بینانه (Optimistic Updates):** تغییرات درجا روی کلاینت اعمال شده و رابط کاربری را بدون تاخیر (Latency) به‌روز می‌کنند.
+* **مدیریت حذف متوازن:** رکوردهای حذف‌شده ابتدا در جدول میانی `deleted_records` در کلاینت ثبت شده و در اولین اتصال به شبکه، دستور پاک‌سازی معادل را به سرور ابری ارسال می‌کنند.
+* **حل تعارضات بر پایه تقدم زمانی:** استفاده از فیلد `updatedAt` با دقت میلی‌ثانیه برای اعمال سناریوهای تغییر همزمان (Last-Write-Wins).
+
+---
+
+## 🧠 ماژول‌ها و جزئیات فنی مهندسی (Deep Dive into Core Modules)
+
+### ۱. فضای یادگیری هوشمند زبان (FSRS Spaced Repetition)
+این ماژول فراتر از یک جعبه لایتنر سنتی عمل می‌کند و با بهره‌گیری از نسخه ششم الگوریتم **Free Spaced Repetition Scheduler (FSRS)**، زمان بهینه مرور بعدی هر کلمه را بر اساس فرآیند انطباق حافظه بلندمدت مغز پیش‌بینی می‌کند.
+* **مدیریت ظرفیت شناختی (Cognitive Load Management):** سیستم مجهز به مکانیزم هوشمند بررسی ظرفیت روزانه کلمات جدید است. در صورت فراتر رفتن ظرفیت انتخابی کاربر از استاندارد علوم شناختی (۵ الی ۱۰ کلمه در روز)، هشدارهای علمی و بازدارنده فعال می‌شوند.
+* **مرور تطبیقی خودکار:** صف انتظار کلمات محلی پس از هر تعامل، مجدداً محاسبه و چیدمان می‌شود. کلماتی که فراموش شده‌اند بر اساس زمان‌بندی دقیق و با فاصله‌های کوتاه‌تر برای بازخوانی بازمی‌گردند.
+* **امکانات جانبی:** قابلیت تلفظ بومی کلمات هدف با موتور کپسوله‌شده وب کلاینت (Web Speech API) و ورود/خروج اطلاعات کلمات به صورت یکپارچه با فرمت استاندارد JSON.
+
+### ۲. فضای حسابداری شخصی هوشمند (Smart Finance & NLP Engine)
+سامانه مدیریت مالی غیرمتمرکز ویتا برای تسریع در ثبت مخارج روزانه، مجهز به یک موتور پردازش زبان طبیعی فارسی محلی (Client-Side NLP) است.
+* **پردازش متن به عدد کلمات فارسی (Verbal Number Parsing):** پلتفرم با ساخت درخت‌های نحوی کوچک، عباراتی مانند `"پنجاه هزار تومان"`، `"۴.۵ میلیون"` یا `"نیم میلیون"` را پردازش کرده و مستقیماً به مقادیر خالص ریاضی تبدیل می‌کند.
+* **ردیاب خوش‌بینانه بودجه ماهانه (Reactive Budget Warnings):** با استفاده از هوک‌های زنده Dexie، به محض شروع تایپ مبلغ در فرم، کل مخارج ماه جاری در دسته‌بندی یا تگ مربوطه محاسبه شده و در صورت احتمال عبور از مرز ۸۰٪ بودجه تنظیم‌شده، هشدار اتمیک و قبل از ثبت نهایی نمایش داده می‌شود.
+* **تحلیل‌های بصری بدون بار پردازشی سنگین:** رسم نمودارهای روند ماهانه و سهم دسته‌بندی‌ها به صورت کاملاً بهینه‌شده با اشکال پویا و منعطف SVG و تعاملات روانی که بدون تحمیل کتابخانه‌های سنگین پیاده‌سازی شده‌اند.
+
+---
+
+## 🛠️ پشته فناوری توسعه (High-End Tech Stack)
+
+* **پایه فریم‌ورک:** React 19 + Next.js 16 (App Router) با پشتیبانی کامل از Server Components و Server Actions امن ایزوله‌شده با دکوراتور `server-only`.
+* **مدیریت داده‌های محلی:** Dexie.js (لایه‌ای پیشرفته روی IndexedDB) با قابلیت Reactive Queries در React.
+* **اتصال ابری سرور:** Drizzle ORM متصل به پایگاه‌داده قدرتمند PostgreSQL.
+* **استایلینگ و انیمیشن:** Tailwind CSS v4 (کامپایل سریع بومی و مدرن) + shadcn/ui + Framer Motion جهت مدیریت میکرواینترکشن‌های لوکس.
+* **اعتبارسنجی یکپارچه:** Zod Schemas به عنوان نقطه مرکزی ولیدیشن سرور، کلاینت و المان‌های رابط کاربری.
+* **آفلاین مطلق (PWA):** سرویس ورکر اختصاصی هوشمند (`sw.js`) جهت کش اتمیک لایه‌ها، فایل‌های ایستا، داده‌های هیدراته‌شده RSC و دارایی‌های چندرسانه‌ای.
+
+---
+
+## ⚙️ راهنمای راه‌اندازی و اجرای نسخه محلی (Installation & Setup)
+
+پروژه به طور پیش‌فرض بر اساس پکیج منیجر سریع **pnpm** بهینه‌سازی شده است.
+
+### ۱. کلون کردن مخزن و نصب وابستگی‌ها
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/your-username/vita.git
+cd vita
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### ۲. تنظیم متغیرهای محیطی
+یک فایل با نام `.env.local` در مسیر اصلی پروژه ساخته و متغیرهای زیر را در آن مقداردهی کنید:
+```env
+DATABASE_URL="postgresql://username:password@localhost:5432/vita_db"
+SESSION_SECRET="یک-کلید-بسیار-امن-و-طولانی-برای-رمزنگاری-نشست‌ها"
+RESEND_API_KEY="re_your_resend_api_key" # اختیاری - برای ارسال ایمیل بازیابی رمز عبور
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### ۳. آماده‌سازی پایگاه‌داده ابری (Drizzle Migrations)
+به کمک دستورات زیر، ساختارهای جداول پایگاه‌داده را تولید کرده و روی PostgreSQL اعمال نمایید:
+```bash
+pnpm db:generate
+pnpm db:push
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### ۴. اجرای برنامه در محیط توسعه
+```bash
+pnpm dev
+```
+اکنون برنامه روی آدرس [http://localhost:3000](http://localhost:3000) در دسترس خواهد بود.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 💎 استانداردهای عملکردی و تجربه کاربری (Core Web Vitals & Premium UX)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+* **شاخص ثبات چیدمان (CLS = 0):** تمامی کامپوننت‌ها و بخش‌های دارای فرآیند بارگذاری تعلیقی (Suspense)، مجهز به المان‌های اسکلتون پیشرفته (Skeleton Loaders) با ابعاد پیکسلی دقیقاً برابر با خروجی نهایی داده‌ها هستند تا از جابجایی ناگهانی المان‌ها ممانعت شود.
+* **بارگذاری تنبل ابزارها (Dynamic Lazy Loading):** بخش‌های محاسباتی سنگین و نمودارهای تحلیلی سیستم به صورت ناهمگام با استفاده از `next/dynamic` بارگذاری می‌شوند تا حجم باندل اولیه صفحه اصلی به حداقل برسد.
+* **انعطاف در برابر کراش (Component Isolation):** هر ویجت و بخش تعاملی پلتفرم در داشبورد، درون یک مرز خطای اختصاصی (`ErrorBoundary`) محصور شده است تا بروز یک خطای احتمالی در حافظه یا داده‌های یک ماژول، پایداری کل داشبورد و فضاهای کاربری دیگر را تهدید نکند.
+```
+```
