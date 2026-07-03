@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useModules } from "@/hooks/use-modules";
 import { useSync } from "@/hooks/use-sync";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -22,16 +21,20 @@ export function useDashboardState() {
     "finance",
   ]);
 
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  const activeWidget =
-    (searchParams.get("space") as "language" | "finance") || "language";
+  const [activeWidget, setActiveWidgetState] = useState<"language" | "finance">(
+    "language",
+  );
 
   useEffect(() => {
     setMounted(true);
     if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const spaceParam = params.get("space");
+    if (spaceParam === "language" || spaceParam === "finance") {
+      setActiveWidgetState(spaceParam);
+    }
+
     setIsOnline(navigator.onLine);
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -51,10 +54,18 @@ export function useDashboardState() {
   }, []);
 
   const changeActiveWidget = (widget: "language" | "finance") => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("space", widget);
-    params.delete("tab");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    setActiveWidgetState(widget);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("space", widget);
+      params.delete("tab");
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(
+        { ...window.history.state, as: newUrl, url: newUrl },
+        "",
+        newUrl,
+      );
+    }
   };
 
   const moveWidget = (index: number, direction: "up" | "down") => {

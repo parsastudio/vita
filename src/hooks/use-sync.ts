@@ -137,13 +137,8 @@ export function useSync() {
       } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : "Sync failed";
         setError(errMsg);
-        if (!pushOnly) {
-          toast(
-            "خطا در همگام‌سازی ابری. برنامه در حالت آفلاین کار می‌کند.",
-            "error",
-          );
-        }
-      } finally {
+      }
+      {
         setIsSyncing(false);
         isSyncingRef.current = false;
         setDatabaseSyncingActive(false);

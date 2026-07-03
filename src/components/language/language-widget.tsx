@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import { SentenceParser } from "./sentence-parser";
 import { SrsReviewer } from "./srs-reviewer";
 import { WordList } from "./word-list";
@@ -11,17 +10,31 @@ import { useLanguageData } from "@/hooks/use-language-data";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 export function LanguageWidget() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+  const [activeTab, setActiveTabState] = useState<"add" | "review" | "list">(
+    "add",
+  );
 
-  const activeTab =
-    (searchParams.get("tab") as "add" | "review" | "list") || "add";
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (tabParam === "add" || tabParam === "review" || tabParam === "list") {
+      setActiveTabState(tabParam);
+    }
+  }, []);
 
   const setActiveTab = (tab: "add" | "review" | "list") => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", tab);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    setActiveTabState(tab);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("tab", tab);
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(
+        { ...window.history.state, as: newUrl, url: newUrl },
+        "",
+        newUrl,
+      );
+    }
   };
 
   const { cards, reviewCards, nextReviewDate, cardCount, reviewCount, userId } =

@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import { QuickEntry } from "./quick-entry";
 import { TransactionList } from "./transaction-list";
 import { Button } from "@/components/ui/button";
@@ -23,17 +22,31 @@ const FinanceDashboard = dynamic(
 );
 
 export function FinanceWidget() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+  const [activeTab, setActiveTabState] = useState<"add" | "stats" | "list">(
+    "add",
+  );
 
-  const activeTab =
-    (searchParams.get("tab") as "add" | "stats" | "list") || "add";
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (tabParam === "add" || tabParam === "stats" || tabParam === "list") {
+      setActiveTabState(tabParam);
+    }
+  }, []);
 
   const setActiveTab = (tab: "add" | "stats" | "list") => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", tab);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    setActiveTabState(tab);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("tab", tab);
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(
+        { ...window.history.state, as: newUrl, url: newUrl },
+        "",
+        newUrl,
+      );
+    }
   };
 
   const { transactions, budgets, txCount, userId } = useFinanceData();
