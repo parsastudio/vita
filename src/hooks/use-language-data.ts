@@ -4,49 +4,35 @@ import { useMemo, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { localDb, type LanguageCard } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useLanguageActions } from "./use-language-actions";
 
 export function useLanguageData() {
   const { user } = useAuth();
   const userId = user?.id || "guest";
+  const { reconcileLanguageQueue } = useLanguageActions();
 
   const cards = useLiveQuery(() => {
     return localDb.languageCards.where("userId").equals(userId).toArray();
   }, [userId]);
 
   useEffect(() => {
-    if (!cards || cards.length === 0 || userId === "guest") return;
+    if (userId === "guest") return;
 
-    const autoActivateFromQueue = async () => {
+    const checkAndReconcile = async () => {
+      const settings = await localDb.userSettings
+        .where("userId")
+        .equals(userId)
+        .first();
+      if (!settings) return;
+
       const todayStr = new Date().toISOString().split("T")[0];
-      const localStorageKey = `vita_last_auto_activation_${userId}`;
-      const lastActivationDate = localStorage.getItem(localStorageKey);
-
-      if (lastActivationDate !== todayStr) {
-        const queuedCards = await localDb.languageCards
-          .where("userId")
-          .equals(userId)
-          .filter((c) => c.srsStatus === "queued")
-          .limit(15)
-          .toArray();
-
-        if (queuedCards.length > 0) {
-          await localDb.transaction("rw", [localDb.languageCards], async () => {
-            for (const card of queuedCards) {
-              await localDb.languageCards.update(card.id, {
-                srsStatus: "active",
-                due: new Date(),
-                updatedAt: new Date(),
-                synced: false,
-              });
-            }
-          });
-        }
-        localStorage.setItem(localStorageKey, todayStr);
+      if (settings.lastNewWordsDate !== todayStr) {
+        await reconcileLanguageQueue(userId);
       }
     };
 
-    autoActivateFromQueue();
-  }, [cards, userId]);
+    checkAndReconcile();
+  }, [userId, reconcileLanguageQueue]);
 
   const reviewCards = useMemo<LanguageCard[]>(() => {
     if (!cards || cards.length === 0) return [];

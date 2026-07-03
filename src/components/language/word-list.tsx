@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { type LanguageCard } from "@/lib/db/client";
+import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useSpeech } from "@/hooks/use-speech";

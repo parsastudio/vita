@@ -28,6 +28,9 @@ export function useModules() {
         id: newId,
         userId,
         enabledModules: ["language", "finance"],
+        dailyNewWordsLimit: 10,
+        lastNewWordsDate: null,
+        todayNewWordsCount: 0,
         updatedAt: new Date(),
         synced: false,
       });
@@ -43,6 +46,9 @@ export function useModules() {
       id: settingsId || uuidv4(),
       userId,
       enabledModules: updated,
+      dailyNewWordsLimit: settingsRecord?.dailyNewWordsLimit ?? 10,
+      lastNewWordsDate: settingsRecord?.lastNewWordsDate ?? null,
+      todayNewWordsCount: settingsRecord?.todayNewWordsCount ?? 0,
       updatedAt: new Date(),
       synced: false,
     });

@@ -50,6 +50,9 @@ export const userSettingsSchema = z.object({
   id: z.string().uuid(),
   userId: z.string().uuid().nullable(),
   enabledModules: z.array(z.string()),
+  dailyNewWordsLimit: z.number().int().min(1).max(50).default(10),
+  lastNewWordsDate: z.string().nullable().optional(),
+  todayNewWordsCount: z.number().int().min(0).default(0),
   updatedAt: z.date(),
   synced: z.boolean(),
 });

@@ -65,6 +65,9 @@ const syncFinanceBudgetSchema = z.object({
 const syncUserSettingsSchema = z.object({
   id: z.string().uuid(),
   enabledModules: z.array(z.string()),
+  dailyNewWordsLimit: z.number().int().optional().default(10),
+  lastNewWordsDate: z.string().nullable().optional().default(null),
+  todayNewWordsCount: z.number().int().optional().default(0),
   updatedAt: z.unknown(),
 });
 
@@ -263,6 +266,9 @@ export async function syncData(rawPayload: unknown) {
       id: s.id,
       userId,
       enabledModules: s.enabledModules,
+      dailyNewWordsLimit: s.dailyNewWordsLimit ?? 10,
+      lastNewWordsDate: s.lastNewWordsDate ?? null,
+      todayNewWordsCount: s.todayNewWordsCount ?? 0,
       updatedAt: parseDate(s.updatedAt),
     }));
 
@@ -274,6 +280,9 @@ export async function syncData(rawPayload: unknown) {
           target: userSettings.id,
           set: {
             enabledModules: sql`EXCLUDED.enabled_modules`,
+            dailyNewWordsLimit: sql`EXCLUDED.daily_new_words_limit`,
+            lastNewWordsDate: sql`EXCLUDED.last_new_words_date`,
+            todayNewWordsCount: sql`EXCLUDED.today_new_words_count`,
             updatedAt: sql`EXCLUDED.updated_at`,
           },
           where: sql`EXCLUDED.updated_at > ${userSettings.updatedAt} AND ${userSettings.userId} = ${userId}`,

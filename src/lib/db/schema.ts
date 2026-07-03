@@ -106,6 +106,9 @@ export const userSettings = pgTable(
     id: uuid("id").primaryKey(),
     userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
     enabledModules: text("enabled_modules").array().notNull(),
+    dailyNewWordsLimit: integer("daily_new_words_limit").default(10).notNull(),
+    lastNewWordsDate: varchar("last_new_words_date", { length: 50 }),
+    todayNewWordsCount: integer("today_new_words_count").default(0).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

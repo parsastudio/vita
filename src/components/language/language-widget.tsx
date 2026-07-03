@@ -4,26 +4,32 @@ import React, { useState, useEffect } from "react";
 import { SentenceParser } from "./sentence-parser";
 import { SrsReviewer } from "./srs-reviewer";
 import { WordList } from "./word-list";
+import { SrsSettings } from "./srs-settings";
 import { Button } from "@/components/ui/button";
 import { formatPersianNumber } from "@/lib/utils";
 import { useLanguageData } from "@/hooks/use-language-data";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 export function LanguageWidget() {
-  const [activeTab, setActiveTabState] = useState<"add" | "review" | "list">(
-    "add",
-  );
+  const [activeTab, setActiveTabState] = useState<
+    "add" | "review" | "list" | "settings"
+  >("add");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
-    if (tabParam === "add" || tabParam === "review" || tabParam === "list") {
+    if (
+      tabParam === "add" ||
+      tabParam === "review" ||
+      tabParam === "list" ||
+      tabParam === "settings"
+    ) {
       setActiveTabState(tabParam);
     }
   }, []);
 
-  const setActiveTab = (tab: "add" | "review" | "list") => {
+  const setActiveTab = (tab: "add" | "review" | "list" | "settings") => {
     setActiveTabState(tab);
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -57,7 +63,7 @@ export function LanguageWidget() {
         </div>
       </div>
 
-      <div className="flex gap-1.5 border-b border-border pb-3">
+      <div className="flex flex-wrap gap-1.5 border-b border-border pb-3">
         <Button
           variant={activeTab === "add" ? "default" : "ghost"}
           size="sm"
@@ -88,6 +94,15 @@ export function LanguageWidget() {
           className="font-vazir text-xs font-semibold"
         >
           لیست کارت‌ها
+        </Button>
+
+        <Button
+          variant={activeTab === "settings" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("settings")}
+          className="font-vazir text-xs font-semibold"
+        >
+          شخصی‌سازی مرور
         </Button>
       </div>
 
@@ -129,6 +144,18 @@ export function LanguageWidget() {
             }
           >
             <WordList cards={cards} />
+          </ErrorBoundary>
+        )}
+
+        {activeTab === "settings" && (
+          <ErrorBoundary
+            fallback={
+              <div className="p-4 border border-destructive/20 bg-destructive/5 text-destructive rounded-xl text-center font-vazir text-xs">
+                خطایی در بارگذاری بخش شخصی‌سازی رخ داد.
+              </div>
+            }
+          >
+            <SrsSettings />
           </ErrorBoundary>
         )}
       </div>

@@ -11,6 +11,61 @@ export function useLanguageActions() {
   const { user } = useAuth();
   const userId = user?.id || "guest";
 
+  const reconcileLanguageQueue = async (targetUserId: string) => {
+    const settings = await localDb.userSettings
+      .where("userId")
+      .equals(targetUserId)
+      .first();
+    if (!settings) return;
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    let limit = settings.dailyNewWordsLimit ?? 10;
+    let count = settings.todayNewWordsCount ?? 0;
+    let lastDate = settings.lastNewWordsDate ?? null;
+
+    if (lastDate !== todayStr) {
+      count = 0;
+      lastDate = todayStr;
+    }
+
+    const remainingBudget = limit - count;
+    if (remainingBudget > 0) {
+      const queuedCards = await localDb.languageCards
+        .where("userId")
+        .equals(targetUserId)
+        .filter((c) => c.srsStatus === "queued")
+        .toArray();
+
+      const sortedQueued = queuedCards.sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+
+      const cardsToActivate = sortedQueued.slice(0, remainingBudget);
+      if (cardsToActivate.length > 0) {
+        const now = new Date();
+        await localDb.transaction("rw", [localDb.languageCards], async () => {
+          for (const card of cardsToActivate) {
+            await localDb.languageCards.update(card.id, {
+              srsStatus: "active",
+              due: now,
+              updatedAt: now,
+              synced: false,
+            });
+          }
+        });
+        count += cardsToActivate.length;
+      }
+    }
+
+    await localDb.userSettings.update(settings.id, {
+      todayNewWordsCount: count,
+      lastNewWordsDate: lastDate,
+      updatedAt: new Date(),
+      synced: false,
+    });
+  };
+
   const handleSrsAction = async (
     card: LanguageCard,
     ratingVal: Rating | "archived",
@@ -22,6 +77,24 @@ export function useLanguageActions() {
         updatedAt: new Date(),
         synced: false,
       });
+
+      if (card.reps <= 2) {
+        const settings = await localDb.userSettings
+          .where("userId")
+          .equals(userId)
+          .first();
+        if (settings) {
+          const currentCount = settings.todayNewWordsCount ?? 0;
+          const nextCount = Math.max(0, currentCount - 1);
+          await localDb.userSettings.update(settings.id, {
+            todayNewWordsCount: nextCount,
+            updatedAt: new Date(),
+            synced: false,
+          });
+          await reconcileLanguageQueue(userId);
+        }
+      }
+
       return { status: "archived" };
     }
 
@@ -86,7 +159,7 @@ export function useLanguageActions() {
         originalText: text.trim(),
         translation: translation.trim(),
         focusWord: selectedWord,
-        srsStatus: "active",
+        srsStatus: "queued",
         due: fsrsDefaults.due,
         stability: fsrsDefaults.stability,
         difficulty: fsrsDefaults.difficulty,
@@ -103,6 +176,8 @@ export function useLanguageActions() {
       };
       await localDb.languageCards.put(newCard);
     });
+
+    await reconcileLanguageQueue(userId);
   };
 
   const importCards = async (
@@ -114,15 +189,6 @@ export function useLanguageActions() {
     }>,
   ) => {
     const fsrsDefaults = createNewFSRSCard();
-    const todayStr = new Date().toISOString().split("T")[0];
-    const localStorageKey = `vita_last_auto_activation_${userId}`;
-    const lastActivationDate =
-      typeof window !== "undefined"
-        ? localStorage.getItem(localStorageKey)
-        : null;
-
-    const shouldAutoActivateToday = lastActivationDate !== todayStr;
-    let activatedTodayCount = 0;
 
     await localDb.transaction("rw", [localDb.languageCards], async () => {
       for (const item of items) {
@@ -139,17 +205,7 @@ export function useLanguageActions() {
 
         if (existing) continue;
 
-        let status = item.srsStatus || "queued";
-
-        if (
-          status === "queued" &&
-          shouldAutoActivateToday &&
-          activatedTodayCount < 15
-        ) {
-          status = "active";
-          activatedTodayCount++;
-        }
-
+        const status = item.srsStatus || "queued";
         const isArchived = status === "archived";
 
         const newCard: LanguageCard = {
@@ -158,7 +214,7 @@ export function useLanguageActions() {
           originalText: normalizedText,
           translation: item.translation.trim(),
           focusWord: item.focusWord.trim(),
-          srsStatus: status,
+          srsStatus: status as "active" | "archived" | "queued",
           due: status === "active" ? new Date() : fsrsDefaults.due,
           stability: fsrsDefaults.stability,
           difficulty: isArchived ? 1.0 : fsrsDefaults.difficulty,
@@ -177,9 +233,7 @@ export function useLanguageActions() {
       }
     });
 
-    if (activatedTodayCount > 0 && typeof window !== "undefined") {
-      localStorage.setItem(localStorageKey, todayStr);
-    }
+    await reconcileLanguageQueue(userId);
   };
 
   return {
@@ -188,5 +242,6 @@ export function useLanguageActions() {
     deleteCard,
     addCard,
     importCards,
+    reconcileLanguageQueue,
   };
 }

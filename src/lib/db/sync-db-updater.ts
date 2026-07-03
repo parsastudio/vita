@@ -48,6 +48,9 @@ export interface PulledData {
   userSettings: {
     id: string;
     enabledModules: string[];
+    dailyNewWordsLimit: number;
+    lastNewWordsDate: string | null;
+    todayNewWordsCount: number;
     updatedAt: string | Date;
   }[];
   deletedRecords: {
@@ -144,7 +147,7 @@ export async function updateLocalDbAfterSync(
               originalText: card.originalText,
               translation: card.translation,
               focusWord: card.focusWord,
-              srsStatus: card.srsStatus as "active" | "archived",
+              srsStatus: card.srsStatus as "active" | "archived" | "queued",
               difficulty: Number(card.difficulty),
               stability: Number(card.stability),
               elapsedDays: Number(card.elapsedDays),
@@ -203,6 +206,9 @@ export async function updateLocalDbAfterSync(
               id: s.id,
               userId,
               enabledModules: s.enabledModules,
+              dailyNewWordsLimit: Number(s.dailyNewWordsLimit || 10),
+              lastNewWordsDate: s.lastNewWordsDate || null,
+              todayNewWordsCount: Number(s.todayNewWordsCount || 0),
               updatedAt: new Date(s.updatedAt),
               synced: true,
             });
