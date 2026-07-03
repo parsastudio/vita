@@ -12,6 +12,7 @@ const importItemSchema = z.object({
   focusWord: z.string().min(1),
   originalText: z.string().min(1),
   translation: z.string().min(1),
+  srsStatus: z.enum(["active", "archived"]).optional(),
 });
 
 const importSchema = z.array(importItemSchema);
@@ -35,6 +36,7 @@ export function WordImportExport({ cards }: WordImportExportProps) {
       focusWord: card.focusWord,
       originalText: card.originalText,
       translation: card.translation,
+      srsStatus: card.srsStatus,
     }));
 
     const jsonString = JSON.stringify(exportData, null, 2);

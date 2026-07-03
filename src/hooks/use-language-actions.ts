@@ -110,6 +110,7 @@ export function useLanguageActions() {
       originalText: string;
       translation: string;
       focusWord: string;
+      srsStatus?: "active" | "archived";
     }>,
   ) => {
     const fsrsDefaults = createNewFSRSCard();
@@ -129,16 +130,19 @@ export function useLanguageActions() {
 
         if (existing) continue;
 
+        const status = item.srsStatus || "active";
+        const isArchived = status === "archived";
+
         const newCard: LanguageCard = {
           id: uuidv4(),
           userId,
           originalText: normalizedText,
           translation: item.translation.trim(),
           focusWord: item.focusWord.trim(),
-          srsStatus: "active",
+          srsStatus: status,
           due: fsrsDefaults.due,
           stability: fsrsDefaults.stability,
-          difficulty: fsrsDefaults.difficulty,
+          difficulty: isArchived ? 1.0 : fsrsDefaults.difficulty,
           elapsedDays: fsrsDefaults.elapsedDays,
           scheduledDays: fsrsDefaults.scheduledDays,
           reps: fsrsDefaults.reps,
