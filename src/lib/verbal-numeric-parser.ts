@@ -92,7 +92,11 @@ function evaluateSegment(words: string[]): number {
       continue;
     }
 
-    if (maps.units[w] !== undefined) {
+    const isDigits = /^\d+(?:\.\d+)?$/.test(w);
+
+    if (isDigits) {
+      currentAcc += parseFloat(w);
+    } else if (maps.units[w] !== undefined) {
       currentAcc += maps.units[w];
     } else if (maps.tens[w] !== undefined) {
       currentAcc += maps.tens[w];
