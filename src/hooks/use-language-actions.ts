@@ -110,10 +110,19 @@ export function useLanguageActions() {
       originalText: string;
       translation: string;
       focusWord: string;
-      srsStatus?: "active" | "archived";
+      srsStatus?: "active" | "archived" | "queued";
     }>,
   ) => {
     const fsrsDefaults = createNewFSRSCard();
+    const todayStr = new Date().toISOString().split("T")[0];
+    const localStorageKey = `vita_last_auto_activation_${userId}`;
+    const lastActivationDate =
+      typeof window !== "undefined"
+        ? localStorage.getItem(localStorageKey)
+        : null;
+
+    const shouldAutoActivateToday = lastActivationDate !== todayStr;
+    let activatedTodayCount = 0;
 
     await localDb.transaction("rw", [localDb.languageCards], async () => {
       for (const item of items) {
@@ -130,7 +139,17 @@ export function useLanguageActions() {
 
         if (existing) continue;
 
-        const status = item.srsStatus || "active";
+        let status = item.srsStatus || "queued";
+
+        if (
+          status === "queued" &&
+          shouldAutoActivateToday &&
+          activatedTodayCount < 15
+        ) {
+          status = "active";
+          activatedTodayCount++;
+        }
+
         const isArchived = status === "archived";
 
         const newCard: LanguageCard = {
@@ -140,7 +159,7 @@ export function useLanguageActions() {
           translation: item.translation.trim(),
           focusWord: item.focusWord.trim(),
           srsStatus: status,
-          due: fsrsDefaults.due,
+          due: status === "active" ? new Date() : fsrsDefaults.due,
           stability: fsrsDefaults.stability,
           difficulty: isArchived ? 1.0 : fsrsDefaults.difficulty,
           elapsedDays: fsrsDefaults.elapsedDays,
@@ -157,6 +176,10 @@ export function useLanguageActions() {
         await localDb.languageCards.put(newCard);
       }
     });
+
+    if (activatedTodayCount > 0 && typeof window !== "undefined") {
+      localStorage.setItem(localStorageKey, todayStr);
+    }
   };
 
   return {

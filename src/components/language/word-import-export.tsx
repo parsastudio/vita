@@ -12,7 +12,7 @@ const importItemSchema = z.object({
   focusWord: z.string().min(1),
   originalText: z.string().min(1),
   translation: z.string().min(1),
-  srsStatus: z.enum(["active", "archived"]).optional(),
+  srsStatus: z.enum(["active", "archived", "queued"]).optional(),
 });
 
 const importSchema = z.array(importItemSchema);

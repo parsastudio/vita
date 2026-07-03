@@ -40,6 +40,7 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
 
     const activeCards = matched.filter((c) => c.srsStatus === "active");
     const archivedCards = matched.filter((c) => c.srsStatus === "archived");
+    const queuedCards = matched.filter((c) => c.srsStatus === "queued");
 
     const sortFn = (a: LanguageCard, b: LanguageCard) => {
       if (sortBy === "newest") {
@@ -54,9 +55,10 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
     };
 
     const sortedActive = [...activeCards].sort(sortFn);
+    const sortedQueued = [...queuedCards].sort(sortFn);
     const sortedArchived = [...archivedCards].sort(sortFn);
 
-    return [...sortedActive, ...sortedArchived];
+    return [...sortedActive, ...sortedQueued, ...sortedArchived];
   }, [cards, search, filterStatus, sortBy]);
 
   const handleSpeak = (text: string) => {
@@ -64,7 +66,19 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
   };
 
   const handleToggleArchive = async (card: LanguageCard) => {
-    const isArchiving = await toggleArchiveCard(card);
+    const isArchiving = card.srsStatus === "active";
+    const nextStatus = isArchiving ? "archived" : "active";
+    const nextDifficulty = isArchiving ? 1.0 : card.difficulty;
+
+    await localDb.transaction("rw", [localDb.languageCards], async () => {
+      await localDb.languageCards.update(card.id, {
+        srsStatus: nextStatus,
+        difficulty: nextDifficulty,
+        updatedAt: new Date(),
+        synced: false,
+      });
+    });
+
     toast(
       isArchiving
         ? "کارت با موفقیت آرشیو شد"
@@ -97,6 +111,7 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
             {[
               { key: "all", label: "همه کلمات" },
               { key: "active", label: "در جریان مرور" },
+              { key: "queued", label: "در صف انتظار" },
               { key: "archived", label: "آرشیو شده‌ها" },
             ].map((status) => (
               <Button
@@ -159,10 +174,16 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
                     className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full font-vazir ${
                       card.srsStatus === "active"
                         ? "bg-primary/10 text-primary"
-                        : "bg-muted text-muted-foreground"
+                        : card.srsStatus === "queued"
+                          ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                          : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    {card.srsStatus === "active" ? "در جریان" : "آرشیو"}
+                    {card.srsStatus === "active"
+                      ? "در جریان"
+                      : card.srsStatus === "queued"
+                        ? "در صف انتظار"
+                        : "آرشیو"}
                   </span>
 
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 font-vazir">

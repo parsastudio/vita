@@ -6,7 +6,7 @@ export const languageCardSchema = z.object({
   originalText: z.string(),
   translation: z.string(),
   focusWord: z.string(),
-  srsStatus: z.enum(["active", "archived"]),
+  srsStatus: z.enum(["active", "archived", "queued"]),
   difficulty: z.number(),
   stability: z.number(),
   elapsedDays: z.number(),

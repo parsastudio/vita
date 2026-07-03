@@ -1,16 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Vazirmatn } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { GuestBanner } from "@/components/auth/guest-banner";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { ErrorBoundary } from "@/components/error-boundary";
-
-const vazirmatn = Vazirmatn({
-  subsets: ["arabic", "latin"],
-  variable: "--font-vazirmatn",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "ویتا - فضای شخصی هوشمند",
@@ -38,7 +31,7 @@ export default function RootLayout({
       lang="fa"
       dir="rtl"
       suppressHydrationWarning
-      className={`${vazirmatn.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-primary/10 overflow-x-hidden">
         <ErrorBoundary>

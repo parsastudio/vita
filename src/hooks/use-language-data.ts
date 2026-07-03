@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { localDb, type LanguageCard } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -12,6 +12,41 @@ export function useLanguageData() {
   const cards = useLiveQuery(() => {
     return localDb.languageCards.where("userId").equals(userId).toArray();
   }, [userId]);
+
+  useEffect(() => {
+    if (!cards || cards.length === 0 || userId === "guest") return;
+
+    const autoActivateFromQueue = async () => {
+      const todayStr = new Date().toISOString().split("T")[0];
+      const localStorageKey = `vita_last_auto_activation_${userId}`;
+      const lastActivationDate = localStorage.getItem(localStorageKey);
+
+      if (lastActivationDate !== todayStr) {
+        const queuedCards = await localDb.languageCards
+          .where("userId")
+          .equals(userId)
+          .filter((c) => c.srsStatus === "queued")
+          .limit(15)
+          .toArray();
+
+        if (queuedCards.length > 0) {
+          await localDb.transaction("rw", [localDb.languageCards], async () => {
+            for (const card of queuedCards) {
+              await localDb.languageCards.update(card.id, {
+                srsStatus: "active",
+                due: new Date(),
+                updatedAt: new Date(),
+                synced: false,
+              });
+            }
+          });
+        }
+        localStorage.setItem(localStorageKey, todayStr);
+      }
+    };
+
+    autoActivateFromQueue();
+  }, [cards, userId]);
 
   const reviewCards = useMemo<LanguageCard[]>(() => {
     if (!cards || cards.length === 0) return [];
