@@ -201,7 +201,7 @@ export function QuickEntryForm({
         فرم ثبت تراکنش تفصیلی
       </span>
       {validationError && (
-        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-medium leading-relaxed font-vazir flex items-start gap-1.5">
+        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-medium leading-relaxed font-vazir flex items-start gap-1.5 animate-shake">
           <AlertTriangle className="size-4 shrink-0 text-red-500 mt-0.5" />
           <span>{validationError}</span>
         </div>
@@ -213,7 +213,7 @@ export function QuickEntryForm({
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 min-w-0">
           <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
             مبلغ (تومان)
           </label>
@@ -224,7 +224,7 @@ export function QuickEntryForm({
             onChange={handleAmountChange}
             placeholder="0"
             dir="ltr"
-            className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
+            className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir min-w-0"
           />
           {amountSuggestions.length > 0 && (
             <div className="pt-2 animate-in fade-in duration-200">
@@ -246,7 +246,7 @@ export function QuickEntryForm({
             </div>
           )}
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 min-w-0">
           <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
             نوع تراکنش
           </label>
@@ -269,7 +269,7 @@ export function QuickEntryForm({
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 min-w-0">
           <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
             عنوان خرج / درآمد
           </label>
@@ -279,10 +279,10 @@ export function QuickEntryForm({
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             placeholder="مثال: خرید شیر، تاکسی، حقوق"
-            className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
+            className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir min-w-0"
           />
         </div>
-        <div className="relative space-y-1.5">
+        <div className="relative space-y-1.5 min-w-0">
           <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
             برچسب‌ها (با کاما جدا کنید)
           </label>
@@ -293,7 +293,7 @@ export function QuickEntryForm({
             onFocus={() => setShowTagsDropdown(true)}
             onBlur={() => setTimeout(() => setShowTagsDropdown(false), 220)}
             placeholder="مثال: خونه، غذا، رفت و آمد"
-            className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
+            className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir min-w-0"
           />
           {showTagsDropdown && filteredTags.length > 0 && (
             <div className="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-card border border-border rounded-lg shadow-lg">
@@ -311,7 +311,7 @@ export function QuickEntryForm({
           )}
         </div>
       </div>
-      <div className="space-y-1.5">
+      <div className="space-y-1.5 min-w-0">
         <label className="text-xs font-semibold text-muted-foreground uppercase font-vazir">
           توضیحات اختیاری
         </label>
@@ -320,10 +320,10 @@ export function QuickEntryForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="جزئیات بیشتر..."
-          className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
+          className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir min-w-0"
         />
       </div>
-      <Button type="submit" className="w-full font-vazir">
+      <Button type="submit" className="w-full font-vazir h-10 text-sm">
         ذخیره و ثبت در دفتر مالی
       </Button>
     </form>

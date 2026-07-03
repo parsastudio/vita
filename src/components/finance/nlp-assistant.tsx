@@ -56,30 +56,39 @@ export function NlpAssistant({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-4 p-5 bg-gradient-to-r from-primary/5 via-violet-500/5 to-indigo-500/5 rounded-2xl border border-primary/10 backdrop-blur-md transition-all duration-300 hover:border-primary/20">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 p-4 sm:p-5 bg-gradient-to-r from-primary/5 via-violet-500/5 to-indigo-500/5 rounded-2xl border border-primary/10 backdrop-blur-md transition-all duration-300 hover:border-primary/20">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <label className="text-xs font-semibold text-primary uppercase tracking-wider font-vazir flex items-center gap-1.5">
             <Sparkles className="size-4 text-primary animate-pulse" />
             دستیار صوتی و متنی هوشمند ویتا
           </label>
-          <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium font-vazir">
+          <span className="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium font-vazir">
             پردازشگر طبیعی کلمات
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2.5">
           <input
             type="text"
             value={nlpText}
             onChange={(e) => setNlpText(e.target.value)}
-            placeholder="بنویسید مثلاً: ۵۰ هزار تاکسی یا ۴.۵ میلیون حقوق واریز..."
-            className="flex-1 h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
+            placeholder="مثلاً: ۵۰ هزار تاکسی یا ۴.۵ میلیون حقوق..."
+            className="flex-1 h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir min-w-0"
           />
           {parsedNlp && parsedNlp.amount > 0 && (
-            <div className="flex gap-1">
-              <Button type="button" onClick={handleApply} variant="outline">
+            <div className="flex gap-1.5 shrink-0 justify-stretch">
+              <Button
+                type="button"
+                onClick={handleApply}
+                variant="outline"
+                className="flex-1 sm:flex-initial text-xs h-10"
+              >
                 اعمال روی فرم
               </Button>
-              <Button type="button" onClick={handleSaveDirect}>
+              <Button
+                type="button"
+                onClick={handleSaveDirect}
+                className="flex-1 sm:flex-initial text-xs h-10"
+              >
                 ثبت مستقیم
               </Button>
             </div>
@@ -87,7 +96,7 @@ export function NlpAssistant({
         </div>
 
         {parsedNlp && parsedNlp.amount > 0 && (
-          <div className="p-4 bg-card/60 backdrop-blur-sm rounded-xl border border-primary/20 flex items-center justify-between text-xs transition-all animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="p-4 bg-card/60 backdrop-blur-sm rounded-xl border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs transition-all animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="font-vazir">
               <span className="font-medium text-muted-foreground">
                 تشخیص سیستم:
@@ -107,7 +116,7 @@ export function NlpAssistant({
                 {parsedNlp.category}
               </span>
             </div>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold font-vazir">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold font-vazir self-start sm:self-auto">
               آماده اقدام
             </span>
           </div>
@@ -124,7 +133,7 @@ export function NlpAssistant({
               key={idx}
               type="button"
               onClick={() => onPresetSelect(preset)}
-              className="px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted text-xs text-foreground font-medium transition-all flex items-center gap-1.5 shadow-xs cursor-pointer font-vazir"
+              className="px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted text-xs text-foreground font-medium transition-all flex items-center gap-1.5 shadow-xs cursor-pointer font-vazir max-w-full truncate"
             >
               <span className="font-bold">
                 {preset.type === "income" ? (
@@ -133,7 +142,7 @@ export function NlpAssistant({
                   <ArrowUp className="size-3 text-red-600 inline-block" />
                 )}
               </span>
-              <span>{preset.label}</span>
+              <span className="truncate">{preset.label}</span>
             </button>
           ))}
         </div>

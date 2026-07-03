@@ -39,7 +39,7 @@ export function DashboardHeader({
   return (
     <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-border pb-6 gap-4">
       <div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-3xl font-bold tracking-tight text-foreground font-vazir">
             ویتا
           </h1>
@@ -73,12 +73,12 @@ export function DashboardHeader({
         </p>
       </div>
 
-      <div className="relative flex items-center gap-3 self-start md:self-auto">
+      <div className="relative flex flex-wrap items-center gap-2.5 self-start md:self-auto">
         <Button
           variant="outline"
           size="icon"
           onClick={onToggleTheme}
-          className="rounded-full border-border bg-background text-foreground"
+          className="rounded-full border-border bg-background text-foreground shrink-0"
         >
           <span className="sr-only">تغییر تم</span>
           {theme ? (
@@ -163,7 +163,7 @@ export function DashboardHeader({
         <Button
           variant="outline"
           onClick={() => setShowSettings(!showSettings)}
-          className="rounded-full gap-2 text-sm font-vazir"
+          className="rounded-full gap-2 text-sm font-vazir shrink-0"
         >
           تنظیمات فضاها
         </Button>

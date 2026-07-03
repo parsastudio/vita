@@ -60,7 +60,7 @@ export function DashboardGrid({
   }
 
   return (
-    <div className="flex-1 w-full max-w-3xl mx-auto px-4 py-8 md:py-12 flex flex-col gap-8">
+    <div className="flex-1 w-full max-w-3xl mx-auto px-4 pt-8 pb-16 md:pt-12 md:pb-24 flex flex-col gap-8">
       <ErrorBoundary
         fallback={
           <div className="p-4 border border-destructive/20 bg-destructive/5 text-destructive rounded-xl text-center font-vazir text-xs">
@@ -191,6 +191,18 @@ export function DashboardGrid({
           )}
         </AnimatePresence>
       </main>
+
+      <footer className="w-full mt-8 pt-8 border-t border-border/40 text-center space-y-3">
+        <p className="text-xs text-muted-foreground/80 font-vazir leading-relaxed">
+          تمامی حقوق مادی و معنوی این پلتفرم محفوظ و داده‌ها به‌طور امن بر روی
+          دستگاه شما کپسوله شده‌اند.
+        </p>
+        <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground/60 font-vazir">
+          <span>نسخه ۲.۰.۰</span>
+          <span>•</span>
+          <span>طراحی شده برای بهره‌وری برتر</span>
+        </div>
+      </footer>
 
       <ErrorBoundary
         fallback={

@@ -41,7 +41,7 @@ export function BudgetManager({
 
       <form
         onSubmit={handleSetBudget}
-        className="flex flex-row gap-2 w-full items-center"
+        className="flex flex-col sm:flex-row gap-2.5 w-full items-stretch sm:items-center"
       >
         <input
           type="text"
@@ -49,7 +49,7 @@ export function BudgetManager({
           value={budgetCategory}
           onChange={(e) => setBudgetCategory(e.target.value)}
           placeholder="عنوان یا برچسب"
-          className="flex-1 min-w-0 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
+          className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir min-w-0"
         />
         <input
           type="number"
@@ -57,13 +57,13 @@ export function BudgetManager({
           value={budgetLimit}
           onChange={(e) => setBudgetLimit(e.target.value)}
           placeholder="سقف بودجه"
-          className="w-20 sm:w-28 min-w-0 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
+          className="w-full sm:w-28 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir min-w-0"
         />
         <button
           type="submit"
-          className="h-9 px-3 sm:px-4 shrink-0 rounded-lg bg-primary hover:bg-primary/80 text-primary-foreground text-xs font-bold font-vazir cursor-pointer"
+          className="h-9 px-4 rounded-lg bg-primary hover:bg-primary/80 text-primary-foreground text-xs font-bold font-vazir cursor-pointer shrink-0"
         >
-          تنظیم
+          تنظیم بودجه
         </button>
       </form>
 
