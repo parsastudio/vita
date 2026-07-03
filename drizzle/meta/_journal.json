@@ -8,6 +8,13 @@
       "when": 1782997143968,
       "tag": "0000_solid_wasp",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783087289444,
+      "tag": "0001_lyrical_talon",
+      "breakpoints": true
     }
   ]
 }

@@ -162,10 +162,10 @@ export function SrsReviewer({
       <AnimatePresence mode="wait">
         <motion.div
           key={currentCard.id + (showAnswer ? "-ans" : "-ques")}
-          initial={{ opacity: 0, scale: 0.97, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.97, y: -10 }}
-          transition={{ type: "spring", stiffness: 120, damping: 18 }}
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
           className="space-y-6 text-center"
         >
           <div className="space-y-4">
@@ -195,9 +195,9 @@ export function SrsReviewer({
             </Button>
           ) : (
             <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 100, damping: 16 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
               className="space-y-8 pt-6 border-t border-border"
             >
               <div className="space-y-3">
