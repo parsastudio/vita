@@ -1,11 +1,19 @@
 import Dexie, { type Table } from "dexie";
-export {
+import {
   type LanguageCard,
   type FinanceTransaction,
   type FinanceBudget,
   type UserSettings,
   type DeletedRecord,
 } from "./schemas";
+
+export {
+  type LanguageCard,
+  type FinanceTransaction,
+  type FinanceBudget,
+  type UserSettings,
+  type DeletedRecord,
+};
 
 export { updateLocalDbAfterSync } from "./sync-db-updater";
 

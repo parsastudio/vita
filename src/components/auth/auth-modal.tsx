@@ -6,7 +6,6 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { X } from "lucide-react";
-import { signUp, signIn } from "@/app/actions/auth";
 import {
   requestPasswordResetAction,
   resetPasswordWithCodeAction,

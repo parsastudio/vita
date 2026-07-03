@@ -36,7 +36,7 @@ export function useModules() {
 
   const toggleModule = async (moduleId: string) => {
     const updated = enabledModules.includes(moduleId)
-      ? enabledModules.filter((id) => id !== moduleId)
+      ? enabledModules.filter((id: string) => id !== moduleId)
       : [...enabledModules, moduleId];
 
     await localDb.userSettings.put({

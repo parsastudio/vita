@@ -83,20 +83,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function initSession() {
-      const activeUser = await getCurrentUserAction();
-      if (activeUser) {
-        setUser(activeUser);
-        setIsGuest(false);
-      } else {
-        const guestCookie = Cookies.get("guest_mode");
-        if (guestCookie === "true") {
-          setIsGuest(true);
-          setUser(null);
+      try {
+        const activeUser = await getCurrentUserAction();
+        if (activeUser) {
+          setUser(activeUser);
+          setIsGuest(false);
+          localStorage.setItem("vita_cached_user", JSON.stringify(activeUser));
         } else {
-          setShowAuthModal(true);
+          const guestCookie = Cookies.get("guest_mode");
+          if (guestCookie === "true") {
+            setIsGuest(true);
+            setUser(null);
+          } else {
+            setShowAuthModal(true);
+          }
         }
+      } catch {
+        const cachedUserStr = localStorage.getItem("vita_cached_user");
+        if (cachedUserStr) {
+          setUser(JSON.parse(cachedUserStr));
+          setIsGuest(false);
+        } else {
+          const guestCookie = Cookies.get("guest_mode");
+          if (guestCookie === "true") {
+            setIsGuest(true);
+            setUser(null);
+          } else {
+            setShowAuthModal(true);
+          }
+        }
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }
     initSession();
   }, []);
@@ -119,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (res.success && res.user) {
       await migrateGuestData(res.user.id);
       setUser(res.user);
+      localStorage.setItem("vita_cached_user", JSON.stringify(res.user));
       setIsGuest(false);
       Cookies.remove("guest_mode");
       setShowAuthModal(false);
@@ -132,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (res.success && res.user) {
       await migrateGuestData(res.user.id);
       setUser(res.user);
+      localStorage.setItem("vita_cached_user", JSON.stringify(res.user));
       setIsGuest(false);
       Cookies.remove("guest_mode");
       setShowAuthModal(false);
@@ -155,6 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       localStorage.removeItem(`last_synced_at_${user.id}`);
     }
+    localStorage.removeItem("vita_cached_user");
     await signOutAction();
     await localDb.transaction(
       "rw",
