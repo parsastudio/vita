@@ -142,7 +142,7 @@ export function parseNaturalLanguageTransaction(
   const normalizedText = toEnglishDigits(titlePart);
   const rawWords = normalizedText.split(/\s+/).filter(Boolean);
   const words = rawWords
-    .map((w) => w.replace(/[.,،\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim())
+    .map((w) => w.replace(/[,،\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim())
     .filter(Boolean);
 
   let parsedAmount = 0;

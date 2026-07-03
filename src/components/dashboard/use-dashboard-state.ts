@@ -10,7 +10,7 @@ export function useDashboardState() {
   const { user, isGuest, logout, disableGuestMode, isLoading } = useAuth();
   const { enabledModules, toggleModule } = useModules();
   const { isSyncing, performSync } = useSync();
-  const { theme, setTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const [showSettings, setShowSettings] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
@@ -80,7 +80,7 @@ export function useDashboardState() {
   };
 
   const handleToggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
 
   return {
@@ -105,7 +105,7 @@ export function useDashboardState() {
     moveWidget,
     activeWidget,
     setActiveWidget: changeActiveWidget,
-    theme: theme || "light",
+    theme: mounted ? resolvedTheme || "light" : "",
     handleToggleTheme,
   };
 }

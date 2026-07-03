@@ -8,6 +8,7 @@ import { BookOpen, Wallet } from "lucide-react";
 import { LogoutModal } from "@/components/auth/logout-modal";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { AccountSettingsModal } from "@/components/auth/account-settings-modal";
+import { usePwa } from "@/hooks/use-pwa";
 
 export function DashboardGrid({
   languageWidget,
@@ -34,6 +35,8 @@ export function DashboardGrid({
     showAccountSettings,
     setShowAccountSettings,
   } = useDashboardState();
+
+  const { isInstallable, isStandalone, triggerInstall } = usePwa();
 
   const isLanguageEnabled = enabledModules.includes("language");
   const isFinanceEnabled = enabledModules.includes("finance");
@@ -194,7 +197,18 @@ export function DashboardGrid({
         </AnimatePresence>
       </main>
 
-      <footer className="w-full mt-8 pt-8 border-t border-border/40 text-center space-y-3 px-4 sm:px-0">
+      <footer className="w-full mt-8 pt-8 border-t border-border/40 text-center space-y-4 px-4 sm:px-0">
+        {!isStandalone && isInstallable && (
+          <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground/80 font-vazir bg-primary/5 border border-primary/10 rounded-lg py-1.5 px-3.5 max-w-xs mx-auto transition-all">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            <button
+              onClick={triggerInstall}
+              className="font-bold text-primary hover:underline cursor-pointer"
+            >
+              دانلود اپلیکیشن آفلاین ویتا
+            </button>
+          </div>
+        )}
         <p className="text-xs text-muted-foreground/80 font-vazir leading-relaxed">
           تمامی حقوق مادی و معنوی این پلتفرم محفوظ و داده‌ها به‌طور امن بر روی
           دستگاه شما کپسوله شده‌اند.

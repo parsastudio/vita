@@ -19,7 +19,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       });
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, 4000);
+      }, 2500);
     },
     [],
   );
@@ -31,7 +31,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ toasts, toast, dismiss }}>
       {children}
-      <div className="fixed bottom-6 start-6 z-[100] flex flex-col gap-2 max-w-md w-full">
+      <div className="fixed bottom-4 inset-x-4 sm:bottom-6 sm:start-6 sm:end-auto z-[100] flex flex-col gap-2 sm:max-w-md w-auto">
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div
@@ -39,7 +39,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              className={`p-4 rounded-xl shadow-xl flex items-center justify-between border backdrop-blur-md ${
+              className={`p-3 sm:p-4 rounded-xl shadow-xl flex items-center justify-between border backdrop-blur-md text-xs sm:text-sm ${
                 t.type === "success"
                   ? "bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400"
                   : t.type === "error"
@@ -47,10 +47,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                     : "bg-primary/10 border-primary/20 text-primary"
               }`}
             >
-              <span className="text-xs font-semibold">{t.message}</span>
+              <span className="font-semibold leading-relaxed break-words flex-1 pr-1">
+                {t.message}
+              </span>
               <button
                 onClick={() => dismiss(t.id)}
-                className="text-xs font-bold hover:opacity-75 transition-opacity ms-4 cursor-pointer"
+                className="text-sm font-bold hover:opacity-75 transition-opacity ms-3 cursor-pointer shrink-0 p-1 select-none"
               >
                 ×
               </button>
