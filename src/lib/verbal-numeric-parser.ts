@@ -186,6 +186,9 @@ export function parseVerbalNumbers(text: string): string {
 
         if (hasOnlyDigits) {
           processedTokens.push(segment.join(" "));
+          if (j < tokens.length) {
+            processedTokens.push(" ");
+          }
           i = j;
           continue;
         }
@@ -208,6 +211,9 @@ export function parseVerbalNumbers(text: string): string {
         }
 
         processedTokens.push(value.toString());
+        if (j < tokens.length) {
+          processedTokens.push(" ");
+        }
         i = j;
       } else {
         processedTokens.push(tokens[i]);
