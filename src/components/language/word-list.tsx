@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useSpeech } from "@/hooks/use-speech";
 import { useLanguageActions } from "@/hooks/use-language-actions";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import { Volume2, Trash2, Archive, ArchiveRestore } from "lucide-react";
 import { formatPersianNumber } from "@/lib/utils";
 import { WordImportExport } from "@/components/language/word-import-export";
@@ -18,14 +19,10 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
     "newest",
   );
   const { toast } = useToast();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
 
   const { speak } = useSpeech();
   const { toggleArchiveCard, deleteCard } = useLanguageActions();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const sortedAndFiltered = useMemo(() => {
     const matched = cards.filter((card) => {

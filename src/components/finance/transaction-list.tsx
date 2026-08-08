@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { type FinanceTransaction } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -8,6 +8,7 @@ import { formatPersianNumber, formatPersianDate } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useFinanceActions } from "@/hooks/use-finance-actions";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function TransactionList({
@@ -18,16 +19,12 @@ export function TransactionList({
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const { toast } = useToast();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const { user } = useAuth();
   const userId = user?.id || "guest";
   const { deleteTransaction } = useFinanceActions(userId);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const sortedTransactions = [...transactions].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),

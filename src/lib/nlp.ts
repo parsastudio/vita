@@ -116,7 +116,7 @@ export function parseNaturalLanguageTransaction(
 ): ParsedNlp | null {
   if (!nlpText.trim()) return null;
 
-  let cleanedText = parseVerbalNumbers(toEnglishDigits(nlpText.trim()));
+  const cleanedText = parseVerbalNumbers(toEnglishDigits(nlpText.trim()));
   const splitKeywords = [
     "واسه ی",
     "واسه",

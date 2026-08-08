@@ -1,15 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 
 export function GuestBanner() {
   const { isGuest, disableGuestMode, isLoading } = useAuth();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsMounted();
 
   if (!mounted || isLoading || !isGuest) return null;
 

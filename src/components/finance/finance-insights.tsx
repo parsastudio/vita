@@ -132,9 +132,9 @@ export function FinanceInsights({
                   بزرگترین اقلام هزینه‌ای
                 </span>
                 <span className="text-[11px] text-muted-foreground font-vazir block">
-                  رکورد بیشترین مبلغ مربوط به "{insights.maxExpenseTx.category}"
-                  با رقم {formatPersianNumber(insights.maxExpenseTx.amount)}{" "}
-                  تومان است.
+                  رکورد بیشترین مبلغ مربوط به &ldquo;
+                  {insights.maxExpenseTx.category}&rdquo; با رقم{" "}
+                  {formatPersianNumber(insights.maxExpenseTx.amount)} تومان است.
                 </span>
               </div>
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { SentenceParser } from "@/components/language/sentence-parser";
 import { SrsReviewer } from "@/components/language/srs-reviewer";
 import { WordList } from "@/components/language/word-list";
@@ -13,10 +13,8 @@ import { ErrorBoundary } from "@/components/error-boundary";
 export function LanguageWidget() {
   const [activeTab, setActiveTabState] = useState<
     "add" | "review" | "list" | "settings"
-  >("add");
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  >(() => {
+    if (typeof window === "undefined") return "add";
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
     if (
@@ -25,9 +23,10 @@ export function LanguageWidget() {
       tabParam === "list" ||
       tabParam === "settings"
     ) {
-      setActiveTabState(tabParam);
+      return tabParam;
     }
-  }, []);
+    return "add";
+  });
 
   const setActiveTab = (tab: "add" | "review" | "list" | "settings") => {
     setActiveTabState(tab);
@@ -43,7 +42,7 @@ export function LanguageWidget() {
     }
   };
 
-  const { cards, reviewCards, nextReviewDate, cardCount, reviewCount, userId } =
+  const { cards, reviewCards, nextReviewDate, cardCount, reviewCount } =
     useLanguageData();
 
   return (
@@ -115,7 +114,7 @@ export function LanguageWidget() {
               </div>
             }
           >
-            <SentenceParser userId={userId} />
+            <SentenceParser />
           </ErrorBoundary>
         )}
 

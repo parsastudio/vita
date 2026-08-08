@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import { X } from "lucide-react";
 import {
   requestPasswordResetAction,
@@ -22,6 +24,7 @@ export function AuthModal() {
     isLoading,
   } = useAuth();
   const { toast } = useToast();
+  const mounted = useIsMounted();
   const [authMode, setAuthMode] = useState<
     "signin" | "signup" | "forgot_password" | "verify_reset"
   >("signin");
@@ -31,13 +34,8 @@ export function AuthModal() {
   const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   const emailInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (showAuthModal && mounted) {
@@ -207,9 +205,11 @@ export function AuthModal() {
 
           <div className="flex flex-col items-center text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full overflow-hidden border border-border">
-              <img
+              <Image
                 src="/vita-logo.webp"
                 alt="ویتا"
+                width={48}
+                height={48}
                 className="size-full object-cover"
               />
             </div>

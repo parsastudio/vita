@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import { type FinanceTransaction } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useFinanceActions } from "@/hooks/use-finance-actions";
-import { formatPersianNumber } from "@/lib/utils";
 import { toEnglishDigits } from "@/lib/nlp";
 import { AlertTriangle } from "lucide-react";
 import { z } from "zod";

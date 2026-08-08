@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useModules } from "@/hooks/use-modules";
 import { useSync } from "@/hooks/use-sync";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useTheme } from "next-themes";
 
 export function useDashboardState() {
@@ -11,23 +12,24 @@ export function useDashboardState() {
   const { enabledModules, toggleModule } = useModules();
   const { isSyncing, performSync } = useSync();
   const { setTheme, resolvedTheme } = useTheme();
+  const mounted = useIsMounted();
   const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
-  const [mounted, setMounted] = useState(false);
 
   const [activeWidget, setActiveWidgetState] = useState<"language" | "finance">(
-    "language",
+    () => {
+      if (typeof window === "undefined") return "language";
+      const params = new URLSearchParams(window.location.search);
+      const spaceParam = params.get("space");
+      if (spaceParam === "language" || spaceParam === "finance") {
+        return spaceParam;
+      }
+      return "language";
+    },
   );
 
   useEffect(() => {
-    setMounted(true);
     if (typeof window === "undefined") return;
-
-    const params = new URLSearchParams(window.location.search);
-    const spaceParam = params.get("space");
-    if (spaceParam === "language" || spaceParam === "finance") {
-      setActiveWidgetState(spaceParam);
-    }
 
     setIsOnline(navigator.onLine);
     const handleOnline = () => setIsOnline(true);

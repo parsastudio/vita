@@ -31,7 +31,6 @@ export function CategoryDistribution({
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   const segments = useMemo<CategorySegment[]>(() => {
-    let accumulatedPercent = 0;
     const colors = [
       "#8B5CF6",
       "#10B981",
@@ -41,17 +40,21 @@ export function CategoryDistribution({
       "#EC4899",
       "#6B7280",
     ];
-    return categories.map((cat, idx) => {
+    let accumulatedPercent = 0;
+    const result: CategorySegment[] = [];
+    for (let idx = 0; idx < categories.length; idx++) {
+      const cat = categories[idx];
       const currentPercent = cat.percentage;
       const strokeDashoffset = 100 - accumulatedPercent;
       accumulatedPercent += currentPercent;
-      return {
+      result.push({
         ...cat,
         color: colors[idx % colors.length],
         strokeDashoffset,
         strokeDasharray: `${currentPercent} ${100 - currentPercent}`,
-      };
-    });
+      });
+    }
+    return result;
   }, [categories]);
 
   return (

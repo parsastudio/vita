@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { type FinanceTransaction, type FinanceBudget } from "@/lib/db/client";
 import { useToast } from "@/hooks/use-toast";
 import { getJalaliDateParts, JALALI_MONTH_NAMES } from "@/lib/utils";
 import { useFinanceActions } from "@/hooks/use-finance-actions";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import { StatsCards } from "@/components/finance/stats-cards";
 import { TrendChart } from "@/components/finance/trend-chart";
 import { BudgetManager } from "@/components/finance/budget-manager";
@@ -23,18 +24,14 @@ export function FinanceDashboard({
   userId,
 }: FinanceDashboardProps) {
   const { toast } = useToast();
+  const mounted = useIsMounted();
   const [subTab, setSubTab] = useState<"overview" | "categories" | "budgets">(
     "overview",
   );
   const [budgetCategory, setBudgetCategory] = useState("");
   const [budgetLimit, setBudgetLimit] = useState("");
-  const [mounted, setMounted] = useState(false);
 
   const { setBudget, deleteBudget } = useFinanceActions(userId);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const stats = useMemo(() => {
     let income = 0;
@@ -121,6 +118,7 @@ export function FinanceDashboard({
           const matchTag = tx.tags.some(
             (t: string) => t.toLowerCase() === target,
           );
+          if (!matchCategory && !matchTag) return false;
 
           const txParts = getJalaliDateParts(new Date(tx.createdAt));
           return (

@@ -23,6 +23,9 @@ export function useSync() {
   const pendingSyncRef = useRef(false);
   const syncOptionsRef = useRef<{ pushOnly?: boolean } | null>(null);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const syncRef = useRef<(options?: { pushOnly?: boolean }) => Promise<void>>(
+    async () => {},
+  );
 
   const performSync = useCallback(
     async (options?: { pushOnly?: boolean }) => {
@@ -137,8 +140,7 @@ export function useSync() {
       } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : "Sync failed";
         setError(errMsg);
-      }
-      {
+      } finally {
         setIsSyncing(false);
         isSyncingRef.current = false;
         setDatabaseSyncingActive(false);
@@ -147,14 +149,13 @@ export function useSync() {
           pendingSyncRef.current = false;
           const nextOptions = syncOptionsRef.current || undefined;
           syncOptionsRef.current = null;
-          performSync(nextOptions);
+          syncRef.current(nextOptions);
         }
       }
     },
     [user, isGuest, toast],
   );
 
-  const syncRef = useRef(performSync);
   useEffect(() => {
     syncRef.current = performSync;
   }, [performSync]);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -16,15 +16,14 @@ const cardFormSchema = z.object({
 });
 
 interface SentenceParserProps {
-  userId: string;
   onSaveSuccess?: () => void;
 }
 
-export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
+export function SentenceParser({ onSaveSuccess }: SentenceParserProps) {
   const { toast } = useToast();
   const [text, setText] = useState("");
   const [translation, setTranslation] = useState("");
-  const [selectedWord, setSelectedWord] = useState("");
+  const [userSelectedWord, setUserSelectedWord] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const { addCard } = useLanguageActions();
@@ -35,21 +34,13 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
     return normalized.split(/[\s,./#!$%\^&*;:{}=\-_`~()?"]+/).filter(Boolean);
   }, [text]);
 
-  const wordsSerialized = useMemo(() => words.join(" "), [words]);
-
-  useEffect(() => {
-    const wordsArray = wordsSerialized.split(" ").filter(Boolean);
-    if (wordsArray.length > 0) {
-      setSelectedWord((prev) => {
-        if (!prev || !wordsArray.includes(prev)) {
-          return wordsArray[0];
-        }
-        return prev;
-      });
-    } else {
-      setSelectedWord("");
+  const selectedWord = useMemo(() => {
+    if (words.length === 0) return "";
+    if (userSelectedWord && words.includes(userSelectedWord)) {
+      return userSelectedWord;
     }
-  }, [wordsSerialized]);
+    return words[0];
+  }, [words, userSelectedWord]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +61,7 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
 
     setText("");
     setTranslation("");
+    setUserSelectedWord(null);
     toast("کارت جدید لایتنر با موفقیت اضافه شد", "success");
     onSaveSuccess?.();
   };
@@ -115,7 +107,7 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
               <button
                 key={idx}
                 type="button"
-                onClick={() => setSelectedWord(word)}
+                onClick={() => setUserSelectedWord(word)}
                 className={`px-3 py-1.5 text-sm rounded-lg border transition-all cursor-pointer ${
                   selectedWord === word
                     ? "border-red-500/40 bg-red-500/5 text-red-600 font-semibold shadow-md shadow-red-500/10 ring-2 ring-red-500/20"

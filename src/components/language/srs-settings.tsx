@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useSrsSettings } from "@/hooks/use-srs-settings";
 import { useLanguageActions } from "@/hooks/use-language-actions";
 import { Button } from "@/components/ui/button";
@@ -13,16 +13,20 @@ export function SrsSettings() {
     useSrsSettings();
   const { reconcileLanguageQueue } = useLanguageActions();
   const { toast } = useToast();
-  const [inputValue, setInputValue] = useState(dailyNewWordsLimit.toString());
+  const [inputValue, setInputValue] = useState<string | null>(null);
+  const [prevLimit, setPrevLimit] = useState<number>(dailyNewWordsLimit);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  useEffect(() => {
+  if (dailyNewWordsLimit !== prevLimit) {
+    setPrevLimit(dailyNewWordsLimit);
     setInputValue(dailyNewWordsLimit.toString());
-  }, [dailyNewWordsLimit]);
+  }
+
+  const currentValue = inputValue ?? dailyNewWordsLimit.toString();
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const limit = parseInt(inputValue, 10);
+    const limit = parseInt(currentValue, 10);
     if (isNaN(limit) || limit < 1 || limit > 50) {
       toast("لطفاً عددی معتبر بین ۱ تا ۵۰ وارد کنید", "error");
       return;
@@ -42,7 +46,7 @@ export function SrsSettings() {
     toast("صف انتظار لایتنر با موفقیت تحلیل و همگام شد", "success");
   };
 
-  const limitNum = parseInt(inputValue, 10) || dailyNewWordsLimit;
+  const limitNum = parseInt(currentValue, 10) || dailyNewWordsLimit;
 
   return (
     <div className="space-y-6">
@@ -67,7 +71,7 @@ export function SrsSettings() {
               type="number"
               min={1}
               max={50}
-              value={inputValue}
+              value={currentValue}
               onChange={(e) => setInputValue(e.target.value)}
               className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
             />

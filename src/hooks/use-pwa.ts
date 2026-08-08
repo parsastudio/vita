@@ -15,16 +15,17 @@ export function usePwa() {
   const [isInstallable, setIsInstallable] = useState(false);
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
-  const [isStandalone, setIsStandalone] = useState(false);
+  const [isStandalone] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      ("standalone" in window.navigator &&
+        (window.navigator as { standalone?: boolean }).standalone === true)
+    );
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    const checkStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      ("standalone" in window.navigator &&
-        (window.navigator as { standalone?: boolean }).standalone === true);
-    setIsStandalone(checkStandalone);
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();

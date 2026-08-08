@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { QuickEntry } from "./quick-entry";
-import { TransactionList } from "./transaction-list";
+import React, { useState } from "react";
+import { QuickEntry } from "@/components/finance/quick-entry";
+import { TransactionList } from "@/components/finance/transaction-list";
 import { Button } from "@/components/ui/button";
 import { formatPersianNumber } from "@/lib/utils";
 import { useFinanceData } from "@/hooks/use-finance-data";
@@ -10,7 +10,10 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import dynamic from "next/dynamic";
 
 const FinanceDashboard = dynamic(
-  () => import("./finance-dashboard").then((mod) => mod.FinanceDashboard),
+  () =>
+    import("@/components/finance/finance-dashboard").then(
+      (mod) => mod.FinanceDashboard,
+    ),
   {
     loading: () => (
       <div className="h-96 bg-muted/20 rounded-2xl animate-pulse flex items-center justify-center text-xs text-muted-foreground font-vazir">
@@ -23,17 +26,16 @@ const FinanceDashboard = dynamic(
 
 export function FinanceWidget() {
   const [activeTab, setActiveTabState] = useState<"add" | "stats" | "list">(
-    "add",
+    () => {
+      if (typeof window === "undefined") return "add";
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam === "add" || tabParam === "stats" || tabParam === "list") {
+        return tabParam;
+      }
+      return "add";
+    },
   );
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get("tab");
-    if (tabParam === "add" || tabParam === "stats" || tabParam === "list") {
-      setActiveTabState(tabParam);
-    }
-  }, []);
 
   const setActiveTab = (tab: "add" | "stats" | "list") => {
     setActiveTabState(tab);

@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useSpeech } from "@/hooks/use-speech";
 import { useLanguageActions } from "@/hooks/use-language-actions";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Volume2,
@@ -36,26 +37,20 @@ export function SrsReviewer({
   nextReviewDate?: Date | null;
   onReviewComplete: () => void;
 }) {
-  const [queue, setQueue] = useState<LanguageCard[]>([]);
+  const [queue, setQueue] = useState<LanguageCard[]>(cards);
+  const [prevCards, setPrevCards] = useState<LanguageCard[]>(cards);
   const [showAnswer, setShowAnswer] = useState(false);
-  const [sessionInitialized, setSessionInitialized] = useState(false);
   const { toast } = useToast();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
+
+  if (cards !== prevCards) {
+    setPrevCards(cards);
+    setQueue([...cards]);
+  }
 
   const { speak } = useSpeech();
   const { handleSrsAction } = useLanguageActions();
   const scheduler = useMemo(() => fsrs(), []);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (cards && !sessionInitialized) {
-      setQueue([...cards]);
-      setSessionInitialized(true);
-    }
-  }, [cards, sessionInitialized]);
 
   const currentCard = queue[0];
 
@@ -70,7 +65,7 @@ export function SrsReviewer({
     };
   }, [currentCard, scheduler]);
 
-  if (mounted && sessionInitialized && queue.length === 0) {
+  if (mounted && queue.length === 0) {
     const nextDueFriendly = nextReviewDate
       ? getFriendlyInterval(nextReviewDate)
       : null;

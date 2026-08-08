@@ -19,7 +19,7 @@ export function useLanguageActions() {
     if (!settings) return;
 
     const todayStr = new Date().toISOString().split("T")[0];
-    let limit = settings.dailyNewWordsLimit ?? 10;
+    const limit = settings.dailyNewWordsLimit ?? 10;
     let count = settings.todayNewWordsCount ?? 0;
     let lastDate = settings.lastNewWordsDate ?? null;
 
