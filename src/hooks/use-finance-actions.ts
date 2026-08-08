@@ -1,7 +1,7 @@
 "use client";
 
 import { localDb, type FinanceTransaction } from "@/lib/db/client";
-import { getJalaliDateParts } from "@/lib/utils";
+import { getJalaliDateParts, formatPersianNumber } from "@/lib/utils";
 import { toEnglishDigits } from "@/lib/nlp";
 import { v4 as uuidv4 } from "uuid";
 
@@ -202,11 +202,9 @@ export function useFinanceActions(userId: string) {
       return `هشدار: با ثبت این تراکنش، مخارج شما به ${(
         (nextTotal / limit) *
         100
-      ).toFixed(0)}٪ از سقف بودجه تعیین شده (${new Intl.NumberFormat(
-        "fa-IR",
-      ).format(limit)} تومان) برای عنوان یا تگ "${
-        budget.categoryOrTag
-      }" خواهد رسید.`;
+      ).toFixed(0)}٪ از سقف بودجه تعیین شده (${formatPersianNumber(
+        limit,
+      )} تومان) برای عنوان یا تگ "${budget.categoryOrTag}" خواهد رسید.`;
     }
 
     return null;

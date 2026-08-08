@@ -14,14 +14,7 @@ import {
   decryptSession,
   checkRuntimeSecret,
 } from "@/lib/auth/crypto";
-
-const authSchema = z.object({
-  email: z.string().email("فرمت آدرس ایمیل وارد شده معتبر نیست").max(255),
-  password: z
-    .string()
-    .min(8, "رمز عبور باید حداقل حاوی ۸ کاراکتر باشد")
-    .max(100),
-});
+import { authSchema } from "@/lib/auth/schemas";
 
 export async function signUpAction(email: string, password: string) {
   try {

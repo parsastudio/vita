@@ -20,6 +20,21 @@ export function formatPersianDate(date: Date | string): string {
   }).format(new Date(date));
 }
 
+export const JALALI_MONTH_NAMES = [
+  "فروردین",
+  "اردیبهشت",
+  "خرداد",
+  "تیر",
+  "مرداد",
+  "شهریور",
+  "مهر",
+  "آبان",
+  "آذر",
+  "دی",
+  "بهمن",
+  "اسفند",
+] as const;
+
 export function getJalaliDateParts(date: Date | string | number): {
   year: number;
   month: number;
@@ -37,20 +52,15 @@ export function getJalaliDateParts(date: Date | string | number): {
   const month =
     parseInt(parts.find((p) => p.type === "month")?.value || "0", 10) - 1;
   const day = parseInt(parts.find((p) => p.type === "day")?.value || "0", 10);
-  const monthNames = [
-    "فروردین",
-    "اردیبهشت",
-    "خرداد",
-    "تیر",
-    "مرداد",
-    "شهریور",
-    "مهر",
-    "آبان",
-    "آذر",
-    "دی",
-    "بهمن",
-    "اسفند",
-  ];
-  const monthName = monthNames[month] || "";
+  const monthName = JALALI_MONTH_NAMES[month] || "";
   return { year, month, day, monthName };
+}
+
+export function parseDate(val: unknown): Date {
+  if (val instanceof Date) return val;
+  if (typeof val === "string" || typeof val === "number") {
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) return d;
+  }
+  return new Date();
 }

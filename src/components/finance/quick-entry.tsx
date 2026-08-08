@@ -5,8 +5,8 @@ import { type FinanceTransaction } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { useFinanceActions } from "@/hooks/use-finance-actions";
-import { NlpAssistant } from "./nlp-assistant";
-import { QuickEntryForm } from "./quick-entry-form";
+import { NlpAssistant } from "@/components/finance/nlp-assistant";
+import { QuickEntryForm } from "@/components/finance/quick-entry-form";
 import { formatPersianNumber } from "@/lib/utils";
 
 interface ParsedNlp {
@@ -30,6 +30,10 @@ const BASE_PRESETS: PresetQuick[] = [
   { label: "حقوق", amount: 25000000, type: "income", category: "حقوق" },
   { label: "سوپرمارکت", amount: 150000, type: "expense", category: "خوراک" },
 ];
+
+function formatPresetLabel(preset: { label: string; amount: number }): string {
+  return `${preset.label} - ${formatPersianNumber(preset.amount)} تومان`;
+}
 
 export function QuickEntry({
   transactions,
@@ -58,7 +62,7 @@ export function QuickEntry({
     if (!transactions || transactions.length === 0) {
       return BASE_PRESETS.map((p) => ({
         ...p,
-        label: `${p.label} - ${formatPersianNumber(p.amount)} تومان`,
+        label: formatPresetLabel(p),
       }));
     }
     const recentTxs = transactions.slice(-100);
@@ -76,7 +80,10 @@ export function QuickEntry({
     const result = sorted.slice(0, 4).map((item) => {
       const displayLabel = item.tx.description || item.tx.category;
       return {
-        label: `${displayLabel} - ${formatPersianNumber(item.tx.amount)} تومان`,
+        label: formatPresetLabel({
+          label: displayLabel,
+          amount: item.tx.amount,
+        }),
         amount: item.tx.amount,
         type: item.tx.type,
         category: item.tx.category,
@@ -86,7 +93,7 @@ export function QuickEntry({
     if (result.length < 4) {
       const remaining = BASE_PRESETS.slice(0, 4 - result.length).map((p) => ({
         ...p,
-        label: `${p.label} - ${formatPersianNumber(p.amount)} تومان`,
+        label: formatPresetLabel(p),
       }));
       return [...result, ...remaining];
     }

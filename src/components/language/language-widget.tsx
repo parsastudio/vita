@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { SentenceParser } from "./sentence-parser";
-import { SrsReviewer } from "./srs-reviewer";
-import { WordList } from "./word-list";
-import { SrsSettings } from "./srs-settings";
+import { SentenceParser } from "@/components/language/sentence-parser";
+import { SrsReviewer } from "@/components/language/srs-reviewer";
+import { WordList } from "@/components/language/word-list";
+import { SrsSettings } from "@/components/language/srs-settings";
 import { Button } from "@/components/ui/button";
 import { formatPersianNumber } from "@/lib/utils";
 import { useLanguageData } from "@/hooks/use-language-data";
@@ -115,7 +115,7 @@ export function LanguageWidget() {
               </div>
             }
           >
-            <SentenceParser userId={userId} onSaveSuccess={() => {}} />
+            <SentenceParser userId={userId} />
           </ErrorBoundary>
         )}
 

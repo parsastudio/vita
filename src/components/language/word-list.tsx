@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { localDb, type LanguageCard } from "@/lib/db/client";
+import { type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useSpeech } from "@/hooks/use-speech";
 import { useLanguageActions } from "@/hooks/use-language-actions";
 import { Volume2, Trash2, Archive, ArchiveRestore } from "lucide-react";
 import { formatPersianNumber } from "@/lib/utils";
-import { WordImportExport } from "./word-import-export";
+import { WordImportExport } from "@/components/language/word-import-export";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function WordList({ cards }: { cards: LanguageCard[] }) {
@@ -66,19 +66,7 @@ export function WordList({ cards }: { cards: LanguageCard[] }) {
   };
 
   const handleToggleArchive = async (card: LanguageCard) => {
-    const isArchiving = card.srsStatus === "active";
-    const nextStatus = isArchiving ? "archived" : "active";
-    const nextDifficulty = isArchiving ? 1.0 : card.difficulty;
-
-    await localDb.transaction("rw", [localDb.languageCards], async () => {
-      await localDb.languageCards.update(card.id, {
-        srsStatus: nextStatus,
-        difficulty: nextDifficulty,
-        updatedAt: new Date(),
-        synced: false,
-      });
-    });
-
+    const isArchiving = await toggleArchiveCard(card);
     toast(
       isArchiving
         ? "کارت با موفقیت آرشیو شد"

@@ -5,7 +5,7 @@ import {
   type FinanceBudget,
   type UserSettings,
   type DeletedRecord,
-} from "./schemas";
+} from "@/lib/db/schemas";
 
 export {
   type LanguageCard,
@@ -15,7 +15,7 @@ export {
   type DeletedRecord,
 };
 
-export { updateLocalDbAfterSync } from "./sync-db-updater";
+export { updateLocalDbAfterSync } from "@/lib/db/sync-db-updater";
 
 class VitaLocalDatabase extends Dexie {
   languageCards!: Table<LanguageCard, string>;
@@ -40,9 +40,7 @@ class VitaLocalDatabase extends Dexie {
           .table("languageCards")
           .toCollection()
           .modify((card) => {
-            if (card.due === undefined) {
-              card.due = card.nextReviewDate || card.updatedAt || new Date();
-            }
+            if (card.due === undefined) card.due = card.updatedAt || new Date();
             if (card.elapsedDays === undefined) card.elapsedDays = 0;
             if (card.scheduledDays === undefined) card.scheduledDays = 0;
             if (card.reps === undefined) card.reps = 0;

@@ -11,16 +11,8 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, gt, inArray, sql } from "drizzle-orm";
 import { getCurrentUserAction } from "@/app/actions/auth";
+import { parseDate } from "@/lib/utils";
 import { z } from "zod";
-
-function parseDate(val: unknown): Date {
-  if (val instanceof Date) return val;
-  if (typeof val === "string" || typeof val === "number") {
-    const d = new Date(val);
-    if (!isNaN(d.getTime())) return d;
-  }
-  return new Date();
-}
 
 const syncLanguageCardSchema = z.object({
   id: z.string().uuid(),

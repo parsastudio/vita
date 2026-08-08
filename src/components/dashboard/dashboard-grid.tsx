@@ -2,8 +2,8 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useDashboardState } from "./use-dashboard-state";
-import { DashboardHeader } from "./dashboard-header";
+import { useDashboardState } from "@/components/dashboard/use-dashboard-state";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { BookOpen, Wallet } from "lucide-react";
 import { LogoutModal } from "@/components/auth/logout-modal";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -29,7 +29,6 @@ export function DashboardGrid({
     activeWidget,
     setActiveWidget,
     logout,
-    disableGuestMode,
     theme,
     handleToggleTheme,
     showAccountSettings,
@@ -78,7 +77,6 @@ export function DashboardGrid({
           performSync={performSync}
           user={user}
           logout={logout}
-          disableGuestMode={disableGuestMode}
           enabledModules={enabledModules}
           toggleModule={toggleModule}
           theme={theme}

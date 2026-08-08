@@ -169,14 +169,7 @@ export function parseVerbalNumbers(text: string): string {
       }
 
       if (segment.length > 0) {
-        const normalizedSegment = segment.map((word) => {
-          if (/^\d+$/.test(word)) {
-            return word;
-          }
-          return word;
-        });
-
-        const numericWords = normalizedSegment.map((w) => {
+        const numericWords = segment.map((w) => {
           if (/^\d+$/.test(w)) {
             const num = parseInt(w, 10);
             if (num === 1) return "یک";
@@ -186,7 +179,7 @@ export function parseVerbalNumbers(text: string): string {
           return w;
         });
 
-        const hasOnlyDigits = normalizedSegment.every((w) => /^\d+$/.test(w));
+        const hasOnlyDigits = segment.every((w) => /^\d+$/.test(w));
 
         if (hasOnlyDigits) {
           processedTokens.push(segment.join(" "));

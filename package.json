@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+        "files": "python3 debug/file_collector.py",
+    "tree": "python3 debug/tree_generator.py",
+    "errors": "python3 debug/error_checker.py",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"

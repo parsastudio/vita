@@ -17,7 +17,7 @@ const cardFormSchema = z.object({
 
 interface SentenceParserProps {
   userId: string;
-  onSaveSuccess: () => void;
+  onSaveSuccess?: () => void;
 }
 
 export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
@@ -71,7 +71,7 @@ export function SentenceParser({ userId, onSaveSuccess }: SentenceParserProps) {
     setText("");
     setTranslation("");
     toast("کارت جدید لایتنر با موفقیت اضافه شد", "success");
-    onSaveSuccess();
+    onSaveSuccess?.();
   };
 
   return (

@@ -11,15 +11,9 @@ export function useDashboardState() {
   const { enabledModules, toggleModule } = useModules();
   const { isSyncing, performSync } = useSync();
   const { setTheme, resolvedTheme } = useTheme();
-  const [showSettings, setShowSettings] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [mounted, setMounted] = useState(false);
-  const [widgetOrder, setWidgetOrder] = useState<string[]>([
-    "language",
-    "finance",
-  ]);
 
   const [activeWidget, setActiveWidgetState] = useState<"language" | "finance">(
     "language",
@@ -42,11 +36,6 @@ export function useDashboardState() {
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
-    const savedOrder = localStorage.getItem("vita_widget_order");
-    if (savedOrder) {
-      setWidgetOrder(JSON.parse(savedOrder));
-    }
-
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
@@ -68,17 +57,6 @@ export function useDashboardState() {
     }
   };
 
-  const moveWidget = (index: number, direction: "up" | "down") => {
-    const nextIndex = direction === "up" ? index - 1 : index + 1;
-    if (nextIndex < 0 || nextIndex >= widgetOrder.length) return;
-    const updated = [...widgetOrder];
-    const temp = updated[index];
-    updated[index] = updated[nextIndex];
-    updated[nextIndex] = temp;
-    setWidgetOrder(updated);
-    localStorage.setItem("vita_widget_order", JSON.stringify(updated));
-  };
-
   const handleToggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
@@ -93,16 +71,10 @@ export function useDashboardState() {
     toggleModule,
     isSyncing,
     performSync,
-    showSettings,
-    setShowSettings,
-    showUserMenu,
-    setShowUserMenu,
     showAccountSettings,
     setShowAccountSettings,
     isOnline,
     mounted,
-    widgetOrder,
-    moveWidget,
     activeWidget,
     setActiveWidget: changeActiveWidget,
     theme: mounted ? resolvedTheme || "light" : "",

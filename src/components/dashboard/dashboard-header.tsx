@@ -12,7 +12,6 @@ interface DashboardHeaderProps {
   performSync: () => void;
   user: { email: string } | null;
   logout: () => void;
-  disableGuestMode: () => void;
   enabledModules: string[];
   toggleModule: (id: string) => void;
   theme: string;

@@ -3,13 +3,13 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { type FinanceTransaction, type FinanceBudget } from "@/lib/db/client";
 import { useToast } from "@/hooks/use-toast";
-import { getJalaliDateParts } from "@/lib/utils";
+import { getJalaliDateParts, JALALI_MONTH_NAMES } from "@/lib/utils";
 import { useFinanceActions } from "@/hooks/use-finance-actions";
-import { StatsCards } from "./stats-cards";
-import { TrendChart } from "./trend-chart";
-import { BudgetManager } from "./budget-manager";
-import { FinanceInsights } from "./finance-insights";
-import { CategoryDistribution } from "./category-distribution";
+import { StatsCards } from "@/components/finance/stats-cards";
+import { TrendChart } from "@/components/finance/trend-chart";
+import { BudgetManager } from "@/components/finance/budget-manager";
+import { FinanceInsights } from "@/components/finance/finance-insights";
+import { CategoryDistribution } from "@/components/finance/category-distribution";
 
 interface FinanceDashboardProps {
   transactions: FinanceTransaction[];
@@ -74,20 +74,6 @@ export function FinanceDashboard({
     > = {};
     const now = new Date();
     const currentJalali = getJalaliDateParts(now);
-    const monthNames = [
-      "فروردین",
-      "اردیبهشت",
-      "خرداد",
-      "تیر",
-      "مرداد",
-      "شهریور",
-      "مهر",
-      "آبان",
-      "آذر",
-      "دی",
-      "بهمن",
-      "اسفند",
-    ];
 
     for (let i = 5; i >= 0; i--) {
       let m = currentJalali.month - i;
@@ -97,7 +83,11 @@ export function FinanceDashboard({
         y -= 1;
       }
       const key = `${y}-${m}`;
-      monthlyData[key] = { income: 0, expense: 0, label: monthNames[m] };
+      monthlyData[key] = {
+        income: 0,
+        expense: 0,
+        label: JALALI_MONTH_NAMES[m],
+      };
     }
 
     transactions.forEach((tx) => {
