@@ -11,19 +11,25 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
-interface NavigatorWithStandalone extends Navigator {
+interface NavigatorWithRelatedApps extends Navigator {
   standalone?: boolean;
+  getInstalledRelatedApps?: () => Promise<
+    Array<{ id?: string; platform?: string; url?: string }>
+  >;
 }
+
+export type PwaModalMode = "ios" | "desktop_guide" | "already_installed" | null;
 
 export function usePwa() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
-  const [showIosModal, setShowIosModal] = useState(false);
+  const [modalMode, setModalMode] = useState<PwaModalMode>(null);
+  const [isAlreadyInstalledRelated, setIsAlreadyInstalledRelated] =
+    useState(false);
 
   const [isStandalone] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
-    const nav = window.navigator as NavigatorWithStandalone;
+    const nav = window.navigator as NavigatorWithRelatedApps;
     return (
       window.matchMedia("(display-mode: standalone)").matches ||
       nav.standalone === true
@@ -36,21 +42,28 @@ export function usePwa() {
     return /iphone|ipad|ipod/i.test(userAgent);
   });
 
-  const [isInAppBrowser] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    const userAgent = window.navigator.userAgent;
-    return /FBAV|Instagram|Telegram|Line|Twitter|MicroMessenger/i.test(
-      userAgent,
-    );
-  });
-
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    const checkInstalledRelated = async () => {
+      const nav = window.navigator as NavigatorWithRelatedApps;
+      if (typeof nav.getInstalledRelatedApps === "function") {
+        try {
+          const apps = await nav.getInstalledRelatedApps();
+          if (apps && apps.length > 0) {
+            setIsAlreadyInstalledRelated(true);
+          }
+        } catch {
+          setIsAlreadyInstalledRelated(false);
+        }
+      }
+    };
+
+    checkInstalledRelated();
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setIsInstallable(true);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -68,12 +81,18 @@ export function usePwa() {
   }, []);
 
   const handleInstallClick = useCallback(async (): Promise<
+    | "already_installed"
     | "prompt_triggered"
     | "ios_instructions"
-    | "already_installed"
-    | "unsupported"
+    | "desktop_instructions"
   > => {
     if (isStandalone) {
+      setModalMode("already_installed");
+      return "already_installed";
+    }
+
+    if (isAlreadyInstalledRelated) {
+      setModalMode("already_installed");
       return "already_installed";
     }
 
@@ -82,26 +101,25 @@ export function usePwa() {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === "accepted") {
         setDeferredPrompt(null);
-        setIsInstallable(false);
       }
       return "prompt_triggered";
     }
 
     if (isIos) {
-      setShowIosModal(true);
+      setModalMode("ios");
       return "ios_instructions";
     }
 
-    return "unsupported";
-  }, [isStandalone, deferredPrompt, isIos]);
+    setModalMode("desktop_guide");
+    return "desktop_instructions";
+  }, [isStandalone, isAlreadyInstalledRelated, deferredPrompt, isIos]);
 
   return {
-    isInstallable,
     isStandalone,
     isIos,
-    isInAppBrowser,
-    showIosModal,
-    setShowIosModal,
+    isAlreadyInstalledRelated,
+    modalMode,
+    setModalMode,
     handleInstallClick,
   };
 }

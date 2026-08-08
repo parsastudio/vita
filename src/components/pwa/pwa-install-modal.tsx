@@ -2,17 +2,25 @@
 
 import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share, PlusSquare, X, Sparkles } from "lucide-react";
+import {
+  Share,
+  PlusSquare,
+  X,
+  Sparkles,
+  CheckCircle2,
+  Monitor,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { type PwaModalMode } from "@/hooks/use-pwa";
 
 interface PwaInstallModalProps {
-  isOpen: boolean;
+  mode: PwaModalMode;
   onClose: () => void;
 }
 
-export function PwaInstallModal({ isOpen, onClose }: PwaInstallModalProps) {
+export function PwaInstallModal({ mode, onClose }: PwaInstallModalProps) {
   useEffect(() => {
-    if (!isOpen) return;
+    if (!mode) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
@@ -20,9 +28,9 @@ export function PwaInstallModal({ isOpen, onClose }: PwaInstallModalProps) {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [mode, onClose]);
 
-  if (!isOpen) return null;
+  if (!mode) return null;
 
   return (
     <AnimatePresence>
@@ -52,58 +60,139 @@ export function PwaInstallModal({ isOpen, onClose }: PwaInstallModalProps) {
             <X className="size-4" />
           </button>
 
-          <div className="flex flex-col items-center text-center space-y-3">
-            <div className="size-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-              <Sparkles className="size-6 animate-pulse" />
+          {mode === "already_installed" && (
+            <div className="space-y-5 text-center">
+              <div className="size-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="size-6 animate-pulse" />
+              </div>
+              <div className="space-y-1.5">
+                <h2 className="text-xl font-bold text-foreground font-vazir">
+                  اپلیکیشن ویتا روی سیستم شما نصب است
+                </h2>
+                <p className="text-xs text-muted-foreground font-vazir leading-relaxed">
+                  برنامه ویتا قبلاً روی این دستگاه نصب شده است. برای تجربه بهتر
+                  می‌توانید آن را از لیست برنامه‌های دسکتاپ/گوشی خود اجرا کنید
+                  یا روی آیکون 💻 در نوار آدرس مرورگر کلیک نمایید.
+                </p>
+              </div>
+              <Button
+                onClick={onClose}
+                className="w-full font-vazir text-xs h-10 font-bold"
+              >
+                متوجه شدم
+              </Button>
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-foreground font-vazir">
-                نصب اپلیکیشن ویتا در آیفون / آیپد
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1 font-vazir leading-relaxed">
-                برای استفاده از تمامی قابلیت‌های آفلاین و دسترسی سریع بدون نیاز
-                به مرورگر، مراحل زیر را طی کنید:
-              </p>
-            </div>
-          </div>
+          )}
 
-          <div className="space-y-3">
-            <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-muted/40 border border-border/60">
-              <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <Share className="size-4" />
+          {mode === "ios" && (
+            <div className="space-y-5">
+              <div className="flex flex-col items-center text-center space-y-2">
+                <div className="size-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                  <Sparkles className="size-6 animate-pulse" />
+                </div>
+                <h2 className="text-xl font-bold text-foreground font-vazir">
+                  نصب اپلیکیشن ویتا در آیفون / آیپد
+                </h2>
+                <p className="text-xs text-muted-foreground font-vazir leading-relaxed">
+                  جهت دسترسی سریع و استفاده آفلاین، مراحل زیر را اجرا کنید:
+                </p>
               </div>
-              <div className="space-y-0.5 text-right font-vazir">
-                <span className="text-xs font-bold text-foreground block">
-                  ۱. آیکون Share (اشتراک‌گذاری)
-                </span>
-                <span className="text-[11px] text-muted-foreground block">
-                  در منوی پایین مرورگر Safari روی آیکون اشتراک‌گذاری ضربه بزنید.
-                </span>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-muted/40 border border-border/60">
-              <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <PlusSquare className="size-4" />
-              </div>
-              <div className="space-y-0.5 text-right font-vazir">
-                <span className="text-xs font-bold text-foreground block">
-                  ۲. گزینه‌ی Add to Home Screen
-                </span>
-                <span className="text-[11px] text-muted-foreground block">
-                  منو را به پایین اسکرول کرده و گزینه «افزودن به صفحه اصلی» را
-                  انتخاب کنید.
-                </span>
-              </div>
-            </div>
-          </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-muted/40 border border-border/60">
+                  <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <Share className="size-4" />
+                  </div>
+                  <div className="space-y-0.5 text-right font-vazir">
+                    <span className="text-xs font-bold text-foreground block">
+                      ۱. آیکون Share (اشتراک‌گذاری)
+                    </span>
+                    <span className="text-[11px] text-muted-foreground block">
+                      در منوی پایین مرورگر Safari روی آیکون اشتراک‌گذاری کلیک
+                      کنید.
+                    </span>
+                  </div>
+                </div>
 
-          <Button
-            onClick={onClose}
-            className="w-full font-vazir text-xs h-10 font-bold"
-          >
-            متوجه شدم
-          </Button>
+                <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-muted/40 border border-border/60">
+                  <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <PlusSquare className="size-4" />
+                  </div>
+                  <div className="space-y-0.5 text-right font-vazir">
+                    <span className="text-xs font-bold text-foreground block">
+                      ۲. گزینه‌ی Add to Home Screen
+                    </span>
+                    <span className="text-[11px] text-muted-foreground block">
+                      منو را به پایین اسکرول کرده و «افزودن به صفحه اصلی» را
+                      بزنید.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={onClose}
+                className="w-full font-vazir text-xs h-10 font-bold"
+              >
+                متوجه شدم
+              </Button>
+            </div>
+          )}
+
+          {mode === "desktop_guide" && (
+            <div className="space-y-5">
+              <div className="flex flex-col items-center text-center space-y-2">
+                <div className="size-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                  <Monitor className="size-6 animate-pulse" />
+                </div>
+                <h2 className="text-xl font-bold text-foreground font-vazir">
+                  راهنمای نصب اپلیکیشن ویتا
+                </h2>
+                <p className="text-xs text-muted-foreground font-vazir leading-relaxed">
+                  می‌توانید اپلیکیشن را مستقیماً از نوار مرورگر خود نصب کنید:
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-muted/40 border border-border/60">
+                  <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <PlusSquare className="size-4" />
+                  </div>
+                  <div className="space-y-0.5 text-right font-vazir">
+                    <span className="text-xs font-bold text-foreground block">
+                      آیکون نصب در نوار آدرس (Address Bar)
+                    </span>
+                    <span className="text-[11px] text-muted-foreground block">
+                      در بالای مرورگر (سمت راست آدرس سایت)، روی آیکون ➕ یا 💻
+                      برای نصب کلیک کنید.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-muted/40 border border-border/60">
+                  <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <Monitor className="size-4" />
+                  </div>
+                  <div className="space-y-0.5 text-right font-vazir">
+                    <span className="text-xs font-bold text-foreground block">
+                      منوی سه نقطه مرورگر (⋮)
+                    </span>
+                    <span className="text-[11px] text-muted-foreground block">
+                      یا از منوی مرورگر گزینه «نصب ویتا» (Install Vita) را
+                      انتخاب کنید.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={onClose}
+                className="w-full font-vazir text-xs h-10 font-bold"
+              >
+                متوجه شدم
+              </Button>
+            </div>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>

@@ -9,7 +9,6 @@ import { LogoutModal } from "@/components/auth/logout-modal";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { AccountSettingsModal } from "@/components/auth/account-settings-modal";
 import { usePwa } from "@/hooks/use-pwa";
-import { useToast } from "@/hooks/use-toast";
 import { PwaInstallModal } from "@/components/pwa/pwa-install-modal";
 
 export function DashboardGrid({
@@ -37,9 +36,8 @@ export function DashboardGrid({
     setShowAccountSettings,
   } = useDashboardState();
 
-  const { isStandalone, showIosModal, setShowIosModal, handleInstallClick } =
+  const { isStandalone, modalMode, setModalMode, handleInstallClick } =
     usePwa();
-  const { toast } = useToast();
 
   const isLanguageEnabled = enabledModules.includes("language");
   const isFinanceEnabled = enabledModules.includes("finance");
@@ -57,15 +55,7 @@ export function DashboardGrid({
   }, [isLanguageEnabled, isFinanceEnabled, activeWidget, setActiveWidget]);
 
   const onInstallApp = async () => {
-    const outcome = await handleInstallClick();
-    if (outcome === "already_installed") {
-      toast("شما در حال حاضر از نسخه نصب‌شده اپلیکیشن استفاده می‌کنید", "info");
-    } else if (outcome === "unsupported") {
-      toast(
-        "مرورگر شما از نصب مستقیم پشتیبانی نمی‌کند. لطفاً با Chrome یا Safari وارد شوید",
-        "info",
-      );
-    }
+    await handleInstallClick();
   };
 
   if (isLoading) {
@@ -263,10 +253,7 @@ export function DashboardGrid({
         />
       </ErrorBoundary>
 
-      <PwaInstallModal
-        isOpen={showIosModal}
-        onClose={() => setShowIosModal(false)}
-      />
+      <PwaInstallModal mode={modalMode} onClose={() => setModalMode(null)} />
     </div>
   );
 }
