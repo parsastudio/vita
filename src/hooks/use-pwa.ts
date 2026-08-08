@@ -24,42 +24,43 @@ export function usePwa() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [modalMode, setModalMode] = useState<PwaModalMode>(null);
-  const [isAlreadyInstalledRelated, setIsAlreadyInstalledRelated] =
-    useState(false);
+  const [isAlreadyInstalled, setIsAlreadyInstalled] = useState<boolean>(false);
 
-  const [isStandalone] = useState<boolean>(() => {
+  const [isStandalone, setIsStandalone] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     const nav = window.navigator as NavigatorWithRelatedApps;
     return (
       window.matchMedia("(display-mode: standalone)").matches ||
+      window.matchMedia("(display-mode: fullscreen)").matches ||
+      window.matchMedia("(display-mode: minimal-ui)").matches ||
       nav.standalone === true
     );
   });
 
   const [isIos] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
-    const userAgent = window.navigator.userAgent;
-    return /iphone|ipad|ipod/i.test(userAgent);
+    return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
   });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const checkInstalledRelated = async () => {
-      const nav = window.navigator as NavigatorWithRelatedApps;
+    const nav = window.navigator as NavigatorWithRelatedApps;
+
+    const checkInstalledApps = async () => {
       if (typeof nav.getInstalledRelatedApps === "function") {
         try {
           const apps = await nav.getInstalledRelatedApps();
           if (apps && apps.length > 0) {
-            setIsAlreadyInstalledRelated(true);
+            setIsAlreadyInstalled(true);
           }
         } catch {
-          setIsAlreadyInstalledRelated(false);
+          setIsAlreadyInstalled(false);
         }
       }
     };
 
-    checkInstalledRelated();
+    checkInstalledApps();
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -68,7 +69,15 @@ export function usePwa() {
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
-    if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setIsStandalone(true);
+      setIsAlreadyInstalled(true);
+    };
+
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
 
@@ -77,47 +86,39 @@ export function usePwa() {
         "beforeinstallprompt",
         handleBeforeInstallPrompt,
       );
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 
-  const handleInstallClick = useCallback(async (): Promise<
-    | "already_installed"
-    | "prompt_triggered"
-    | "ios_instructions"
-    | "desktop_instructions"
-  > => {
-    if (isStandalone) {
+  const handleInstallClick = useCallback(async () => {
+    if (isStandalone || isAlreadyInstalled) {
       setModalMode("already_installed");
-      return "already_installed";
-    }
-
-    if (isAlreadyInstalledRelated) {
-      setModalMode("already_installed");
-      return "already_installed";
+      return;
     }
 
     if (deferredPrompt) {
       await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") {
+      const choiceResult = await deferredPrompt.userChoice;
+      if (choiceResult.outcome === "accepted") {
         setDeferredPrompt(null);
+        setIsStandalone(true);
+        setIsAlreadyInstalled(true);
       }
-      return "prompt_triggered";
+      return;
     }
 
     if (isIos) {
       setModalMode("ios");
-      return "ios_instructions";
+      return;
     }
 
-    setModalMode("desktop_guide");
-    return "desktop_instructions";
-  }, [isStandalone, isAlreadyInstalledRelated, deferredPrompt, isIos]);
+    setModalMode("already_installed");
+  }, [isStandalone, isAlreadyInstalled, deferredPrompt, isIos]);
 
   return {
     isStandalone,
+    isAlreadyInstalled,
     isIos,
-    isAlreadyInstalledRelated,
     modalMode,
     setModalMode,
     handleInstallClick,

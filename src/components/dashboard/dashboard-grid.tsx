@@ -209,7 +209,7 @@ export function DashboardGrid({
               onClick={onInstallApp}
               className="font-bold text-primary hover:underline cursor-pointer"
             >
-              دانلود و نصب اپلیکیشن ویتا
+              نصب اپلیکیشن ویتا
             </button>
           </div>
         ) : (

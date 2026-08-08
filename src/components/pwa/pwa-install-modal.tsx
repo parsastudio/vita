@@ -9,6 +9,7 @@ import {
   Sparkles,
   CheckCircle2,
   Monitor,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type PwaModalMode } from "@/hooks/use-pwa";
@@ -65,15 +66,20 @@ export function PwaInstallModal({ mode, onClose }: PwaInstallModalProps) {
               <div className="size-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="size-6 animate-pulse" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-3">
                 <h2 className="text-xl font-bold text-foreground font-vazir">
                   اپلیکیشن ویتا روی سیستم شما نصب است
                 </h2>
-                <p className="text-xs text-muted-foreground font-vazir leading-relaxed">
-                  برنامه ویتا قبلاً روی این دستگاه نصب شده است. برای تجربه بهتر
-                  می‌توانید آن را از لیست برنامه‌های دسکتاپ/گوشی خود اجرا کنید
-                  یا روی آیکون 💻 در نوار آدرس مرورگر کلیک نمایید.
-                </p>
+                <div className="p-3.5 bg-primary/5 border border-primary/15 rounded-xl space-y-1.5 text-right font-vazir">
+                  <span className="text-xs font-bold text-primary block flex items-center gap-1.5">
+                    <ExternalLink className="size-3.5" />
+                    روش باز کردن اپلیکیشن:
+                  </span>
+                  <span className="text-[11px] text-muted-foreground block leading-relaxed">
+                    در بالای همین صفحه (سمت راست نوار آدرس مرورگر)، روی آیکون 💻
+                    یا ↗️ کلیک کنید یا برنامه را از منوی سیستم خود اجرا کنید.
+                  </span>
+                </div>
               </div>
               <Button
                 onClick={onClose}
