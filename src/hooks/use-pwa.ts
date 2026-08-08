@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -11,16 +11,36 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+interface NavigatorWithStandalone extends Navigator {
+  standalone?: boolean;
+}
+
 export function usePwa() {
-  const [isInstallable, setIsInstallable] = useState(false);
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [showIosModal, setShowIosModal] = useState(false);
+
   const [isStandalone] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
+    const nav = window.navigator as NavigatorWithStandalone;
     return (
       window.matchMedia("(display-mode: standalone)").matches ||
-      ("standalone" in window.navigator &&
-        (window.navigator as { standalone?: boolean }).standalone === true)
+      nav.standalone === true
+    );
+  });
+
+  const [isIos] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const userAgent = window.navigator.userAgent;
+    return /iphone|ipad|ipod/i.test(userAgent);
+  });
+
+  const [isInAppBrowser] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const userAgent = window.navigator.userAgent;
+    return /FBAV|Instagram|Telegram|Line|Twitter|MicroMessenger/i.test(
+      userAgent,
     );
   });
 
@@ -47,15 +67,41 @@ export function usePwa() {
     };
   }, []);
 
-  const triggerInstall = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
-      setIsInstallable(false);
-      setDeferredPrompt(null);
+  const handleInstallClick = useCallback(async (): Promise<
+    | "prompt_triggered"
+    | "ios_instructions"
+    | "already_installed"
+    | "unsupported"
+  > => {
+    if (isStandalone) {
+      return "already_installed";
     }
-  };
 
-  return { isInstallable, isStandalone, triggerInstall };
+    if (deferredPrompt) {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        setDeferredPrompt(null);
+        setIsInstallable(false);
+      }
+      return "prompt_triggered";
+    }
+
+    if (isIos) {
+      setShowIosModal(true);
+      return "ios_instructions";
+    }
+
+    return "unsupported";
+  }, [isStandalone, deferredPrompt, isIos]);
+
+  return {
+    isInstallable,
+    isStandalone,
+    isIos,
+    isInAppBrowser,
+    showIosModal,
+    setShowIosModal,
+    handleInstallClick,
+  };
 }

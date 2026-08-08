@@ -14,7 +14,10 @@ export function useDashboardState() {
   const { setTheme, resolvedTheme } = useTheme();
   const mounted = useIsMounted();
   const [showAccountSettings, setShowAccountSettings] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return navigator.onLine;
+  });
 
   const [activeWidget, setActiveWidgetState] = useState<"language" | "finance">(
     () => {
@@ -31,7 +34,6 @@ export function useDashboardState() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    setIsOnline(navigator.onLine);
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
