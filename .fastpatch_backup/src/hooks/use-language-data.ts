@@ -1,17 +1,38 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { localDb, type LanguageCard } from "@/lib/db/client";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useLanguageActions } from "./use-language-actions";
 
 export function useLanguageData() {
   const { user } = useAuth();
   const userId = user?.id || "guest";
+  const { reconcileLanguageQueue } = useLanguageActions();
 
   const cards = useLiveQuery(() => {
     return localDb.languageCards.where("userId").equals(userId).toArray();
   }, [userId]);
+
+  useEffect(() => {
+    if (userId === "guest") return;
+
+    const checkAndReconcile = async () => {
+      const settings = await localDb.userSettings
+        .where("userId")
+        .equals(userId)
+        .first();
+      if (!settings) return;
+
+      const todayStr = new Date().toISOString().split("T")[0];
+      if (settings.lastNewWordsDate !== todayStr) {
+        await reconcileLanguageQueue(userId);
+      }
+    };
+
+    checkAndReconcile();
+  }, [userId, reconcileLanguageQueue]);
 
   const reviewCards = useMemo<LanguageCard[]>(() => {
     if (!cards || cards.length === 0) return [];

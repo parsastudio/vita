@@ -95,6 +95,7 @@ export async function syncData(rawPayload: unknown) {
 
   const serverTimestamp = new Date();
   const lastSyncDate = lastSyncedAt ? new Date(lastSyncedAt) : new Date(0);
+  const querySinceDate = new Date(Math.max(0, lastSyncDate.getTime() - 5000));
 
   await db.transaction(async (tx) => {
     if (changes.deletedRecords && changes.deletedRecords.length > 0) {
@@ -298,35 +299,35 @@ export async function syncData(rawPayload: unknown) {
   const newCards = await db.query.languageCards.findMany({
     where: and(
       eq(languageCards.userId, userId),
-      gt(languageCards.updatedAt, lastSyncDate),
+      gt(languageCards.updatedAt, querySinceDate),
     ),
   });
 
   const newTransactions = await db.query.financeTransactions.findMany({
     where: and(
       eq(financeTransactions.userId, userId),
-      gt(financeTransactions.updatedAt, lastSyncDate),
+      gt(financeTransactions.updatedAt, querySinceDate),
     ),
   });
 
   const newBudgets = await db.query.financeBudgets.findMany({
     where: and(
       eq(financeBudgets.userId, userId),
-      gt(financeBudgets.updatedAt, lastSyncDate),
+      gt(financeBudgets.updatedAt, querySinceDate),
     ),
   });
 
   const newSettings = await db.query.userSettings.findMany({
     where: and(
       eq(userSettings.userId, userId),
-      gt(userSettings.updatedAt, lastSyncDate),
+      gt(userSettings.updatedAt, querySinceDate),
     ),
   });
 
   const pulledDeletes = await db.query.deletedRecords.findMany({
     where: and(
       eq(deletedRecords.userId, userId),
-      gt(deletedRecords.deletedAt, lastSyncDate),
+      gt(deletedRecords.deletedAt, querySinceDate),
     ),
   });
 

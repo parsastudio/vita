@@ -33,7 +33,6 @@ const PERSIAN_STOP_WORDS = new Set([
   "ی",
   "یک",
   "عدد",
-  "تا",
   "من",
   "بابتِ",
   "برایِ",

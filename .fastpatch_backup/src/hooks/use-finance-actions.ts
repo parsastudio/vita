@@ -149,6 +149,10 @@ export function useFinanceActions(userId: string) {
       return null;
     }
 
+    if (amtVal < 1000) {
+      amtVal = amtVal * 1000;
+    }
+
     const tags = (tagsInput || "")
       .split(",")
       .map((t) => t.trim().toLowerCase())
@@ -178,13 +182,9 @@ export function useFinanceActions(userId: string) {
         }
         const matchCategory =
           tx.category.toLowerCase() === budget.categoryOrTag.toLowerCase();
-        const matchTag =
-          Array.isArray(tx.tags) &&
-          tx.tags.some(
-            (t: string) =>
-              typeof t === "string" &&
-              t.toLowerCase() === budget.categoryOrTag.toLowerCase(),
-          );
+        const matchTag = tx.tags.some(
+          (t: string) => t.toLowerCase() === budget.categoryOrTag.toLowerCase(),
+        );
         if (!matchCategory && !matchTag) {
           return false;
         }

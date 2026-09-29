@@ -129,14 +129,14 @@ export function parseNaturalLanguageTransaction(
   let tagPart = "";
 
   for (const kw of splitKeywords) {
-    const kwRegex = new RegExp(`\\b${kw}\\b|${kw}`, "i");
-    if (kwRegex.test(cleanedText)) {
-      const parts = cleanedText.split(kwRegex);
-      if (parts.length >= 2) {
-        titlePart = parts[0].trim();
-        tagPart = parts.slice(1).join(" ").trim();
-        break;
-      }
+    const escapedKw = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const kwRegex = new RegExp(`(?:^|\\s+)${escapedKw}(?:\\s+|$)`, "i");
+    const match = kwRegex.exec(cleanedText);
+    if (match) {
+      const matchIndex = match.index + (match[0].startsWith(" ") ? 1 : 0);
+      titlePart = cleanedText.slice(0, matchIndex).trim();
+      tagPart = cleanedText.slice(matchIndex + kw.length).trim();
+      break;
     }
   }
 

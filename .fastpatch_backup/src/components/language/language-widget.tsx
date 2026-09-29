@@ -8,8 +8,6 @@ import { SrsSettings } from "@/components/language/srs-settings";
 import { Button } from "@/components/ui/button";
 import { formatPersianNumber } from "@/lib/utils";
 import { useLanguageData } from "@/hooks/use-language-data";
-import { useLanguageActions } from "@/hooks/use-language-actions";
-import { useAuth } from "@/lib/auth/auth-context";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 export function LanguageWidget() {
@@ -46,15 +44,6 @@ export function LanguageWidget() {
 
   const { cards, reviewCards, nextReviewDate, cardCount, reviewCount } =
     useLanguageData();
-  const { reconcileLanguageQueue } = useLanguageActions();
-  const { user } = useAuth();
-  const userId = user?.id || "guest";
-
-  React.useEffect(() => {
-    if (userId !== "guest") {
-      void reconcileLanguageQueue(userId);
-    }
-  }, [userId, reconcileLanguageQueue]);
 
   return (
     <div className="w-full bg-transparent sm:bg-card border-y sm:border border-border/40 sm:border-border sm:rounded-2xl shadow-none sm:shadow-sm px-4 py-6 sm:p-8 flex flex-col gap-6 min-h-[480px]">

@@ -115,12 +115,9 @@ export function FinanceDashboard({
         .filter((tx) => {
           if (tx.type !== "expense") return false;
           const matchCategory = tx.category.toLowerCase() === target;
-          const matchTag =
-            Array.isArray(tx.tags) &&
-            tx.tags.some(
-              (t: string) =>
-                typeof t === "string" && t.toLowerCase() === target,
-            );
+          const matchTag = tx.tags.some(
+            (t: string) => t.toLowerCase() === target,
+          );
           if (!matchCategory && !matchTag) return false;
 
           const txParts = getJalaliDateParts(new Date(tx.createdAt));

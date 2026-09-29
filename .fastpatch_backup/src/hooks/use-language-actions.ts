@@ -2,9 +2,9 @@
 
 import { localDb, type LanguageCard } from "@/lib/db/client";
 import { Rating, fsrs, type Grade } from "ts-fsrs";
-import { mapToFSRSCard, mapFromFSRSCard, createLanguageCardEntity } from "@/lib/fsrs";
+import { mapToFSRSCard, mapFromFSRSCard, createNewFSRSCard } from "@/lib/fsrs";
 import { useAuth } from "@/lib/auth/auth-context";
-import { getLocalDateString } from "@/lib/utils";
+import { v4 as uuidv4 } from "uuid";
 
 export function useLanguageActions() {
   const scheduler = fsrs();
@@ -18,7 +18,7 @@ export function useLanguageActions() {
       .first();
     if (!settings) return;
 
-    const todayStr = getLocalDateString();
+    const todayStr = new Date().toISOString().split("T")[0];
     const limit = settings.dailyNewWordsLimit ?? 10;
     let count = settings.todayNewWordsCount ?? 0;
     let lastDate = settings.lastNewWordsDate ?? null;
@@ -150,14 +150,30 @@ export function useLanguageActions() {
     translation: string,
     selectedWord: string,
   ) => {
+    const fsrsDefaults = createNewFSRSCard();
+
     await localDb.transaction("rw", [localDb.languageCards], async () => {
-      const newCard = createLanguageCardEntity({
+      const newCard: LanguageCard = {
+        id: uuidv4(),
         userId,
-        originalText: text,
-        translation,
+        originalText: text.trim(),
+        translation: translation.trim(),
         focusWord: selectedWord,
         srsStatus: "queued",
-      });
+        due: fsrsDefaults.due,
+        stability: fsrsDefaults.stability,
+        difficulty: fsrsDefaults.difficulty,
+        elapsedDays: fsrsDefaults.elapsedDays,
+        scheduledDays: fsrsDefaults.scheduledDays,
+        reps: fsrsDefaults.reps,
+        lapses: fsrsDefaults.lapses,
+        state: fsrsDefaults.state,
+        lastReview: fsrsDefaults.lastReview,
+        learningSteps: fsrsDefaults.learningSteps,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        synced: false,
+      };
       await localDb.languageCards.put(newCard);
     });
 
@@ -172,6 +188,8 @@ export function useLanguageActions() {
       srsStatus?: "active" | "archived" | "queued";
     }>,
   ) => {
+    const fsrsDefaults = createNewFSRSCard();
+
     await localDb.transaction("rw", [localDb.languageCards], async () => {
       for (const item of items) {
         const normalizedText = item.originalText.trim();
@@ -187,13 +205,30 @@ export function useLanguageActions() {
 
         if (existing) continue;
 
-        const newCard = createLanguageCardEntity({
+        const status = item.srsStatus || "queued";
+        const isArchived = status === "archived";
+
+        const newCard: LanguageCard = {
+          id: uuidv4(),
           userId,
           originalText: normalizedText,
-          translation: item.translation,
-          focusWord: item.focusWord,
-          srsStatus: item.srsStatus || "queued",
-        });
+          translation: item.translation.trim(),
+          focusWord: item.focusWord.trim(),
+          srsStatus: status as "active" | "archived" | "queued",
+          due: status === "active" ? new Date() : fsrsDefaults.due,
+          stability: fsrsDefaults.stability,
+          difficulty: isArchived ? 1.0 : fsrsDefaults.difficulty,
+          elapsedDays: fsrsDefaults.elapsedDays,
+          scheduledDays: fsrsDefaults.scheduledDays,
+          reps: fsrsDefaults.reps,
+          lapses: fsrsDefaults.lapses,
+          state: fsrsDefaults.state,
+          lastReview: fsrsDefaults.lastReview,
+          learningSteps: fsrsDefaults.learningSteps,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          synced: false,
+        };
         await localDb.languageCards.put(newCard);
       }
     });

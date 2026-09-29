@@ -148,11 +148,12 @@ export function QuickEntryForm({
       return;
     }
     const numAmt = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
+    const finalAmt = numAmt < 1000 ? numAmt * 1000 : numAmt;
     const tags = (tagsInput || "")
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
-    onSave(numAmt, tags);
+    onSave(finalAmt, tags);
   };
 
   const applySuggestion = (sug: {

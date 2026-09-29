@@ -1,5 +1,4 @@
 import { Card as FSRSCard, State as FSRSState, createEmptyCard } from "ts-fsrs";
-import { v4 as uuidv4 } from "uuid";
 import { LanguageCard } from "./db/client";
 
 export function createNewFSRSCard(): Omit<
@@ -70,39 +69,5 @@ export function mapFromFSRSCard(
     state: fsrsCard.state,
     lastReview: fsrsCard.last_review || null,
     learningSteps: fsrsCard.learning_steps,
-  };
-}
-
-export function createLanguageCardEntity(params: {
-  userId: string;
-  originalText: string;
-  translation: string;
-  focusWord: string;
-  srsStatus?: "active" | "archived" | "queued";
-}): LanguageCard {
-  const fsrsDefaults = createNewFSRSCard();
-  const status = params.srsStatus || "queued";
-  const now = new Date();
-
-  return {
-    id: uuidv4(),
-    userId: params.userId,
-    originalText: params.originalText.trim(),
-    translation: params.translation.trim(),
-    focusWord: params.focusWord.trim(),
-    srsStatus: status,
-    due: status === "active" ? now : fsrsDefaults.due,
-    stability: fsrsDefaults.stability,
-    difficulty: status === "archived" ? 1.0 : fsrsDefaults.difficulty,
-    elapsedDays: fsrsDefaults.elapsedDays,
-    scheduledDays: fsrsDefaults.scheduledDays,
-    reps: fsrsDefaults.reps,
-    lapses: fsrsDefaults.lapses,
-    state: fsrsDefaults.state,
-    lastReview: fsrsDefaults.lastReview,
-    learningSteps: fsrsDefaults.learningSteps,
-    createdAt: now,
-    updatedAt: now,
-    synced: false,
   };
 }

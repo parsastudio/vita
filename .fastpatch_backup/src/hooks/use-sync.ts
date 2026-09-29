@@ -149,11 +149,7 @@ export function useSync() {
           pendingSyncRef.current = false;
           const nextOptions = syncOptionsRef.current || undefined;
           syncOptionsRef.current = null;
-          setTimeout(() => {
-            if (!isSyncingRef.current) {
-              void syncRef.current(nextOptions);
-            }
-          }, 50);
+          syncRef.current(nextOptions);
         }
       }
     },
