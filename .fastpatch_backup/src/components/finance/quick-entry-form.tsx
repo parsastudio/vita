@@ -7,10 +7,12 @@ import { useFinanceActions } from "@/hooks/use-finance-actions";
 import { toEnglishDigits } from "@/lib/nlp";
 import { AlertTriangle } from "lucide-react";
 import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 
 const formSchema = z.object({
-  amount: z.string().refine(
+  amount: z.string().min(1, "وارد کردن مبلغ الزامی است").refine(
     (val) => {
       const parsed = parseFloat(toEnglishDigits(val).replace(/,/g, ""));
       return !isNaN(parsed) && parsed > 0;
@@ -19,9 +21,11 @@ const formSchema = z.object({
   ),
   category: z.string().min(1, "عنوان تراکنش الزامی است"),
   type: z.enum(["income", "expense"]),
-  tagsInput: z.string().optional(),
-  description: z.string().optional(),
+  tagsInput: z.string().optional().default(""),
+  description: z.string().optional().default(""),
 });
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface QuickEntryFormProps {
   userId: string;
@@ -57,10 +61,51 @@ export function QuickEntryForm({
   toast,
 }: QuickEntryFormProps) {
   const [budgetWarning, setBudgetWarning] = useState<string | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
   const [showTagsDropdown, setShowTagsDropdown] = useState(false);
 
   const { getBudgetWarning } = useFinanceActions(userId);
+
+  const {
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      amount,
+      category,
+      type,
+      tagsInput,
+      description,
+    },
+  });
+
+  const formAmount = watch("amount");
+  const formCategory = watch("category");
+  const formType = watch("type");
+  const formTagsInput = watch("tagsInput");
+  const formDescription = watch("description");
+
+  useEffect(() => {
+    setValue("amount", amount);
+  }, [amount, setValue]);
+
+  useEffect(() => {
+    setValue("category", category);
+  }, [category, setValue]);
+
+  useEffect(() => {
+    setValue("type", type);
+  }, [type, setValue]);
+
+  useEffect(() => {
+    setValue("tagsInput", tagsInput);
+  }, [tagsInput, setValue]);
+
+  useEffect(() => {
+    setValue("description", description);
+  }, [description, setValue]);
 
   const amountSuggestions = useMemo(() => {
     let amtVal = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
@@ -121,36 +166,23 @@ export function QuickEntryForm({
   useEffect(() => {
     const delayDebounce = setTimeout(async () => {
       const warning = await getBudgetWarning(
-        amount,
-        category,
-        tagsInput,
-        type,
+        formAmount,
+        formCategory,
+        formTagsInput,
+        formType,
         transactions,
       );
       setBudgetWarning(warning);
     }, 300);
 
     return () => clearTimeout(delayDebounce);
-  }, [amount, category, tagsInput, type, transactions, getBudgetWarning]);
+  }, [formAmount, formCategory, formTagsInput, formType, transactions, getBudgetWarning]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setValidationError(null);
-    const validation = formSchema.safeParse({
-      amount,
-      category,
-      type,
-      tagsInput,
-      description,
-    });
-    if (!validation.success) {
-      setValidationError(validation.error.issues[0].message);
-      return;
-    }
-    const numAmt = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
-    const tags = (tagsInput || "")
+  const onSubmit = (data: FormValues) => {
+    const numAmt = parseFloat(toEnglishDigits(data.amount).replace(/,/g, ""));
+    const tags = (data.tagsInput || "")
       .split(",")
-      .map((t) => t.trim())
+      .map((t: string) => t.trim())
       .filter(Boolean);
     onSave(numAmt, tags);
   };
@@ -161,8 +193,12 @@ export function QuickEntryForm({
     description: string;
   }) => {
     setCategory(sug.category);
-    setTagsInput((sug.tags || []).join(", "));
+    setValue("category", sug.category);
+    const tagsStr = (sug.tags || []).join(", ");
+    setTagsInput(tagsStr);
+    setValue("tagsInput", tagsStr);
     setDescription(sug.description);
+    setValue("description", sug.description);
     toast(
       `عنوان و تگ بر اساس مبلغ به عنوان "${sug.category}" اعمال شد`,
       "info",
@@ -170,13 +206,15 @@ export function QuickEntryForm({
   };
 
   const handleSelectTag = (tag: string) => {
-    const parts = tagsInput.split(",");
+    const parts = (formTagsInput || "").split(",");
     parts[parts.length - 1] = tag;
     const joined = parts
-      .map((p) => p.trim())
+      .map((p: string) => p.trim())
       .filter(Boolean)
       .join(", ");
-    setTagsInput(joined ? joined + ", " : tag + ", ");
+    const finalVal = joined ? joined + ", " : tag + ", ";
+    setTagsInput(finalVal);
+    setValue("tagsInput", finalVal);
     setShowTagsDropdown(false);
   };
 
@@ -184,16 +222,24 @@ export function QuickEntryForm({
     const rawVal = toEnglishDigits(e.target.value).replace(/[^0-9]/g, "");
     if (rawVal === "") {
       setAmount("");
+      setValue("amount", "");
       return;
     }
     const parsed = parseInt(rawVal, 10);
     if (isNaN(parsed)) return;
-    setAmount(parsed.toLocaleString("en-US"));
+    const formatted = parsed.toLocaleString("en-US");
+    setAmount(formatted);
+    setValue("amount", formatted);
   };
+
+  const validationError =
+    errors.amount?.message ||
+    errors.category?.message ||
+    errors.type?.message;
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onSubmit)}
       className="space-y-5 pt-4 border-t border-border"
     >
       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block font-vazir">
@@ -273,15 +319,21 @@ export function QuickEntryForm({
           <div className="grid grid-cols-2 gap-2 h-10">
             <button
               type="button"
-              onClick={() => setType("expense")}
-              className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${type === "expense" ? "border-red-500/30 bg-red-500/5 text-red-600 font-bold" : "border-border bg-background text-muted-foreground hover:bg-muted"}`}
+              onClick={() => {
+                setType("expense");
+                setValue("type", "expense");
+              }}
+              className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${formType === "expense" ? "border-red-500/30 bg-red-500/5 text-red-600 font-bold" : "border-border bg-background text-muted-foreground hover:bg-muted"}`}
             >
               هزینه
             </button>
             <button
               type="button"
-              onClick={() => setType("income")}
-              className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${type === "income" ? "border-green-500/30 bg-green-500/5 text-green-600 font-bold" : "border-border bg-background text-muted-foreground hover:bg-muted"}`}
+              onClick={() => {
+                setType("income");
+                setValue("type", "income");
+              }}
+              className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${formType === "income" ? "border-green-500/30 bg-green-500/5 text-green-600 font-bold" : "border-border bg-background text-muted-foreground hover:bg-muted"}`}
             >
               درآمد
             </button>
@@ -295,9 +347,11 @@ export function QuickEntryForm({
           </label>
           <input
             type="text"
-            required
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            value={formCategory}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              setValue("category", e.target.value);
+            }}
             placeholder="مثال: خرید شیر، تاکسی، حقوق"
             className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir min-w-0"
           />
@@ -308,8 +362,11 @@ export function QuickEntryForm({
           </label>
           <input
             type="text"
-            value={tagsInput}
-            onChange={(e) => setTagsInput(e.target.value)}
+            value={formTagsInput}
+            onChange={(e) => {
+              setTagsInput(e.target.value);
+              setValue("tagsInput", e.target.value);
+            }}
             onFocus={() => setShowTagsDropdown(true)}
             onBlur={() => setTimeout(() => setShowTagsDropdown(false), 220)}
             placeholder="مثال: خونه، غذا، رفت و آمد"
@@ -344,12 +401,14 @@ export function QuickEntryForm({
         </label>
         <input
           type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          value={formDescription}
+          onChange={(e) => {
+            setDescription(e.target.value);
+            setValue("description", e.target.value);
+          }}
           placeholder="جزئیات بیشتر..."
           className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir min-w-0"
-        />
-      </div>
+        />      </div>
       <Button type="submit" className="w-full font-vazir h-10 text-sm">
         ذخیره و ثبت در دفتر مالی
       </Button>

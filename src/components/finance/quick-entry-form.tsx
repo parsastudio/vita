@@ -1,18 +1,18 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { type FinanceTransaction } from "@/lib/db/client";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { motion, AnimatePresence } from "framer-motion";
+import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { type FinanceTransaction } from "@/lib/db/client";
 import { useFinanceActions } from "@/hooks/use-finance-actions";
 import { toEnglishDigits } from "@/lib/nlp";
-import { AlertTriangle } from "lucide-react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { motion, AnimatePresence } from "framer-motion";
 
 const formSchema = z.object({
-  amount: z.string().min(1, "وارد کردن مبلغ الزامی است").refine(
+  amount: z.string().refine(
     (val) => {
       const parsed = parseFloat(toEnglishDigits(val).replace(/,/g, ""));
       return !isNaN(parsed) && parsed > 0;
@@ -21,8 +21,8 @@ const formSchema = z.object({
   ),
   category: z.string().min(1, "عنوان تراکنش الزامی است"),
   type: z.enum(["income", "expense"]),
-  tagsInput: z.string().optional().default(""),
-  description: z.string().optional().default(""),
+  tagsInput: z.string(),
+  description: z.string(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -62,30 +62,23 @@ export function QuickEntryForm({
 }: QuickEntryFormProps) {
   const [budgetWarning, setBudgetWarning] = useState<string | null>(null);
   const [showTagsDropdown, setShowTagsDropdown] = useState(false);
-
   const { getBudgetWarning } = useFinanceActions(userId);
 
   const {
     handleSubmit,
     setValue,
-    watch,
-    formState: { errors },
+    control,
+    formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount,
-      category,
-      type,
-      tagsInput,
-      description,
+      amount: amount || "",
+      category: category || "",
+      type: type || "expense",
+      tagsInput: tagsInput || "",
+      description: description || "",
     },
   });
-
-  const formAmount = watch("amount");
-  const formCategory = watch("category");
-  const formType = watch("type");
-  const formTagsInput = watch("tagsInput");
-  const formDescription = watch("description");
 
   useEffect(() => {
     setValue("amount", amount);
@@ -107,8 +100,14 @@ export function QuickEntryForm({
     setValue("description", description);
   }, [description, setValue]);
 
+  const watched = useWatch({ control });
+  const formAmount = watched.amount ?? amount;
+  const formCategory = watched.category ?? category;
+  const formType = (watched.type as "income" | "expense") ?? type;
+  const formTagsInput = watched.tagsInput ?? tagsInput;
+
   const amountSuggestions = useMemo(() => {
-    let amtVal = parseFloat(toEnglishDigits(amount).replace(/,/g, ""));
+    let amtVal = parseFloat(toEnglishDigits(formAmount).replace(/,/g, ""));
     if (isNaN(amtVal) || amtVal <= 0 || !transactions.length) return [];
     if (amtVal < 1000) amtVal = amtVal * 1000;
     const similar = transactions.filter(
@@ -133,7 +132,7 @@ export function QuickEntryForm({
       if (suggestions.length >= 3) break;
     }
     return suggestions;
-  }, [amount, transactions]);
+  }, [formAmount, transactions]);
 
   const sortedFrequentTags = useMemo(() => {
     if (!transactions || transactions.length === 0) return [];
@@ -152,9 +151,9 @@ export function QuickEntryForm({
   }, [transactions]);
 
   const currentTagQuery = useMemo(() => {
-    const parts = tagsInput.split(",");
+    const parts = formTagsInput.split(",");
     return parts[parts.length - 1].trim();
-  }, [tagsInput]);
+  }, [formTagsInput]);
 
   const filteredTags = useMemo(() => {
     if (!currentTagQuery) return sortedFrequentTags;
@@ -178,13 +177,13 @@ export function QuickEntryForm({
     return () => clearTimeout(delayDebounce);
   }, [formAmount, formCategory, formTagsInput, formType, transactions, getBudgetWarning]);
 
-  const onSubmit = (data: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     const numAmt = parseFloat(toEnglishDigits(data.amount).replace(/,/g, ""));
-    const tags = (data.tagsInput || "")
+    const tags = data.tagsInput
       .split(",")
-      .map((t: string) => t.trim())
+      .map((t) => t.trim())
       .filter(Boolean);
-    onSave(numAmt, tags);
+    await onSave(numAmt, tags);
   };
 
   const applySuggestion = (sug: {
@@ -192,50 +191,47 @@ export function QuickEntryForm({
     tags: string[];
     description: string;
   }) => {
-    setCategory(sug.category);
     setValue("category", sug.category);
+    setCategory(sug.category);
     const tagsStr = (sug.tags || []).join(", ");
-    setTagsInput(tagsStr);
     setValue("tagsInput", tagsStr);
-    setDescription(sug.description);
+    setTagsInput(tagsStr);
     setValue("description", sug.description);
+    setDescription(sug.description);
     toast(
-      `عنوان و تگ بر اساس مبلغ به عنوان "${sug.category}" اعمال شد`,
+      `عنوان و برچسب بر اساس مبلغ به عنوان "${sug.category}" اعمال شد`,
       "info",
     );
   };
 
   const handleSelectTag = (tag: string) => {
-    const parts = (formTagsInput || "").split(",");
+    const parts = formTagsInput.split(",");
     parts[parts.length - 1] = tag;
     const joined = parts
-      .map((p: string) => p.trim())
+      .map((p) => p.trim())
       .filter(Boolean)
       .join(", ");
     const finalVal = joined ? joined + ", " : tag + ", ";
-    setTagsInput(finalVal);
     setValue("tagsInput", finalVal);
+    setTagsInput(finalVal);
     setShowTagsDropdown(false);
   };
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAmountInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawVal = toEnglishDigits(e.target.value).replace(/[^0-9]/g, "");
     if (rawVal === "") {
-      setAmount("");
       setValue("amount", "");
+      setAmount("");
       return;
     }
     const parsed = parseInt(rawVal, 10);
     if (isNaN(parsed)) return;
     const formatted = parsed.toLocaleString("en-US");
-    setAmount(formatted);
     setValue("amount", formatted);
+    setAmount(formatted);
   };
 
-  const validationError =
-    errors.amount?.message ||
-    errors.category?.message ||
-    errors.type?.message;
+  const validationError = errors.amount?.message || errors.category?.message;
 
   return (
     <form
@@ -279,8 +275,8 @@ export function QuickEntryForm({
           <input
             type="text"
             required
-            value={amount}
-            onChange={handleAmountChange}
+            value={formAmount}
+            onChange={handleAmountInputChange}
             placeholder="0"
             dir="ltr"
             className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir min-w-0"
@@ -320,8 +316,8 @@ export function QuickEntryForm({
             <button
               type="button"
               onClick={() => {
-                setType("expense");
                 setValue("type", "expense");
+                setType("expense");
               }}
               className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${formType === "expense" ? "border-red-500/30 bg-red-500/5 text-red-600 font-bold" : "border-border bg-background text-muted-foreground hover:bg-muted"}`}
             >
@@ -330,8 +326,8 @@ export function QuickEntryForm({
             <button
               type="button"
               onClick={() => {
-                setType("income");
                 setValue("type", "income");
+                setType("income");
               }}
               className={`rounded-lg border text-xs font-semibold transition-all cursor-pointer font-vazir ${formType === "income" ? "border-green-500/30 bg-green-500/5 text-green-600 font-bold" : "border-border bg-background text-muted-foreground hover:bg-muted"}`}
             >
@@ -347,10 +343,11 @@ export function QuickEntryForm({
           </label>
           <input
             type="text"
+            required
             value={formCategory}
             onChange={(e) => {
-              setCategory(e.target.value);
               setValue("category", e.target.value);
+              setCategory(e.target.value);
             }}
             placeholder="مثال: خرید شیر، تاکسی، حقوق"
             className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir min-w-0"
@@ -364,8 +361,8 @@ export function QuickEntryForm({
             type="text"
             value={formTagsInput}
             onChange={(e) => {
-              setTagsInput(e.target.value);
               setValue("tagsInput", e.target.value);
+              setTagsInput(e.target.value);
             }}
             onFocus={() => setShowTagsDropdown(true)}
             onBlur={() => setTimeout(() => setShowTagsDropdown(false), 220)}
@@ -401,16 +398,17 @@ export function QuickEntryForm({
         </label>
         <input
           type="text"
-          value={formDescription}
+          value={watched.description ?? description}
           onChange={(e) => {
-            setDescription(e.target.value);
             setValue("description", e.target.value);
+            setDescription(e.target.value);
           }}
           placeholder="جزئیات بیشتر..."
           className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir min-w-0"
-        />      </div>
-      <Button type="submit" className="w-full font-vazir h-10 text-sm">
-        ذخیره و ثبت در دفتر مالی
+        />
+      </div>
+      <Button type="submit" disabled={isSubmitting} className="w-full font-vazir h-10 text-sm">
+        {isSubmitting ? "در حال ثبت..." : "ذخیره و ثبت در دفتر مالی"}
       </Button>
     </form>
   );

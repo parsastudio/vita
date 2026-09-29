@@ -157,7 +157,6 @@ export function LanguageWidget() {
             }
           >
             <SrsReviewer
-              key={reviewCards.map((c) => c.id).join("-") || "empty-queue"}
               cards={reviewCards}
               nextReviewDate={nextReviewDate}
               onReviewComplete={() => setActiveTab("list")}
@@ -191,7 +190,6 @@ export function LanguageWidget() {
             }
           >
             <SrsSettings
-              key={dailyNewWordsLimit}
               dailyNewWordsLimit={dailyNewWordsLimit}
               todayNewWordsCount={todayNewWordsCount}
               onSaveLimit={handleSaveLimit}

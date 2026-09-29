@@ -21,28 +21,19 @@ export class ErrorBoundary extends Component<Props, State> {
     isStorageBlocked: false,
   };
 
-  public componentDidMount() {
-    if (typeof window !== "undefined") {
-      window.addEventListener("vita:storage_blocked", this.handleStorageBlocked);
-    }
-  }
-
-  public componentWillUnmount() {
-    if (typeof window !== "undefined") {
-      window.removeEventListener("vita:storage_blocked", this.handleStorageBlocked);
-    }
-  }
-
-  private handleStorageBlocked = () => {
-    this.setState({ hasError: true, isStorageBlocked: true });
-  };
-
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    const isStorageBlocked =
+      error?.name === "QuotaExceededError" ||
+      error?.name === "SecurityError" ||
+      Boolean(error?.message?.toLowerCase().includes("quota")) ||
+      Boolean(error?.message?.toLowerCase().includes("indexeddb")) ||
+      Boolean(error?.message?.toLowerCase().includes("storage"));
+
+    return { hasError: true, error, isStorageBlocked };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
+    console.error("Uncaught error in ErrorBoundary:", error, errorInfo);
   }
 
   public render() {
@@ -57,12 +48,12 @@ export class ErrorBoundary extends Component<Props, State> {
             <span className="text-5xl">⚠️</span>
             <h1 className="text-2xl font-bold font-vazir text-foreground">
               {this.state.isStorageBlocked
-                ? "دسترسی به حافظه محلی مرورگر مسدود است"
+                ? "محدودیت در دسترسی به حافظه محلی"
                 : "خطایی در اجرای برنامه رخ داده است"}
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed font-vazir">
               {this.state.isStorageBlocked
-                ? "مرورگر شما در حالت Private Browsing شدید قرار دارد یا دسترسی به پایگاه‌داده محلی (IndexedDB) را مسدود کرده است. برای استفاده از تمامی قابلیت‌های آفلاین ویتا، لطفاً حالت عادی مرورگر را فعال کنید."
+                ? "به نظر می‌رسد مرورگر شما در حالت ناشناس (Private Browsing) قرار دارد یا سهمیه ذخیره‌سازی محلی مسدود شده است. لطفاً حالت ناشناس را غیرفعال کرده و مجدداً تلاش کنید."
                 : "دسترسی به پایگاه داده محلی یا حافظه پنهان با اختلال مواجه شده است. لطفاً صفحه را بازنشانی کنید یا با بخش پشتیبانی در ارتباط باشید."}
             </p>
             <Button

@@ -139,7 +139,7 @@ export function useFinanceActions(userId: string) {
     type: "income" | "expense",
     transactions: FinanceTransaction[],
   ): Promise<string | null> => {
-    const amtVal = parseFloat(toEnglishDigits(amountStr).replace(/,/g, ""));
+    let amtVal = parseFloat(toEnglishDigits(amountStr).replace(/,/g, ""));
     if (
       isNaN(amtVal) ||
       amtVal <= 0 ||

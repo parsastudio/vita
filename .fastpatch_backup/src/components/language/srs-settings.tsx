@@ -22,6 +22,10 @@ export function SrsSettings({
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setInputValue(dailyNewWordsLimit.toString());
+  }, [dailyNewWordsLimit]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
