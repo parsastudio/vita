@@ -7,10 +7,8 @@ const pbkdf2Async = promisify(crypto.pbkdf2);
 export const SESSION_SECRET =
   process.env.SESSION_SECRET || "vita-space-default-secret-key-2026";
 
-const KDF_SALT = Buffer.from("vita_kdf_storage_salt_buffer_2026", "utf-8");
-export const ENCRYPTION_KEY = crypto.scryptSync(SESSION_SECRET, KDF_SALT, 32);
+export const ENCRYPTION_KEY = crypto.scryptSync(SESSION_SECRET, "salt", 32);
 export const IV_LENGTH = 12;
-export const AUTH_TAG_LENGTH = 16;
 
 export async function hashPassword(
   password: string,
@@ -47,11 +45,6 @@ export function decryptSession(sessionText: string): string | null {
     const iv = Buffer.from(parts[0], "hex");
     const authTag = Buffer.from(parts[1], "hex");
     const encryptedText = Buffer.from(parts[2], "hex");
-
-    if (iv.length !== IV_LENGTH || authTag.length !== AUTH_TAG_LENGTH) {
-      return null;
-    }
-
     const decipher = crypto.createDecipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
     decipher.setAuthTag(authTag);
     let decrypted = decipher.update(encryptedText).toString("utf8");

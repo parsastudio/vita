@@ -11,6 +11,7 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, gt, inArray, sql } from "drizzle-orm";
 import { getCurrentUserAction } from "@/app/actions/auth";
+import { parseDate } from "@/lib/utils";
 import { z } from "zod";
 
 const syncLanguageCardSchema = z.object({
@@ -26,10 +27,10 @@ const syncLanguageCardSchema = z.object({
   reps: z.number().optional().nullable().default(0),
   lapses: z.number().optional().nullable().default(0),
   state: z.number().optional().nullable().default(0),
-  due: z.coerce.date(),
-  lastReview: z.coerce.date().nullable().optional(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
+  due: z.unknown(),
+  lastReview: z.unknown().optional().nullable(),
+  createdAt: z.unknown(),
+  updatedAt: z.unknown(),
   learningSteps: z.number().optional().nullable().default(0),
 });
 
@@ -40,8 +41,8 @@ const syncFinanceTransactionSchema = z.object({
   category: z.string(),
   tags: z.array(z.string()).optional().nullable().default([]),
   description: z.string().optional().nullable().default(""),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
+  createdAt: z.unknown(),
+  updatedAt: z.unknown(),
 });
 
 const syncFinanceBudgetSchema = z.object({
@@ -49,8 +50,8 @@ const syncFinanceBudgetSchema = z.object({
   categoryOrTag: z.string(),
   limitAmount: z.number().or(z.string()),
   period: z.string(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
+  createdAt: z.unknown(),
+  updatedAt: z.unknown(),
 });
 
 const syncUserSettingsSchema = z.object({
@@ -59,13 +60,13 @@ const syncUserSettingsSchema = z.object({
   dailyNewWordsLimit: z.number().int().optional().default(10),
   lastNewWordsDate: z.string().nullable().optional().default(null),
   todayNewWordsCount: z.number().int().optional().default(0),
-  updatedAt: z.coerce.date(),
+  updatedAt: z.unknown(),
 });
 
 const syncDeletedRecordSchema = z.object({
   id: z.string().uuid(),
   tableName: z.string(),
-  deletedAt: z.coerce.date(),
+  deletedAt: z.unknown(),
 });
 
 const syncPayloadSchema = z.object({
@@ -143,7 +144,7 @@ export async function syncData(rawPayload: unknown) {
         id: r.id,
         userId,
         tableName: r.tableName,
-        deletedAt: r.deletedAt,
+        deletedAt: parseDate(r.deletedAt),
       }));
 
       await tx.insert(deletedRecords).values(tbs).onConflictDoNothing();
@@ -163,10 +164,10 @@ export async function syncData(rawPayload: unknown) {
       reps: card.reps ?? 0,
       lapses: card.lapses ?? 0,
       state: card.state ?? 0,
-      due: card.due,
-      lastReview: card.lastReview || null,
-      createdAt: card.createdAt,
-      updatedAt: card.updatedAt,
+      due: parseDate(card.due),
+      lastReview: card.lastReview ? parseDate(card.lastReview) : null,
+      createdAt: parseDate(card.createdAt),
+      updatedAt: parseDate(card.updatedAt),
       learningSteps: card.learningSteps ?? 0,
     }));
 
@@ -205,8 +206,8 @@ export async function syncData(rawPayload: unknown) {
       category: t.category,
       tags: t.tags || [],
       description: t.description || "",
-      createdAt: t.createdAt,
-      updatedAt: t.updatedAt,
+      createdAt: parseDate(t.createdAt),
+      updatedAt: parseDate(t.updatedAt),
     }));
 
     if (txsToUpsert.length > 0) {
@@ -233,8 +234,8 @@ export async function syncData(rawPayload: unknown) {
       categoryOrTag: b.categoryOrTag,
       limitAmount: String(b.limitAmount),
       period: b.period,
-      createdAt: b.createdAt,
-      updatedAt: b.updatedAt,
+      createdAt: parseDate(b.createdAt),
+      updatedAt: parseDate(b.updatedAt),
     }));
 
     if (budgetsToUpsert.length > 0) {
@@ -260,7 +261,7 @@ export async function syncData(rawPayload: unknown) {
       dailyNewWordsLimit: s.dailyNewWordsLimit ?? 10,
       lastNewWordsDate: s.lastNewWordsDate ?? null,
       todayNewWordsCount: s.todayNewWordsCount ?? 0,
-      updatedAt: s.updatedAt,
+      updatedAt: parseDate(s.updatedAt),
     }));
 
     if (settingsToUpsert.length > 0) {

@@ -1,7 +1,6 @@
 "use server";
 
 import "server-only";
-import crypto from "crypto";
 import { db } from "@/lib/db/server";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -12,21 +11,11 @@ import {
   checkRuntimeSecret,
 } from "@/lib/auth/crypto";
 import { authSchema } from "@/lib/auth/schemas";
-import { checkRateLimit } from "@/lib/auth/rate-limiter";
 
 export async function requestPasswordResetAction(email: string) {
   try {
     checkRuntimeSecret();
     const lowerEmail = email.toLowerCase();
-
-    const rateLimit = checkRateLimit(`reset_req:${lowerEmail}`, 3, 15 * 60 * 1000);
-    if (!rateLimit.allowed) {
-      return {
-        success: false,
-        error: `تعداد درخواست‌های بازیابی بیش از حد مجاز است. لطفاً ${Math.ceil(rateLimit.retryAfterSec / 60)} دقیقه دیگر دوباره تلاش کنید`,
-      };
-    }
-
     const userRecord = await db.query.users.findFirst({
       where: eq(users.email, lowerEmail),
     });
@@ -35,7 +24,7 @@ export async function requestPasswordResetAction(email: string) {
       return { success: true };
     }
 
-    const code = crypto.randomInt(100000, 1000000).toString();
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     await db
@@ -48,7 +37,7 @@ export async function requestPasswordResetAction(email: string) {
       .where(eq(users.id, userRecord.id));
 
     if (!process.env.RESEND_API_KEY) {
-      console.warn("RESEND_API_KEY is not configured in local environment.");
+      console.warn("RESEND_API_KEY limits. Active recovery code:", code);
       return {
         success: false,
         error: "سرویس ارسال ایمیل در محیط محلی پیکربندی نشده است",
@@ -102,15 +91,6 @@ export async function resetPasswordWithCodeAction(
   try {
     checkRuntimeSecret();
     const lowerEmail = email.toLowerCase();
-
-    const rateLimit = checkRateLimit(`reset_verify:${lowerEmail}`, 5, 15 * 60 * 1000);
-    if (!rateLimit.allowed) {
-      return {
-        success: false,
-        error: `تعداد تلاش‌های نامعتبر بیش از حد مجاز است. لطفاً ${Math.ceil(rateLimit.retryAfterSec / 60)} دقیقه دیگر دوباره تلاش کنید`,
-      };
-    }
-
     const validation = authSchema.safeParse({
       email: lowerEmail,
       password: newPassword,
@@ -132,14 +112,8 @@ export async function resetPasswordWithCodeAction(
     }
 
     const now = new Date();
-    const tokenBuffer = Buffer.from(userRecord.resetToken);
-    const codeBuffer = Buffer.from(code);
-    const isCodeValid =
-      tokenBuffer.length === codeBuffer.length &&
-      crypto.timingSafeEqual(tokenBuffer, codeBuffer);
-
     if (
-      !isCodeValid ||
+      userRecord.resetToken !== code ||
       userRecord.resetTokenExpiresAt < now
     ) {
       return { success: false, error: "کد بازیابی نامعتبر یا منقضی شده است" };

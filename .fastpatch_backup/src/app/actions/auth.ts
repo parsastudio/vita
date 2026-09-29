@@ -15,21 +15,11 @@ import {
   checkRuntimeSecret,
 } from "@/lib/auth/crypto";
 import { authSchema } from "@/lib/auth/schemas";
-import { checkRateLimit } from "@/lib/auth/rate-limiter";
 
 export async function signUpAction(email: string, password: string) {
   try {
     checkRuntimeSecret();
     const lowerEmail = email.toLowerCase();
-
-    const rateLimit = checkRateLimit(`signup:${lowerEmail}`, 5, 60 * 1000);
-    if (!rateLimit.allowed) {
-      return {
-        success: false,
-        error: `تعداد تلاش‌های ثبت‌نام بیش از حد مجاز است. لطفاً ${rateLimit.retryAfterSec} ثانیه دیگر دوباره تلاش کنید`,
-      };
-    }
-
     const validation = authSchema.safeParse({ email: lowerEmail, password });
     if (!validation.success) {
       return { success: false, error: validation.error.issues[0].message };
@@ -82,15 +72,6 @@ export async function signInAction(email: string, password: string) {
   try {
     checkRuntimeSecret();
     const lowerEmail = email.toLowerCase();
-
-    const rateLimit = checkRateLimit(`signin:${lowerEmail}`, 5, 60 * 1000);
-    if (!rateLimit.allowed) {
-      return {
-        success: false,
-        error: `تعداد تلاش‌های ناموفق بیش از حد مجاز است. لطفاً ${rateLimit.retryAfterSec} ثانیه دیگر دوباره تلاش کنید`,
-      };
-    }
-
     const validation = authSchema.safeParse({ email: lowerEmail, password });
     if (!validation.success) {
       return { success: false, error: validation.error.issues[0].message };
