@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { SentenceParser } from "@/components/language/sentence-parser";
 import { SrsReviewer } from "@/components/language/srs-reviewer";
 import { WordList } from "@/components/language/word-list";
@@ -9,52 +9,71 @@ import { Button } from "@/components/ui/button";
 import { formatPersianNumber } from "@/lib/utils";
 import { useLanguageData } from "@/hooks/use-language-data";
 import { useLanguageActions } from "@/hooks/use-language-actions";
+import { useSrsSettings } from "@/hooks/use-srs-settings";
+import { useSpeech } from "@/hooks/use-speech";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth/auth-context";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { useQueryTab } from "@/hooks/use-query-state";
+import { type LanguageCard } from "@/lib/db/client";
+
+const ALLOWED_TABS = ["add", "review", "list", "settings"] as const;
 
 export function LanguageWidget() {
-  const [activeTab, setActiveTabState] = useState<
-    "add" | "review" | "list" | "settings"
-  >(() => {
-    if (typeof window === "undefined") return "add";
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get("tab");
-    if (
-      tabParam === "add" ||
-      tabParam === "review" ||
-      tabParam === "list" ||
-      tabParam === "settings"
-    ) {
-      return tabParam;
-    }
-    return "add";
-  });
-
-  const setActiveTab = (tab: "add" | "review" | "list" | "settings") => {
-    setActiveTabState(tab);
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      params.set("tab", tab);
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      window.history.replaceState(
-        { ...window.history.state, as: newUrl, url: newUrl },
-        "",
-        newUrl,
-      );
-    }
-  };
+  const [activeTab, setActiveTab] = useQueryTab<"add" | "review" | "list" | "settings">(
+    "tab",
+    "add",
+    ALLOWED_TABS,
+  );
 
   const { cards, reviewCards, nextReviewDate, cardCount, reviewCount } =
     useLanguageData();
-  const { reconcileLanguageQueue } = useLanguageActions();
+  const { addCard, toggleArchiveCard, deleteCard, reconcileLanguageQueue } =
+    useLanguageActions();
+  const { dailyNewWordsLimit, todayNewWordsCount, updateDailyLimit } =
+    useSrsSettings();
+  const { speak } = useSpeech();
+  const { toast } = useToast();
   const { user } = useAuth();
   const userId = user?.id || "guest";
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (userId !== "guest") {
       void reconcileLanguageQueue(userId);
     }
   }, [userId, reconcileLanguageQueue]);
+
+  const handleAddCard = async (text: string, translation: string, selectedWord: string) => {
+    await addCard(text, translation, selectedWord);
+    toast("کارت جدید لایتنر با موفقیت اضافه شد", "success");
+    setActiveTab("list");
+  };
+
+  const handleToggleArchive = async (card: LanguageCard) => {
+    const isArchiving = await toggleArchiveCard(card);
+    toast(
+      isArchiving
+        ? "کارت با موفقیت آرشیو شد"
+        : "کارت مجدداً به چرخه یادگیری فعال بازگشت",
+      "success",
+    );
+  };
+
+  const handleDeleteCard = async (id: string) => {
+    await deleteCard(id);
+    toast("کارت لایتنر با موفقیت حذف شد", "info");
+  };
+
+  const handleSaveLimit = async (limit: number) => {
+    await updateDailyLimit(limit);
+    await reconcileLanguageQueue(userId);
+    toast("تنظیمات یادگیری روزانه شما با موفقیت به‌روزرسانی شد", "success");
+  };
+
+  const handleSyncQueue = async () => {
+    await reconcileLanguageQueue(userId);
+    toast("صف انتظار لایتنر با موفقیت تحلیل و همگام شد", "success");
+  };
 
   return (
     <div className="w-full bg-transparent sm:bg-card border-y sm:border border-border/40 sm:border-border sm:rounded-2xl shadow-none sm:shadow-sm px-4 py-6 sm:p-8 flex flex-col gap-6 min-h-[480px]">
@@ -125,7 +144,7 @@ export function LanguageWidget() {
               </div>
             }
           >
-            <SentenceParser />
+            <SentenceParser onAddCard={handleAddCard} />
           </ErrorBoundary>
         )}
 
@@ -153,7 +172,12 @@ export function LanguageWidget() {
               </div>
             }
           >
-            <WordList cards={cards} />
+            <WordList
+              cards={cards}
+              onSpeak={speak}
+              onToggleArchive={handleToggleArchive}
+              onDeleteCard={handleDeleteCard}
+            />
           </ErrorBoundary>
         )}
 
@@ -165,7 +189,12 @@ export function LanguageWidget() {
               </div>
             }
           >
-            <SrsSettings />
+            <SrsSettings
+              dailyNewWordsLimit={dailyNewWordsLimit}
+              todayNewWordsCount={todayNewWordsCount}
+              onSaveLimit={handleSaveLimit}
+              onSyncQueue={handleSyncQueue}
+            />
           </ErrorBoundary>
         )}
       </div>

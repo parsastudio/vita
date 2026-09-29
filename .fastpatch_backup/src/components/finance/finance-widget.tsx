@@ -1,14 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { QuickEntry } from "@/components/finance/quick-entry";
 import { TransactionList } from "@/components/finance/transaction-list";
 import { Button } from "@/components/ui/button";
 import { formatPersianNumber } from "@/lib/utils";
 import { useFinanceData } from "@/hooks/use-finance-data";
-import { useFinanceActions } from "@/hooks/use-finance-actions";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { useQueryTab } from "@/hooks/use-query-state";
 import dynamic from "next/dynamic";
 
 const FinanceDashboard = dynamic(
@@ -26,17 +24,34 @@ const FinanceDashboard = dynamic(
   },
 );
 
-const ALLOWED_TABS = ["add", "stats", "list"] as const;
-
 export function FinanceWidget() {
-  const [activeTab, setActiveTab] = useQueryTab<"add" | "stats" | "list">(
-    "tab",
-    "add",
-    ALLOWED_TABS,
+  const [activeTab, setActiveTabState] = useState<"add" | "stats" | "list">(
+    () => {
+      if (typeof window === "undefined") return "add";
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam === "add" || tabParam === "stats" || tabParam === "list") {
+        return tabParam;
+      }
+      return "add";
+    },
   );
 
+  const setActiveTab = (tab: "add" | "stats" | "list") => {
+    setActiveTabState(tab);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("tab", tab);
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(
+        { ...window.history.state, as: newUrl, url: newUrl },
+        "",
+        newUrl,
+      );
+    }
+  };
+
   const { transactions, budgets, txCount, userId } = useFinanceData();
-  const { deleteTransaction } = useFinanceActions(userId);
 
   return (
     <div className="w-full bg-transparent sm:bg-card border-y sm:border border-border/40 sm:border-border sm:rounded-2xl shadow-none sm:shadow-sm px-4 py-6 sm:p-8 flex flex-col gap-6">
@@ -123,10 +138,7 @@ export function FinanceWidget() {
               </div>
             }
           >
-            <TransactionList
-              transactions={transactions}
-              onDeleteTransaction={deleteTransaction}
-            />
+            <TransactionList transactions={transactions} />
           </ErrorBoundary>
         )}
       </div>

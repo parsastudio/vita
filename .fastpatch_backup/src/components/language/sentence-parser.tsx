@@ -2,8 +2,10 @@
 
 import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { AlertTriangle } from "lucide-react";
+import { useLanguageActions } from "@/hooks/use-language-actions";
 
 const cardFormSchema = z.object({
   text: z.string().min(1, "متن انگلیسی وارد شده خالی است"),
@@ -14,16 +16,17 @@ const cardFormSchema = z.object({
 });
 
 interface SentenceParserProps {
-  onAddCard: (text: string, translation: string, selectedWord: string) => Promise<void>;
   onSaveSuccess?: () => void;
 }
 
-export function SentenceParser({ onAddCard, onSaveSuccess }: SentenceParserProps) {
+export function SentenceParser({ onSaveSuccess }: SentenceParserProps) {
+  const { toast } = useToast();
   const [text, setText] = useState("");
   const [translation, setTranslation] = useState("");
   const [userSelectedWord, setUserSelectedWord] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { addCard } = useLanguageActions();
 
   const words = useMemo(() => {
     if (!text.trim()) return [];
@@ -54,16 +57,13 @@ export function SentenceParser({ onAddCard, onSaveSuccess }: SentenceParserProps
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      await onAddCard(text, translation, selectedWord);
-      setText("");
-      setTranslation("");
-      setUserSelectedWord(null);
-      onSaveSuccess?.();
-    } finally {
-      setIsSubmitting(false);
-    }
+    await addCard(text, translation, selectedWord);
+
+    setText("");
+    setTranslation("");
+    setUserSelectedWord(null);
+    toast("کارت جدید لایتنر با موفقیت اضافه شد", "success");
+    onSaveSuccess?.();
   };
 
   return (
@@ -135,8 +135,8 @@ export function SentenceParser({ onAddCard, onSaveSuccess }: SentenceParserProps
         />
       </div>
 
-      <Button type="submit" disabled={isSubmitting} className="w-full font-vazir">
-        {isSubmitting ? "در حال ایجاد کارت..." : "ذخیره و ایجاد کارت"}
+      <Button type="submit" className="w-full font-vazir">
+        ذخیره و ایجاد کارت
       </Button>
     </form>
   );

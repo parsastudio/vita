@@ -37,14 +37,16 @@ export function SrsReviewer({
   nextReviewDate?: Date | null;
   onReviewComplete: () => void;
 }) {
-  const [queue, setQueue] = useState<LanguageCard[]>(() => cards);
+  const [queue, setQueue] = useState<LanguageCard[]>(cards);
+  const [prevCards, setPrevCards] = useState<LanguageCard[]>(cards);
   const [showAnswer, setShowAnswer] = useState(false);
   const { toast } = useToast();
   const mounted = useIsMounted();
 
-  React.useEffect(() => {
-    setQueue(cards);
-  }, [cards]);
+  if (cards !== prevCards) {
+    setPrevCards(cards);
+    setQueue([...cards]);
+  }
 
   const { speak } = useSpeech();
   const { handleSrsAction } = useLanguageActions();

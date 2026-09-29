@@ -6,23 +6,25 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { formatPersianNumber, formatPersianDate } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
+import { useAuth } from "@/lib/auth/auth-context";
+import { useFinanceActions } from "@/hooks/use-finance-actions";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface TransactionListProps {
-  transactions: FinanceTransaction[];
-  onDeleteTransaction: (id: string) => Promise<void>;
-}
-
 export function TransactionList({
   transactions,
-  onDeleteTransaction,
-}: TransactionListProps) {
+}: {
+  transactions: FinanceTransaction[];
+}) {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const { toast } = useToast();
   const mounted = useIsMounted();
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const { user } = useAuth();
+  const userId = user?.id || "guest";
+  const { deleteTransaction } = useFinanceActions(userId);
 
   const sortedTransactions = [...transactions].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -41,7 +43,7 @@ export function TransactionList({
   });
 
   const handleDelete = async (id: string) => {
-    await onDeleteTransaction(id);
+    await deleteTransaction(id);
     toast("تراکنش با موفقیت حذف شد", "info");
   };
 

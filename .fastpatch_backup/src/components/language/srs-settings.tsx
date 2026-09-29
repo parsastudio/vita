@@ -1,58 +1,52 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useSrsSettings } from "@/hooks/use-srs-settings";
+import { useLanguageActions } from "@/hooks/use-language-actions";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { Brain, Sparkles, AlertTriangle, RefreshCw } from "lucide-react";
 import { formatPersianNumber } from "@/lib/utils";
 
-interface SrsSettingsProps {
-  dailyNewWordsLimit: number;
-  todayNewWordsCount: number;
-  onSaveLimit: (limit: number) => Promise<void>;
-  onSyncQueue: () => Promise<void>;
-}
-
-export function SrsSettings({
-  dailyNewWordsLimit,
-  todayNewWordsCount,
-  onSaveLimit,
-  onSyncQueue,
-}: SrsSettingsProps) {
-  const [inputValue, setInputValue] = useState<string>(() => dailyNewWordsLimit.toString());
+export function SrsSettings() {
+  const { dailyNewWordsLimit, todayNewWordsCount, updateDailyLimit, userId } =
+    useSrsSettings();
+  const { reconcileLanguageQueue } = useLanguageActions();
+  const { toast } = useToast();
+  const [inputValue, setInputValue] = useState<string | null>(null);
+  const [prevLimit, setPrevLimit] = useState<number>(dailyNewWordsLimit);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  if (dailyNewWordsLimit !== prevLimit) {
+    setPrevLimit(dailyNewWordsLimit);
     setInputValue(dailyNewWordsLimit.toString());
-  }, [dailyNewWordsLimit]);
+  }
+
+  const currentValue = inputValue ?? dailyNewWordsLimit.toString();
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    const limit = parseInt(inputValue, 10);
+    const limit = parseInt(currentValue, 10);
     if (isNaN(limit) || limit < 1 || limit > 50) {
-      setError("لطفاً عددی معتبر بین ۱ تا ۵۰ وارد کنید");
+      toast("لطفاً عددی معتبر بین ۱ تا ۵۰ وارد کنید", "error");
       return;
     }
 
     setIsUpdating(true);
-    try {
-      await onSaveLimit(limit);
-    } finally {
-      setIsUpdating(false);
-    }
+    await updateDailyLimit(limit);
+    await reconcileLanguageQueue(userId);
+    setIsUpdating(false);
+    toast("تنظیمات یادگیری روزانه شما با موفقیت به‌روزرسانی شد", "success");
   };
 
   const handleSyncQueue = async () => {
     setIsUpdating(true);
-    try {
-      await onSyncQueue();
-    } finally {
-      setIsUpdating(false);
-    }
+    await reconcileLanguageQueue(userId);
+    setIsUpdating(false);
+    toast("صف انتظار لایتنر با موفقیت تحلیل و همگام شد", "success");
   };
 
-  const limitNum = parseInt(inputValue, 10) || dailyNewWordsLimit;
+  const limitNum = parseInt(currentValue, 10) || dailyNewWordsLimit;
 
   return (
     <div className="space-y-6">
@@ -77,11 +71,8 @@ export function SrsSettings({
               type="number"
               min={1}
               max={50}
-              value={inputValue}
-              onChange={(e) => {
-                setError(null);
-                setInputValue(e.target.value);
-              }}
+              value={currentValue}
+              onChange={(e) => setInputValue(e.target.value)}
               className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none transition-all font-vazir"
             />
           </div>
@@ -97,12 +88,6 @@ export function SrsSettings({
             </p>
           </div>
         </div>
-
-        {error && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-xl font-vazir">
-            {error}
-          </div>
-        )}
 
         {limitNum > 10 && (
           <div className="p-4 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 rounded-xl text-xs leading-relaxed font-vazir flex items-start gap-2 animate-in fade-in duration-300">

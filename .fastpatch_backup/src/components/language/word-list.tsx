@@ -3,31 +3,26 @@
 import React, { useState, useMemo } from "react";
 import { type LanguageCard } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useSpeech } from "@/hooks/use-speech";
+import { useLanguageActions } from "@/hooks/use-language-actions";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { Volume2, Trash2, Archive, ArchiveRestore } from "lucide-react";
 import { formatPersianNumber } from "@/lib/utils";
 import { WordImportExport } from "@/components/language/word-import-export";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface WordListProps {
-  cards: LanguageCard[];
-  onSpeak: (text: string) => void;
-  onToggleArchive: (card: LanguageCard) => Promise<void>;
-  onDeleteCard: (id: string) => Promise<void>;
-}
-
-export function WordList({
-  cards,
-  onSpeak,
-  onToggleArchive,
-  onDeleteCard,
-}: WordListProps) {
+export function WordList({ cards }: { cards: LanguageCard[] }) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"newest" | "hardest" | "easiest">(
     "newest",
   );
+  const { toast } = useToast();
   const mounted = useIsMounted();
+
+  const { speak } = useSpeech();
+  const { toggleArchiveCard, deleteCard } = useLanguageActions();
 
   const sortedAndFiltered = useMemo(() => {
     const matched = cards.filter((card) => {
@@ -62,6 +57,25 @@ export function WordList({
 
     return [...sortedActive, ...sortedQueued, ...sortedArchived];
   }, [cards, search, filterStatus, sortBy]);
+
+  const handleSpeak = (text: string) => {
+    speak(text);
+  };
+
+  const handleToggleArchive = async (card: LanguageCard) => {
+    const isArchiving = await toggleArchiveCard(card);
+    toast(
+      isArchiving
+        ? "کارت با موفقیت آرشیو شد"
+        : "کارت مجدداً به چرخه یادگیری فعال بازگشت",
+      "success",
+    );
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteCard(id);
+    toast("کارت لایتنر با موفقیت حذف شد", "info");
+  };
 
   return (
     <div className="space-y-6">
@@ -182,7 +196,7 @@ export function WordList({
                 <Button
                   variant="ghost"
                   size="icon-xs"
-                  onClick={() => onSpeak(card.focusWord)}
+                  onClick={() => handleSpeak(card.focusWord)}
                   aria-label="تلفظ انگلیسی"
                   className="rounded-full hover:scale-105 active:scale-95 transition-transform"
                 >
@@ -192,7 +206,7 @@ export function WordList({
                 <Button
                   variant="ghost"
                   size="icon-xs"
-                  onClick={() => onToggleArchive(card)}
+                  onClick={() => handleToggleArchive(card)}
                   aria-label={
                     card.srsStatus === "active"
                       ? "بایگانی کلمه"
@@ -210,7 +224,7 @@ export function WordList({
                 <Button
                   variant="destructive"
                   size="icon-xs"
-                  onClick={() => onDeleteCard(card.id)}
+                  onClick={() => handleDelete(card.id)}
                   aria-label="حذف کارت"
                   className="rounded-full hover:scale-105 active:scale-95 transition-transform"
                 >

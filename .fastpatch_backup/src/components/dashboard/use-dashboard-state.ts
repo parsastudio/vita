@@ -6,9 +6,6 @@ import { useSync } from "@/hooks/use-sync";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useTheme } from "next-themes";
-import { useQueryTab } from "@/hooks/use-query-state";
-
-const ALLOWED_SPACES = ["language", "finance"] as const;
 
 export function useDashboardState() {
   const { user, isGuest, logout, disableGuestMode, isLoading } = useAuth();
@@ -22,10 +19,16 @@ export function useDashboardState() {
     return navigator.onLine;
   });
 
-  const [activeWidget, setActiveWidget] = useQueryTab<"language" | "finance">(
-    "space",
-    "language",
-    ALLOWED_SPACES,
+  const [activeWidget, setActiveWidgetState] = useState<"language" | "finance">(
+    () => {
+      if (typeof window === "undefined") return "language";
+      const params = new URLSearchParams(window.location.search);
+      const spaceParam = params.get("space");
+      if (spaceParam === "language" || spaceParam === "finance") {
+        return spaceParam;
+      }
+      return "language";
+    },
   );
 
   useEffect(() => {
@@ -42,6 +45,21 @@ export function useDashboardState() {
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
+
+  const changeActiveWidget = (widget: "language" | "finance") => {
+    setActiveWidgetState(widget);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("space", widget);
+      params.delete("tab");
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(
+        { ...window.history.state, as: newUrl, url: newUrl },
+        "",
+        newUrl,
+      );
+    }
+  };
 
   const handleToggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -62,7 +80,7 @@ export function useDashboardState() {
     isOnline,
     mounted,
     activeWidget,
-    setActiveWidget,
+    setActiveWidget: changeActiveWidget,
     theme: mounted ? resolvedTheme || "light" : "",
     handleToggleTheme,
   };

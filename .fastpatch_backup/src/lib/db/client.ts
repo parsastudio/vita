@@ -57,14 +57,10 @@ export const localDb = new VitaLocalDatabase();
 
 export const dbChangeListeners = new Set<() => void>();
 
-let databaseSyncingActive = false;
-
-export function isDbSyncing(): boolean {
-  return databaseSyncingActive;
-}
+export let isDatabaseSyncingActive = false;
 
 export function setDatabaseSyncingActive(active: boolean) {
-  databaseSyncingActive = active;
+  isDatabaseSyncingActive = active;
 }
 
 export function subscribeToDbChanges(listener: () => void) {
@@ -86,26 +82,20 @@ const tables = [
   "deletedRecords",
 ] as const;
 
-const GLOBAL_HOOKS_KEY = Symbol.for("vita.db.hooks.registered");
-const globalScope = globalThis as unknown as Record<symbol, boolean | undefined>;
-
-if (!globalScope[GLOBAL_HOOKS_KEY]) {
-  tables.forEach((tableName) => {
-    localDb[tableName].hook("creating", function () {
-      if (databaseSyncingActive) return;
-      setTimeout(() => notifyDbChange(), 0);
-    });
-    localDb[tableName].hook("updating", function () {
-      if (databaseSyncingActive) return;
-      setTimeout(() => notifyDbChange(), 0);
-    });
-    localDb[tableName].hook("deleting", function () {
-      if (databaseSyncingActive) return;
-      setTimeout(() => notifyDbChange(), 0);
-    });
+tables.forEach((tableName) => {
+  localDb[tableName].hook("creating", function () {
+    if (isDatabaseSyncingActive) return;
+    setTimeout(() => notifyDbChange(), 0);
   });
-  globalScope[GLOBAL_HOOKS_KEY] = true;
-}
+  localDb[tableName].hook("updating", function () {
+    if (isDatabaseSyncingActive) return;
+    setTimeout(() => notifyDbChange(), 0);
+  });
+  localDb[tableName].hook("deleting", function () {
+    if (isDatabaseSyncingActive) return;
+    setTimeout(() => notifyDbChange(), 0);
+  });
+});
 
 if (typeof window !== "undefined") {
   localDb.open().catch((err) => {
