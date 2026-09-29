@@ -107,8 +107,12 @@ if (!globalScope[GLOBAL_HOOKS_KEY]) {
   globalScope[GLOBAL_HOOKS_KEY] = true;
 }
 
+export let isStorageBlocked = false;
+
 if (typeof window !== "undefined") {
-  localDb.open().catch((err) => {
-    console.error(err);
+  localDb.open().catch((err: unknown) => {
+    console.error("Dexie database initialization failed:", err);
+    isStorageBlocked = true;
+    window.dispatchEvent(new CustomEvent("vita:storage_blocked", { detail: err }));
   });
 }

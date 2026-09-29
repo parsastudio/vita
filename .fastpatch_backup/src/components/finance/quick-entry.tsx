@@ -66,20 +66,17 @@ export function QuickEntry({
       }));
     }
     const recentTxs = transactions.slice(-100);
-    const freqMap = new Map<string, { count: number; tx: FinanceTransaction }>();
-
-    for (let i = 0; i < recentTxs.length; i++) {
-      const tx = recentTxs[i];
+    const freqMap: Record<string, { count: number; tx: FinanceTransaction }> =
+      {};
+    recentTxs.forEach((tx) => {
       const key = `${tx.category}-${tx.amount}-${tx.type}`;
-      const entry = freqMap.get(key);
-      if (entry) {
-        entry.count += 1;
-      } else {
-        freqMap.set(key, { count: 1, tx });
+      if (!freqMap[key]) {
+        freqMap[key] = { count: 0, tx };
       }
-    }
+      freqMap[key].count += 1;
+    });
 
-    const sorted = Array.from(freqMap.values()).sort((a, b) => b.count - a.count);
+    const sorted = Object.values(freqMap).sort((a, b) => b.count - a.count);
     const result = sorted.slice(0, 4).map((item) => {
       const displayLabel = item.tx.description || item.tx.category;
       return {

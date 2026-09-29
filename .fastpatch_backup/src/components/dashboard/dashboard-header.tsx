@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun, Monitor } from "lucide-react";
-import { useClickOutside } from "@/hooks/use-click-outside";
 
 interface DashboardHeaderProps {
   isOnline: boolean;
@@ -35,9 +34,6 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-
-  const userMenuRef = useClickOutside<HTMLDivElement>(() => setShowUserMenu(false), showUserMenu);
-  const settingsRef = useClickOutside<HTMLDivElement>(() => setShowSettings(false), showSettings);
 
   return (
     <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-border pb-6 gap-4 px-4 sm:px-0">
@@ -96,25 +92,28 @@ export function DashboardHeader({
         </Button>
 
         {!isGuest && (
-          <div ref={userMenuRef} className="relative">
+          <div className="relative">
             <Button
               variant="outline"
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="rounded-full size-8 p-0 flex items-center justify-center font-bold text-sm bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 transition-all"
-              aria-expanded={showUserMenu}
-              aria-label="منوی کاربر"
             >
               {user?.email?.[0]?.toUpperCase() || "U"}
             </Button>
 
             <AnimatePresence>
               {showUserMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute start-0 mt-2 w-56 bg-card border border-border rounded-xl p-4 shadow-xl z-20 space-y-3"
-                >
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowUserMenu(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute start-0 mt-2 w-56 bg-card border border-border rounded-xl p-4 shadow-xl z-20 space-y-3"
+                  >
                     <div className="border-b border-border pb-2">
                       <span className="text-[10px] uppercase font-bold text-muted-foreground block font-vazir">
                         وارد شده با ایمیل
@@ -153,24 +152,28 @@ export function DashboardHeader({
                     >
                       خروج از حساب
                     </button>
-                </motion.div>
+                  </motion.div>
+                </>
               )}
             </AnimatePresence>
           </div>
         )}
 
-        <div ref={settingsRef} className="relative">
-          <Button
-            variant="outline"
-            onClick={() => setShowSettings(!showSettings)}
-            className="rounded-full gap-2 text-sm font-vazir shrink-0"
-            aria-expanded={showSettings}
-          >
-            تنظیمات فضاها
-          </Button>
+        <Button
+          variant="outline"
+          onClick={() => setShowSettings(!showSettings)}
+          className="rounded-full gap-2 text-sm font-vazir shrink-0"
+        >
+          تنظیمات فضاها
+        </Button>
 
-          <AnimatePresence>
-            {showSettings && (
+        <AnimatePresence>
+          {showSettings && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setShowSettings(false)}
+              />
               <motion.div
                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -216,9 +219,9 @@ export function DashboardHeader({
                   </div>
                 </div>
               </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </header>
   );

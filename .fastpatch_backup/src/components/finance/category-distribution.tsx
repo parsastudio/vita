@@ -32,13 +32,13 @@ export function CategoryDistribution({
 
   const segments = useMemo<CategorySegment[]>(() => {
     const colors = [
-      "var(--chart-1)",
-      "var(--chart-2)",
-      "var(--chart-3)",
-      "var(--chart-4)",
-      "var(--chart-5)",
-      "var(--primary)",
-      "var(--muted-foreground)",
+      "#8B5CF6",
+      "#10B981",
+      "#3B82F6",
+      "#F59E0B",
+      "#EF4444",
+      "#EC4899",
+      "#6B7280",
     ];
     let accumulatedPercent = 0;
     const result: CategorySegment[] = [];

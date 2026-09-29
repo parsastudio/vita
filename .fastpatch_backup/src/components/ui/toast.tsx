@@ -9,11 +9,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const toast = useCallback(
     (message: string, type: "success" | "error" | "info" = "success") => {
-      const id =
-        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
+      const id = Math.random().toString(36).substring(2, 9);
       setToasts((prev) => {
         const next = [...prev, { id, message, type }];
         if (next.length > 3) {
